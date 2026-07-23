@@ -1,0 +1,38 @@
+[
+    {
+        "name": "Пункт приема металлолома.",
+        "alias": "Металл",
+        "advanced_coating": 22,
+        "transitional_coating": 2,
+        "ground_coating": 4,
+        "tonnage": 15,
+        "transport": "автосамосвалами",
+        "work_text": null,
+        "note": "Вывоз на металлолом",
+        "comment": null
+    },
+    {
+        "name": "Вывоз отходов на ТБО.",
+        "alias": "ТБО",
+        "advanced_coating": 29,
+        "transitional_coating": 0,
+        "ground_coating": 0,
+        "tonnage": 15,
+        "transport": "автосамосвалами",
+        "work_text": null,
+        "note": "Вывоз на ТБО",
+        "comment": null
+    },
+    {
+        "name": "Площадка для складирования грунта",
+        "alias": "ПлощСкладГрунт",
+        "advanced_coating": 0,
+        "transitional_coating": 0,
+        "ground_coating": 4,
+        "tonnage": 15,
+        "transport": "автосамосвалами",
+        "work_text": null,
+        "note": "На площадку для складирования грунта",
+        "comment": "Узнать куда"
+    }
+]

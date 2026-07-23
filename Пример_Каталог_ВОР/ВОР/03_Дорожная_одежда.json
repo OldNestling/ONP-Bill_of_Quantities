@@ -1,0 +1,551 @@
+{
+    "data_scheme": 1,
+    "metadata": {
+        "ObjectName": "Дорожная одежда",
+        "Num": "ВО-3",
+        "local_estimate": "",
+        "Date": "06.07.2026",
+        "Signatures": {
+            "Composer": "Иванов И.И.",
+            "Composer_Position": "Руководитель группы"
+        },
+        "Verifier": null,
+        "Status_Done": false,
+        "log_list": [
+            {
+                "Date": "15.07.2026",
+                "Event": "Изменена конструкция ДО"
+            }
+        ],
+        "note": ""
+    },
+    "data": {
+        "sections": [
+            {
+                "format_address_cache": null,
+                "name": "Устройство дорожной одежды по основной дороге в стеснённых условиях",
+                "works": [
+                    {
+                        "format_address_cache": null,
+                        "num_cache": null,
+                        "raw_name": "=@ВДО.К2.ДСО.Работа",
+                        "name_cache": "4afdcbc0c9392b9dc5aff37710d17759",
+                        "raw_unit": "cubic_meter",
+                        "raw_quantity_formula": "6000",
+                        "quantity_cache": "6000.0",
+                        "raw_comment": "",
+                        "comment_cache": "d41d8cd98f00b204e9800998ecf8427e",
+                        "local_comment": "",
+                        "type": "работа",
+                        "custom_round": null,
+                        "style_manager": {
+                            "col_2": null,
+                            "col_5": null,
+                            "col_6": null,
+                            "col_7": null,
+                            "col_9": null
+                        },
+                        "status_correct": true,
+                        "status_calculated": true,
+                        "links": [
+                            {
+                                "book_num": 3,
+                                "tag": 24,
+                                "user_pages": null
+                            },
+                            {
+                                "book_num": 3,
+                                "tag": 26,
+                                "user_pages": null
+                            }
+                        ],
+                        "links_cache": null,
+                        "resources": [
+                            {
+                                "format_address_cache": null,
+                                "num_cache": null,
+                                "raw_name": "=@ВДО.К2.ДСО.Ресурс",
+                                "name_cache": "e5dfc7452b43b2812b5c9e2d274e7343",
+                                "raw_unit": "cubic_meter_material",
+                                "raw_quantity_formula": "=@ВДО.К2.ДСО.Расход*Р1.П1",
+                                "quantity_cache": "7678",
+                                "raw_comment": "=@ВДО.К2.ДСО.Прим1",
+                                "comment_cache": "dc49e13182107b8f13204bdf277e286a",
+                                "local_comment": "",
+                                "type": "материал",
+                                "custom_round": null,
+                                "style_manager": {
+                                    "col_2": null,
+                                    "col_5": null,
+                                    "col_6": null,
+                                    "col_7": null,
+                                    "col_9": null
+                                },
+                                "status_correct": true,
+                                "status_calculated": true,
+                                "links": [
+                                    {
+                                        "book_num": 3,
+                                        "tag": 24,
+                                        "user_pages": null
+                                    },
+                                    {
+                                        "book_num": 3,
+                                        "tag": 26,
+                                        "user_pages": null
+                                    }
+                                ],
+                                "links_cache": null
+                            }
+                        ]
+                    },
+                    {
+                        "format_address_cache": null,
+                        "num_cache": null,
+                        "raw_name": "=@ВДО.К2.НСО.Работа",
+                        "name_cache": "ace5e7d0b622bd833b4f8bd7639c1782",
+                        "raw_unit": "square_meter",
+                        "raw_quantity_formula": "29713",
+                        "quantity_cache": "29713.00",
+                        "raw_comment": "",
+                        "comment_cache": "d41d8cd98f00b204e9800998ecf8427e",
+                        "local_comment": "",
+                        "type": "работа",
+                        "custom_round": null,
+                        "style_manager": {
+                            "col_2": null,
+                            "col_5": null,
+                            "col_6": null,
+                            "col_7": null,
+                            "col_9": null
+                        },
+                        "status_correct": false,
+                        "status_calculated": false,
+                        "links": [
+                            {
+                                "book_num": 3,
+                                "tag": 24,
+                                "user_pages": null
+                            },
+                            {
+                                "book_num": 3,
+                                "tag": 26,
+                                "user_pages": null
+                            }
+                        ],
+                        "links_cache": null,
+                        "resources": [
+                            {
+                                "format_address_cache": null,
+                                "num_cache": null,
+                                "raw_name": "=@ВДО.К2.НСО.Ресурс",
+                                "name_cache": "cc37fc2f1f1744f79b313fc87c98388f",
+                                "raw_unit": "cubic_meter_material",
+                                "raw_quantity_formula": "=@ВДО.К2.НСО.Расход*$Р1.$П1*0.15",
+                                "quantity_cache": "5703",
+                                "raw_comment": "=@ВДО.К2.НСО.Прим1",
+                                "comment_cache": "dc49e13182107b8f13204bdf277e286a",
+                                "local_comment": "",
+                                "type": "материал",
+                                "custom_round": null,
+                                "style_manager": {
+                                    "col_2": null,
+                                    "col_5": null,
+                                    "col_6": null,
+                                    "col_7": null,
+                                    "col_9": null
+                                },
+                                "status_correct": false,
+                                "status_calculated": false,
+                                "links": [
+                                    {
+                                        "book_num": 3,
+                                        "tag": 24,
+                                        "user_pages": null
+                                    },
+                                    {
+                                        "book_num": 3,
+                                        "tag": 26,
+                                        "user_pages": null
+                                    }
+                                ],
+                                "links_cache": null
+                            }
+                        ]
+                    },
+                    {
+                        "format_address_cache": null,
+                        "num_cache": null,
+                        "raw_name": "=@ВДО.К2.ВСО.Работа",
+                        "name_cache": "cb727c5f607ffb2630ec951f6c836b84",
+                        "raw_unit": "square_meter",
+                        "raw_quantity_formula": "27152",
+                        "quantity_cache": "27152.00",
+                        "raw_comment": "",
+                        "comment_cache": "d41d8cd98f00b204e9800998ecf8427e",
+                        "local_comment": "",
+                        "type": "работа",
+                        "custom_round": null,
+                        "style_manager": {
+                            "col_2": null,
+                            "col_5": null,
+                            "col_6": null,
+                            "col_7": null,
+                            "col_9": null
+                        },
+                        "status_correct": true,
+                        "status_calculated": false,
+                        "links": [
+                            {
+                                "book_num": 3,
+                                "tag": 24,
+                                "user_pages": null
+                            },
+                            {
+                                "book_num": 3,
+                                "tag": 26,
+                                "user_pages": null
+                            }
+                        ],
+                        "links_cache": null,
+                        "resources": [
+                            {
+                                "format_address_cache": null,
+                                "num_cache": null,
+                                "raw_name": "=@ВДО.К2.ВСО.Ресурс",
+                                "name_cache": "2f68af5f122a88a97af848578059375b",
+                                "raw_unit": "ton",
+                                "raw_quantity_formula": "=@ВДО.К2.ВСО.Расход*Р1.П3",
+                                "quantity_cache": "4553.662",
+                                "raw_comment": "=@ВДО.К2.ВСО.Прим1",
+                                "comment_cache": "950e7442d4f72513f3d3a7777a96b84c",
+                                "local_comment": "",
+                                "type": "материал",
+                                "custom_round": null,
+                                "style_manager": {
+                                    "col_2": null,
+                                    "col_5": null,
+                                    "col_6": null,
+                                    "col_7": null,
+                                    "col_9": null
+                                },
+                                "status_correct": true,
+                                "status_calculated": false,
+                                "links": [
+                                    {
+                                        "book_num": 3,
+                                        "tag": 24,
+                                        "user_pages": null
+                                    },
+                                    {
+                                        "book_num": 3,
+                                        "tag": 26,
+                                        "user_pages": null
+                                    }
+                                ],
+                                "links_cache": null
+                            }
+                        ]
+                    },
+                    {
+                        "format_address_cache": null,
+                        "num_cache": null,
+                        "raw_name": "=@ВДО.К2.НСП.Работа",
+                        "name_cache": "070bfa557b3b5157df3fee41fac2fee9",
+                        "raw_unit": "square_meter",
+                        "raw_quantity_formula": "=Р1.П3",
+                        "quantity_cache": "27152.00",
+                        "raw_comment": "",
+                        "comment_cache": "d41d8cd98f00b204e9800998ecf8427e",
+                        "local_comment": "",
+                        "type": "работа",
+                        "custom_round": null,
+                        "style_manager": {
+                            "col_2": null,
+                            "col_5": null,
+                            "col_6": null,
+                            "col_7": null,
+                            "col_9": null
+                        },
+                        "status_correct": true,
+                        "status_calculated": true,
+                        "links": [
+                            {
+                                "book_num": 3,
+                                "tag": 24,
+                                "user_pages": null
+                            },
+                            {
+                                "book_num": 3,
+                                "tag": 26,
+                                "user_pages": null
+                            }
+                        ],
+                        "links_cache": null,
+                        "resources": [
+                            {
+                                "format_address_cache": null,
+                                "num_cache": null,
+                                "raw_name": "=@ВДО.К2.НСП.Ресурс",
+                                "name_cache": "a90f5b5aa0ef480a27cc0762ca9eae0f",
+                                "raw_unit": "square_meter",
+                                "raw_quantity_formula": "=@ВДО.К2.НСП.Расход*Р1.П4",
+                                "quantity_cache": "4553.66",
+                                "raw_comment": "=@ВДО.К2.НСП.Прим1",
+                                "comment_cache": "950e7442d4f72513f3d3a7777a96b84c",
+                                "local_comment": "",
+                                "type": "материал",
+                                "custom_round": null,
+                                "style_manager": {
+                                    "col_2": null,
+                                    "col_5": null,
+                                    "col_6": null,
+                                    "col_7": null,
+                                    "col_9": null
+                                },
+                                "status_correct": true,
+                                "status_calculated": false,
+                                "links": [
+                                    {
+                                        "book_num": 3,
+                                        "tag": 24,
+                                        "user_pages": null
+                                    },
+                                    {
+                                        "book_num": 3,
+                                        "tag": 26,
+                                        "user_pages": null
+                                    }
+                                ],
+                                "links_cache": null
+                            }
+                        ]
+                    },
+                    {
+                        "format_address_cache": null,
+                        "num_cache": null,
+                        "raw_name": "=@ВДО.К2.ВСП.Работа",
+                        "name_cache": "b5b63d7f638a2db562a499d8cdd59589",
+                        "raw_unit": "square_meter",
+                        "raw_quantity_formula": "=Р1.П3+0.567",
+                        "quantity_cache": "27152.57",
+                        "raw_comment": "",
+                        "comment_cache": "d41d8cd98f00b204e9800998ecf8427e",
+                        "local_comment": "",
+                        "type": "работа",
+                        "custom_round": null,
+                        "style_manager": {
+                            "col_2": null,
+                            "col_5": null,
+                            "col_6": null,
+                            "col_7": null,
+                            "col_9": null
+                        },
+                        "status_correct": true,
+                        "status_calculated": true,
+                        "links": [
+                            {
+                                "book_num": 3,
+                                "tag": 24,
+                                "user_pages": null
+                            },
+                            {
+                                "book_num": 3,
+                                "tag": 26,
+                                "user_pages": null
+                            }
+                        ],
+                        "links_cache": null,
+                        "resources": [
+                            {
+                                "format_address_cache": null,
+                                "num_cache": null,
+                                "raw_name": "=@ВДО.К2.ВСП.Ресурс",
+                                "name_cache": "f00f89aeac4e8b82888619bcf8eab4ea",
+                                "raw_unit": "ton",
+                                "raw_quantity_formula": "=@ВДО.К2.ВСП.Расход*Р1.П5",
+                                "quantity_cache": "3259.123",
+                                "raw_comment": "=@ВДО.К2.ВСП.Прим1",
+                                "comment_cache": "d9412a32253b5b5ba5f1ba3f2541eed6",
+                                "local_comment": "",
+                                "type": "материал",
+                                "custom_round": null,
+                                "style_manager": {
+                                    "col_2": null,
+                                    "col_5": null,
+                                    "col_6": null,
+                                    "col_7": null,
+                                    "col_9": null
+                                },
+                                "status_correct": true,
+                                "status_calculated": false,
+                                "links": [
+                                    {
+                                        "book_num": 3,
+                                        "tag": 24,
+                                        "user_pages": null
+                                    },
+                                    {
+                                        "book_num": 3,
+                                        "tag": 26,
+                                        "user_pages": null
+                                    }
+                                ],
+                                "links_cache": null
+                            }
+                        ]
+                    },
+                    {
+                        "format_address_cache": null,
+                        "num_cache": null,
+                        "raw_name": "=@ВДО.К2.ПО.Работа",
+                        "name_cache": "baf4877a9153e4689d6f045e28ee1fda",
+                        "raw_unit": "cubic_meter_profile",
+                        "raw_quantity_formula": "4577.2",
+                        "quantity_cache": "4577.2",
+                        "raw_comment": "=@ВДО.К2.ПО.Прим2",
+                        "comment_cache": "58fb25a2b373cb17b8bc064d1e980104",
+                        "local_comment": "",
+                        "type": "работа",
+                        "custom_round": null,
+                        "style_manager": {
+                            "col_2": null,
+                            "col_5": null,
+                            "col_6": null,
+                            "col_7": null,
+                            "col_9": null
+                        },
+                        "status_correct": true,
+                        "status_calculated": true,
+                        "links": [
+                            {
+                                "book_num": 3,
+                                "tag": 24,
+                                "user_pages": null
+                            },
+                            {
+                                "book_num": 3,
+                                "tag": 26,
+                                "user_pages": null
+                            }
+                        ],
+                        "links_cache": null,
+                        "resources": [
+                            {
+                                "format_address_cache": null,
+                                "num_cache": null,
+                                "raw_name": "=@ВДО.К2.ПО.Ресурс",
+                                "name_cache": "e5dfc7452b43b2812b5c9e2d274e7343",
+                                "raw_unit": "cubic_meter_material",
+                                "raw_quantity_formula": "=@ВДО.К2.ПО.Расход*Р1.П6",
+                                "quantity_cache": "5857",
+                                "raw_comment": "=@ВДО.К2.ПО.Прим1",
+                                "comment_cache": "dc49e13182107b8f13204bdf277e286a",
+                                "local_comment": "",
+                                "type": "материал",
+                                "custom_round": null,
+                                "style_manager": {
+                                    "col_2": null,
+                                    "col_5": null,
+                                    "col_6": null,
+                                    "col_7": null,
+                                    "col_9": null
+                                },
+                                "status_correct": true,
+                                "status_calculated": false,
+                                "links": [
+                                    {
+                                        "book_num": 3,
+                                        "tag": 24,
+                                        "user_pages": null
+                                    },
+                                    {
+                                        "book_num": 3,
+                                        "tag": 26,
+                                        "user_pages": null
+                                    }
+                                ],
+                                "links_cache": null
+                            }
+                        ]
+                    },
+                    {
+                        "format_address_cache": null,
+                        "num_cache": null,
+                        "raw_name": "=@ВДО.К2.УЧО.Работа",
+                        "name_cache": "d112281274042b07fd48d3433bab8967",
+                        "raw_unit": "square_meter",
+                        "raw_quantity_formula": "916.62",
+                        "quantity_cache": "916.62",
+                        "raw_comment": "",
+                        "comment_cache": "d41d8cd98f00b204e9800998ecf8427e",
+                        "local_comment": "",
+                        "type": "работа",
+                        "custom_round": null,
+                        "style_manager": {
+                            "col_2": null,
+                            "col_5": null,
+                            "col_6": null,
+                            "col_7": null,
+                            "col_9": null
+                        },
+                        "status_correct": true,
+                        "status_calculated": true,
+                        "links": [
+                            {
+                                "book_num": 3,
+                                "tag": 24,
+                                "user_pages": null
+                            },
+                            {
+                                "book_num": 3,
+                                "tag": 26,
+                                "user_pages": null
+                            }
+                        ],
+                        "links_cache": null,
+                        "resources": [
+                            {
+                                "format_address_cache": null,
+                                "num_cache": null,
+                                "raw_name": "=@ВДО.К2.УЧО.Ресурс",
+                                "name_cache": "f00f89aeac4e8b82888619bcf8eab4ea",
+                                "raw_unit": "ton",
+                                "raw_quantity_formula": "=@ВДО.К2.УЧО.Расход*Р1.П7",
+                                "quantity_cache": "110.022",
+                                "raw_comment": "=@ВДО.К2.УЧО.Прим1",
+                                "comment_cache": "d9412a32253b5b5ba5f1ba3f2541eed6",
+                                "local_comment": "",
+                                "type": "материал",
+                                "custom_round": null,
+                                "style_manager": {
+                                    "col_2": null,
+                                    "col_5": null,
+                                    "col_6": null,
+                                    "col_7": null,
+                                    "col_9": null
+                                },
+                                "status_correct": true,
+                                "status_calculated": false,
+                                "links": [
+                                    {
+                                        "book_num": 3,
+                                        "tag": 24,
+                                        "user_pages": null
+                                    },
+                                    {
+                                        "book_num": 3,
+                                        "tag": 26,
+                                        "user_pages": null
+                                    }
+                                ],
+                                "links_cache": null
+                            }
+                        ]
+                    }
+                ]
+            }
+        ],
+        "archive": []
+    }
+}

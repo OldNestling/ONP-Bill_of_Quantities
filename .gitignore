@@ -1,0 +1,46 @@
+# --- Бинарные сборки и дистрибутивы ---
+*.exe
+*.msi
+*.app
+*.dmg
+build/
+dist/
+*.egg-info/
+*.spec
+
+# --- Виртуальное окружение Python ---
+venv/
+.venv/
+env/
+env.bak/
+ENV/
+
+# --- Кеш и скомпилированные файлы Python ---
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+
+# --- Файлы IDE и редакторов ---
+.idea/
+.vscode/
+.comments/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*~
+
+# --- Временные файлы ---
+*.bak
+*.tmp
+*.log
+*.temp
+~$*
+
+version_info.txt
+ONP_Система_ВОР. Руководство.pdf
+/01_Заметки/
+/02_draft/
+License

@@ -1,0 +1,58 @@
+[
+    {
+        "local_num": "ИГЭ_1",
+        "local_name": "Техногенный грунт (галечниковый грунт маловлажный)",
+        "local_density": 1.75,
+        "gesn_1_obj": {
+            "num": "6а",
+            "name": "6а_Гравийно-галечные грунты (кроме моренных) при размере частиц, мм: а) до 80",
+            "density": 1750,
+            "work_1": 1,
+            "work_2": null,
+            "work_3": 2,
+            "work_4": 2,
+            "work_5": 2,
+            "work_6": 3,
+            "work_7": null,
+            "work_8": null,
+            "work_9": 2,
+            "work_10": null,
+            "work_11": null,
+            "work_12": null,
+            "work_13": null
+        },
+        "gesn_4_obj": null,
+        "gesn_5_obj": null,
+        "note1": null,
+        "note2": null,
+        "comment": null
+    },
+    {
+        "local_num": "ИГЭ_С1",
+        "local_name": "Почва (растительный слой с корнями деревьев и кустаника",
+        "local_density": 1.2,
+        "gesn_1_obj": {
+            "num": "9б",
+            "name": "9б_Грунт растительного слоя: б) с корнями кустарника и деревьев",
+            "density": 1200,
+            "work_1": 1,
+            "work_2": 2,
+            "work_3": 2,
+            "work_4": 1,
+            "work_5": 2,
+            "work_6": null,
+            "work_7": null,
+            "work_8": 1,
+            "work_9": 2,
+            "work_10": 1,
+            "work_11": 1,
+            "work_12": null,
+            "work_13": 1
+        },
+        "gesn_4_obj": null,
+        "gesn_5_obj": null,
+        "note1": null,
+        "note2": null,
+        "comment": null
+    }
+]

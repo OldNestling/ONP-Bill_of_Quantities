@@ -1,0 +1,112 @@
+{
+    "ConstructionSite": "Автомобильная дорога «...»",
+    "Verifier": {
+        "Name": "Иванов И.И.",
+        "Position": "ГИП"
+    },
+    "Code": "1234",
+    "Description": "Категория — 3\nКол-во полос — 2\nШирина земляного полотна — 12 м\nАдресс — ...",
+    "units_settings": {
+        "-": {
+            "label": "-",
+            "round": null
+        },
+        "meter": {
+            "label": "м",
+            "round": 2
+        },
+        "p_m": {
+            "label": "п.м",
+            "round": 2
+        },
+        "km": {
+            "label": "км",
+            "round": 3
+        },
+        "square_meter": {
+            "label": "м²",
+            "round": 2
+        },
+        "cubic_meter": {
+            "label": "м³",
+            "round": 1
+        },
+        "cubic_meter_profile": {
+            "label": "м³ (проф)",
+            "round": 1
+        },
+        "cubic_meter_constr": {
+            "label": "м³ (констр)",
+            "round": 2
+        },
+        "cubic_meter_material": {
+            "label": "м³ (матер)",
+            "round": 0
+        },
+        "cubic_meter_soil": {
+            "label": "м³ (грунт)",
+            "round": 0
+        },
+        "hectare": {
+            "label": "га",
+            "round": 3
+        },
+        "count": {
+            "label": "шт.",
+            "round": 0
+        },
+        "kg": {
+            "label": "кг",
+            "round": 2
+        },
+        "ton": {
+            "label": "т",
+            "round": 3
+        },
+        "liter": {
+            "label": "л",
+            "round": 2
+        },
+        "milliliter": {
+            "label": "мл",
+            "round": 0
+        },
+        "package": {
+            "label": "уп.",
+            "round": 0
+        },
+        "machine_hours": {
+            "label": "маш.-ч",
+            "round": 2
+        }
+    },
+    "work_modes_settings": {
+        "position_mode": true,
+        "transportation_mode": true,
+        "ground_complementation_mode": true,
+        "position_types": [
+            "работа",
+            "материал",
+            "перевозка",
+            "оборудование",
+            "машина",
+            "прочее"
+        ],
+        "packed_files_for_BoQ": false
+    },
+    "posts_lib": [
+        "Ведущий инженер",
+        "ГИП",
+        "Директор",
+        "Инженер 1 категории",
+        "Инженер 2 категории",
+        "Инженер 3 категории",
+        "Руководитель группы"
+    ],
+    "performers_lib": [
+        "Иванов И.И."
+    ],
+    "chiefs_lib": [
+        "Иванов И.И."
+    ]
+}
