@@ -1,5 +1,5 @@
 # ONP: Система ВОР
-A simple system for generating work scope sheets in the construction design of the Russian Federation using the Ministry of Construction's XML schema |  Простая система для формирования ведомостей объемов работ в строительном проектировании Российской Федерации по XML-схеме Минстроя
+A simple system for generating bill of quantities in the construction design of the Russian Federation using the Ministry of Construction's XML schema |  Простая система для формирования ведомостей объемов работ в строительном проектировании Российской Федерации по XML-схеме Минстроя
 
 > [!NOTE]
 > This project is tailored to Russian construction design workflows and holds little practical value internationally. 
