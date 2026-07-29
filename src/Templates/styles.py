@@ -305,59 +305,64 @@ CSS_SETTING = """
 		QCheckBox:focus {
 			outline: none;
 		}
-		/* ===================== QSpinBox, QDoubleSpinBox ===================== */
-		QSpinBox, QDoubleSpinBox {
-			border: 1px solid #3a3a3a;
-			border-radius: 3px;
-			padding: 4px;
-			background-color: #ffffff;
-			color: #000000;
-			min-height: 22px;
-		}
-		QSpinBox:focus, QDoubleSpinBox:focus {
-			border: 1px solid #0053a6;
-		}
-		QSpinBox::up-button, QDoubleSpinBox::up-button {
-			subcontrol-origin: border;
-			subcontrol-position: top right;
-			width: 16px;
-			height: 50%;
-			background-color: #f0f0f0;
-			border-left: 1px solid #3a3a3a;
-			border-bottom: 1px solid #3a3a3a;
-			border-top-right-radius: 3px;
-		}
-		QSpinBox::up-button:hover, QDoubleSpinBox::up-button:hover {
-			background-color: #e0e0e0;
-		}
-		QSpinBox::up-button:pressed, QDoubleSpinBox::up-button:pressed {
-			background-color: #d0d0d0;
-		}
-		QSpinBox::down-button, QDoubleSpinBox::down-button {
-			subcontrol-origin: border;
-			subcontrol-position: bottom right;
-			width: 16px;
-			height: 50%;
-			background-color: #f0f0f0;
-			border-left: 1px solid #3a3a3a;
-			border-top: 1px solid #3a3a3a;
-			border-bottom-right-radius: 3px;
-		}
-		QSpinBox::down-button:hover, QDoubleSpinBox::down-button:hover {
-			background-color: #e0e0e0;
-		}
-		QSpinBox::down-button:pressed, QDoubleSpinBox::down-button:pressed {
-			background-color: #d0d0d0;
-		}
-		/* Стрелки через inline SVG (без внешних файлов) */
-		QSpinBox::up-arrow, QDoubleSpinBox::up-arrow {
-			width: 10px;
-			height: 10px;
-			image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpolygon points='5,2 2,8 8,8' fill='%23333333'/%3E%3C/svg%3E");
-		}
-		QSpinBox::down-arrow, QDoubleSpinBox::down-arrow {
-			width: 10px;
-			height: 10px;
-			image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpolygon points='5,8 2,2 8,2' fill='%23333333'/%3E%3C/svg%3E");
-		}
+	
 	 	"""
+
+
+	# пока не удаётся настроить стрелки для числовых полей, временно отключил переопредление
+	#/* ===================== QSpinBox, QDoubleSpinBox ===================== */
+
+	#	QSpinBox, QDoubleSpinBox {
+	#		border: 1px solid #3a3a3a;
+	#		border-radius: 3px;
+	#		padding: 4px;
+	#		background-color: #ffffff;
+	#		color: #000000;
+	#		min-height: 22px;
+	#	}
+	#	QSpinBox:focus, QDoubleSpinBox:focus {
+	#		border: 1px solid #0053a6;
+	#	}
+	#	QSpinBox::up-button, QDoubleSpinBox::up-button {
+	#		subcontrol-origin: border;
+	#		subcontrol-position: top right;
+	#		width: 16px;
+	#		height: 50%;
+	#		background-color: #f0f0f0;
+	#		border-left: 1px solid #3a3a3a;
+	#		border-bottom: 1px solid #3a3a3a;
+	#		border-top-right-radius: 3px;
+	#	}
+	#	QSpinBox::up-button:hover, QDoubleSpinBox::up-button:hover {
+	#		background-color: #e0e0e0;
+	#	}
+	#	QSpinBox::up-button:pressed, QDoubleSpinBox::up-button:pressed {
+	#		background-color: #d0d0d0;
+	#	}
+	#	QSpinBox::down-button, QDoubleSpinBox::down-button {
+	#		subcontrol-origin: border;
+	#		subcontrol-position: bottom right;
+	#		width: 16px;
+	#		height: 50%;
+	#		background-color: #f0f0f0;
+	#		border-left: 1px solid #3a3a3a;
+	#		border-top: 1px solid #3a3a3a;
+	#		border-bottom-right-radius: 3px;
+	#	}
+	#	QSpinBox::down-button:hover, QDoubleSpinBox::down-button:hover {
+	#		background-color: #e0e0e0;
+	#	}
+	#	QSpinBox::down-button:pressed, QDoubleSpinBox::down-button:pressed {
+	#		background-color: #d0d0d0;
+	#	}
+	#	/* Стрелки через inline SVG (без внешних файлов) */
+	#	QSpinBox::up-arrow, QDoubleSpinBox::up-arrow {
+	#		width: 10px;
+	#		height: 10px;
+	#		image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpolygon points='5,2 2,8 8,8' fill='%23333333'/%3E%3C/svg%3E");
+	#	}
+	#	QSpinBox::down-arrow, QDoubleSpinBox::down-arrow {
+	#		width: 10px;
+	#		height: 10px;
+	#		image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpolygon points='5,8 2,2 8,2' fill='%23333333'/%3E%3C/svg%3E");
+	#	}

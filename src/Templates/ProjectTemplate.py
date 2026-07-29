@@ -102,8 +102,6 @@ POSTS_TEMPLATE = (
 		'Инженер 3 категории'
 )
 
-CHIEFS = ('Иванов И.И.')
+CHIEFS = tuple(['Иванов И.И.'])
 
-PERFORMERS_TEMPLATE=([
-	'Иванов И.И.'
-])
+PERFORMERS_TEMPLATE=tuple(['Иванов И.И.'])

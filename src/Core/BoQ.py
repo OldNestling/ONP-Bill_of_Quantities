@@ -17,10 +17,11 @@
 import re, json, copy, math
 from pathlib import Path
 from dataclasses import dataclass
-from decimal import Decimal, ROUND_HALF_UP
 
 from Core.Documentation import Book, Document
-from Core.Utilities import clearing_string, get_user_log, get_hash_text, fixing_decimals, fixing_spaces
+from Core.Utilities import (
+	clearing_string, get_user_log, get_hash_text, fixing_decimals, fixing_spaces, decimal_round
+)
 from abc import ABC
 from Core.Soils import Soil
 from Core.Computing_Module import eval_functions, get_all_alias_request, get_from_library
@@ -61,7 +62,7 @@ class BoQ_manager:
 		self.note = ''						# Пользовательские заметки к разделу ВОР. Взаимодействие через модель фронтэнда
 		self.log_list: list = None			# список со словарями с ключами Date, Event, содержащими информацию о изменениях
 
-		self.sections: list[Work] = None	# Накопитель подразделов ВОР. Подразделы содержат позиции, те могут содержать ценообразующие ресурсы 
+		self.sections: list[Section] = None	# Накопитель подразделов ВОР. Подразделы содержат позиции, те могут содержать ценообразующие ресурсы 
 		self.archive: list = None			# Накопитель исключённых позиций ВОР для удобства сметчика
 		self.links: set = None				# Хранит все существующие ссылки на документы для ускоренной работы с ними
 		self.load_file(file)
@@ -495,7 +496,7 @@ class BoQ_manager:
 				if not work.compare_comment(): is_changed = True
 
 				for resource in work.resources:
-					if resource.compare_name(): is_changed = True
+					if not resource.compare_name(): is_changed = True
 					resource.qnt_check()
 					if not resource.compare_comment(): is_changed = True
 		if is_changed:
@@ -943,7 +944,6 @@ class BoQ_manager:
 		main_element: MainElement = data.get('main_element')
 		sub_element: SubElement = data.get('sub_element')
 
-		print(f'[DEBUG: SELECTED INDEXES] {indexes=}')
 		index_section, index_work, index_resource = indexes
 		section: Section = self.sections[index_section]
 		if not self._check_access_to_obj((index_section, index_work, None)):
@@ -970,8 +970,7 @@ class BoQ_manager:
 				main_resource.name = f'=@{main_el.alias_resource}'
 				main_resource.raw_quantity_formula = f'=@{main_el.alias_factor}*{new_work.format_address}'
 				main_resource.raw_comment = f'=@{main_el.alias_note2}'
-				new_work.dependents.add(main_resource)
-				new_work.resources.append(main_resource)			
+				new_work.dependents.add(main_resource)		
 
 				# ----- Добавляем дополнительные ресурсы -----
 				for i, res in enumerate(main_el.sub_elements, start=1):
@@ -982,7 +981,6 @@ class BoQ_manager:
 					new_resource.raw_quantity_formula = f'=@{res.alias_factor}*{new_work.format_address}'
 					new_resource.raw_comment = f'=@{res.alias_note2}'
 					new_work.dependents.add(new_resource)
-					new_work.resources.append(new_resource)
 				new_index_work += 1
 		
 		# -------- Создание основного элемента и потомков ---------
@@ -990,7 +988,6 @@ class BoQ_manager:
 			main_el: MainElement = main_element
 			new_work = Work(self, [index_section, new_index_work, None])
 			self.add_filled_object(new_work)	
-			print(f'[DEBUG: NEW OJB INDEXES] indexes={new_work.address}')
 			new_work.name = f'=@{main_el.alias_work}'
 			new_work.raw_quantity_formula = f'0'
 			new_work.raw_comment = f'=@{main_el.alias_note1}'
@@ -998,11 +995,9 @@ class BoQ_manager:
 			# ----- Создаем основной ресурс элемента -----
 			main_resource = Resource(self, [index_section, new_index_work, 0])
 			main_resource.name = f'=@{main_el.alias_resource}'
-			print(f'[DEBUG: NEW OJB LINK] indexes={new_work.format_address}')
 			main_resource.raw_quantity_formula = f'=@{main_el.alias_factor}*{new_work.format_address}'
 			main_resource.raw_comment = f'=@{main_el.alias_note2}'
 			new_work.dependents.add(main_resource)
-			new_work.resources.append(main_resource)
 
 			for i, res in enumerate(main_el.sub_elements, start=1):
 				res: SubElement
@@ -1012,7 +1007,6 @@ class BoQ_manager:
 				new_resource.raw_quantity_formula = f'=@{res.alias_factor}*{new_work.format_address}'
 				new_resource.raw_comment = f'=@{res.alias_note2}'
 				new_work.dependents.add(new_resource)
-				new_work.resources.append(new_resource)
 
 		# ------ Создание  только ресурса  ------  
 		else:
@@ -1472,6 +1466,37 @@ class BoQ_manager:
 						continue
 					for link in resource.links:
 						self.links.add(link)
+
+	def _go_through_the_collections(
+			self, 
+			sec_func: function | None = None,  
+			work_func:  function | None = None,
+			res_func:  function | None = None
+	):
+		""" 
+		Проходит по всем коллекциям и выполняет операции с объектами через переданную функцию
+		TODO для рефакторинга в будущем, оценить целесообразность с учётом возврата значений 
+		для реакции на результат. 
+		TODO Подумать над вызовом ошибки для перехвата результата
+
+		### Args:
+			:sec_func: функция взаимодействия с разделом
+			:work_func: функция взаимодействия с позицией работы
+			:res_func: функция взаимодействия с позицией ресурса
+		"""
+		def __apply_func(func: function | None, obj: Section | Work | Resource):
+			if func is None:
+				pass
+			else:
+				func(obj)
+
+		for section in self.sections:
+			__apply_func(sec_func, section)
+			for work in section.works:
+				__apply_func(work_func, work)
+				for resource in work.resources:
+					__apply_func(res_func, resource)
+	
 	
 class Section:
 	""" 
@@ -1869,7 +1894,7 @@ class PositionLine(ABC):
 		self.custom_round: int | None = None			# Замещение округления с системного на пользовательское
 		self.status_correct = False						# Подтверждено готовым разработчиком
 		self.status_calculated = False					# Подтверждено готовым сметчиком
-		self.dependents: set[PositionLine] = set()							# Зависимые от этой позиции элементы (требуют пересчёта при изменении объекта)
+		self.dependents: set[PositionLine] = set()		# Зависимые от этой позиции элементы (требуют пересчёта при изменении объекта)
 	
 
 	@property
@@ -2011,13 +2036,6 @@ class PositionLine(ABC):
 	def quantity(self) -> str:
 		""" Вычисляет результат чистой текстовой формулы из quantity_formula, 
 		уже не содержащей вспомогательного синтаксиса"""
-
-		def __decimal_round(number, precision=2):
-			# Преобразуем число в строку, чтобы Decimal точно его понял
-			# Формируем строку для указания точности, например '0.01' для 2 знаков
-			quantize_str = '0.' + '0' * precision
-			# Выполняем округление с нужным правилом
-			return Decimal(str(number)).quantize(Decimal(quantize_str), rounding=ROUND_HALF_UP)
 		
 		raw_quantity_formula = self.raw_quantity_formula
 		if not raw_quantity_formula:
@@ -2028,7 +2046,7 @@ class PositionLine(ABC):
 			result = eval(expr, {"__builtins__": None})
 			round_property = self.unit_round
 			#self.compare_qnt(result, round_property)
-			rounded_result = __decimal_round(result, round_property)
+			rounded_result = decimal_round(result, round_property)
 			calc = f"{rounded_result:.{round_property}f}"
 			return calc
 
@@ -2050,10 +2068,10 @@ class PositionLine(ABC):
 		if not self.quantity_cache:
 			self.quantity_cache = res
 			self.status_calculated = False
+
 			return False
 
 		if self.status_calculated and res != self.quantity_cache:
-			print(f'[DEBUG qnt: {self}] {res=} != {self.quantity_cache=}')
 			self.status_calculated = False
 			self.quantity_cache = res
 			return False

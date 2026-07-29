@@ -16,6 +16,7 @@
 
 import re, os, pyperclip, sys, hashlib,  subprocess
 from datetime import datetime
+from decimal import Decimal, ROUND_HALF_UP
 
 # ГЛОБАЛЬНЫЕ ФУНКЦИИ ПРОЕКТА 
 
@@ -65,6 +66,12 @@ def requesting_value(value_type, input_object: str, min_value = None, max_value 
 				print('Ошибка: введите число')
 				continue  # Повторяем ввод
 
+def decimal_round(number, precision=2):
+	# Преобразуем число в строку, чтобы Decimal точно его понял
+	# Формируем строку для указания точности, например '0.01' для 2 знаков
+	quantize_str = '0.' + '0' * precision
+	# Выполняем округление с нужным правилом
+	return Decimal(str(number)).quantize(Decimal(quantize_str), rounding=ROUND_HALF_UP)
 
 def clearing_string(string):
 	"""Подготовка строки для вычисления."""
@@ -137,7 +144,7 @@ def resource_path(relative_path):
 def get_hash_text(text: str) -> str:
 	""" Используется для сравнения изменений текстовых ячеек в позициях """
 	# Форматирование текста без учёта мелких корректировок
-	text = text.replace(' ','').replace(',','').replace('.','').replace('\n','').lower()
+	text = text.replace(' ','').replace(',','').replace('.','').replace('\n','').lower().strip()
 	hash_object = hashlib.md5(text.encode())
 	hex_digest = hash_object.hexdigest()
 	return hex_digest

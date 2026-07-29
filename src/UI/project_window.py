@@ -22,7 +22,7 @@ from PyQt6.QtWidgets import (
 	QDialogButtonBox, QVBoxLayout, QHBoxLayout, QGroupBox, QLineEdit,
 	QPlainTextEdit, QMessageBox, QListWidget, QAbstractItemView, QTableWidget, 
 	QTableWidgetItem, QHeaderView, QComboBox, QCompleter, QTabWidget, QFrame, 
-	QProgressDialog, QInputDialog, QTextBrowser, QMenu)
+	QProgressDialog, QInputDialog, QTextBrowser, QMenu, QSpinBox)
 from PyQt6.QtCore import Qt, QSize, QTimer
 from PyQt6.QtGui import QColor, QPixmap
 
@@ -1544,9 +1544,20 @@ class Export_Dialog(QDialog):
 
 		layout.addWidget(QLabel("Выберите формат экспорта:"))
 
-		self.format_combo = QComboBox()
-		self.format_combo.addItems(["XML", "GGE", "PDF по форме 1", "PDF по форме 2"])
-		layout.addWidget(self.format_combo)
+		self.format_combobox = QComboBox()
+		self.format_combobox.addItems(["XML", "GGE", "PDF по форме 1", "PDF по форме 2"])
+		layout.addWidget(self.format_combobox)
+
+		self.subsection_num = QSpinBox()
+		self.subsection_num.setMinimum(0)
+		self.subsection_num.setMaximumWidth(40)
+		self.subsection_num.setValue(4)
+
+		subsec_line = QHBoxLayout()
+		subsec_line.addWidget(QLabel('Номер подраздела СД: '))
+		subsec_line.addWidget(self.subsection_num)
+
+		layout.addLayout(subsec_line)
 
 		btn_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
 		btn_box.accepted.connect(self.accept)
@@ -1555,12 +1566,13 @@ class Export_Dialog(QDialog):
 
 	def get_data(self):
 		"""Возвращает расширение файла: .xml или .gge"""
-		form = self.format_combo.currentText()
-		if form == "XML":
-			return (".xml", None)
-		elif form == "GGE":
-			return (".gge", None)
-		elif form == "PDF по форме 1":
-			return (".pdf", 0)
-		else:
-			return (".pdf", 1)
+		subsec = self.subsection_num.value()
+		match self.format_combobox.currentText():
+			case  'GGE':
+				return ('.gge', None, subsec)
+			case 'XML':
+				return ('.xml', None, subsec)
+			case 'PDF по форме 1':
+				return ('.pdf', 0, subsec)
+			case 'PDF по форме 2':
+				return ('.pdf', 1, subsec)

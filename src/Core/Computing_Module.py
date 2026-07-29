@@ -15,7 +15,7 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 import math, re
-from .Utilities import convert_value, text_after, clearing_string
+from .Utilities import convert_value, text_after, clearing_string, decimal_round
 
 
 # ---------------------------------------------------------------------------------------
@@ -279,7 +279,7 @@ def round_func(string: str):
 	try:
 		val = convert_value(val)
 		m = int(m)
-		return round(val, m)
+		return decimal_round(val, m)
 	except Exception:
 		return '#ОШИБКА'
 

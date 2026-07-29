@@ -18,7 +18,7 @@ from PyQt6.QtWidgets import (
 	QWidget, QLabel, QPushButton, QDialog, QVBoxLayout, QToolBar, QMessageBox, QHeaderView,
 	QComboBox, QDialogButtonBox, QMenu, QApplication, QTreeView, QSplitter, QTabWidget,
 	QAbstractItemView, QWidgetAction, QGridLayout, QColorDialog, QToolButton, QLineEdit,
-	QTextEdit
+	QTextEdit, QSpinBox, QHBoxLayout
 	)
 from PyQt6.QtGui import QAction, QColor, QCursor, QTextCursor
 from PyQt6.QtCore import Qt, QSize, QModelIndex, QEvent, QTimer
@@ -1331,17 +1331,17 @@ class BoQ_Tab(QWidget):
 				return
 		exp_dialog = Export_Dialog(self)
 		if exp_dialog.exec() == QDialog.DialogCode.Accepted:
-			format = exp_dialog.get_data()
+			format, form, subsec = exp_dialog.get_data()
 			try:
 				convertor = Convertor(manager.project)
-				if format[0] in ('.xml', '.gge'):
-					convertor.create_xml_3p01(manager, format[0])
+				if format in ('.xml', '.gge'):
+					convertor.create_xml_3p01(manager, format, subsection= subsec)
 					open_func = self.project.open_xml_folder
 				else:
-					convertor.export_to_pdf(manager, format[1])
+					convertor.export_to_pdf(manager, form, subsec)
 					open_func = self.project.open_pdf_folder
 				folder = {'.xml': 'XML', '.gge': 'XML', '.pdf': 'PDF'}	
-				QMessageBox.information(self, 'Экспорт', f'Файл экспортирован в папку {folder.get(format[0], '#ОШИБКА')}')
+				QMessageBox.information(self, 'Экспорт', f'Файл экспортирован в папку {folder.get(format, '#ОШИБКА')}')
 				open_func()
 			except Exception as e:
 				QMessageBox.warning(self, 'Ошибка', f'Не удалость экспортировать файл:\n{e}')
@@ -2191,6 +2191,18 @@ class Export_Dialog(QDialog):
 		self.format_combobox.setCurrentIndex(0)
 		edit_layout.addWidget(self.format_combobox)
 
+		self.subsection_num = QSpinBox()
+		self.subsection_num.setMinimum(0)
+		self.subsection_num.setMaximumWidth(40)
+		self.subsection_num.setValue(4)
+
+		subsec_line = QHBoxLayout()
+		subsec_line.addWidget(QLabel('Номер подраздела СД: '))
+		subsec_line.addWidget(self.subsection_num)
+
+		edit_layout.addLayout(subsec_line)
+
+
 		buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
 		ok_button = buttons.button(QDialogButtonBox.StandardButton.Ok)
 		ok_button.setText('Применить')
@@ -2202,13 +2214,14 @@ class Export_Dialog(QDialog):
 		edit_layout.addWidget(buttons)
 
 	def get_data(self):
+		subsec = self.subsection_num.value()
 		match self.format_combobox.currentText():
 			case  'GGE':
-				return ('.gge', None)
+				return ('.gge', None, subsec)
 			case 'XML':
-				return ('.xml', None)
+				return ('.xml', None, subsec)
 			case 'PDF по форме 1':
-				return ('.pdf', 0)
+				return ('.pdf', 0, subsec)
 			case 'PDF по форме 2':
-				return ('.pdf', 1)
+				return ('.pdf', 1, subsec)
 

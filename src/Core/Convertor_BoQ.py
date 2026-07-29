@@ -47,7 +47,13 @@ class Convertor:
 		self.xml_dir = self.project.base_dir / 'XML'
 		self.UNITS_LIB: dict | None = None	# Словарь с еденицами измерения
 	
-	def create_xml_3p01(self, manager: BoQ_manager, file_extension = '.gge') -> bool:
+	def create_xml_3p01(self, manager: BoQ_manager, file_extension = '.gge', subsection = 4) -> bool:
+		""" Создаёт файл данных по XML-схеме 
+		### Args:
+			:manager: менеджер данных ВОР
+			:file_extension: расширение результирующего файла xml|gge. По сути не важно, но госключ примет только xml
+			:subsection: номер подраздела сметной документации
+		"""
 		project = self.project
 		if not project.library:
 			project.set_library()
@@ -218,7 +224,8 @@ class Convertor:
 			pass
 		folder = manager.file.parent.parent / 'XML'
 		folder.mkdir(parents=True, exist_ok=True)
-		output = folder / manager.file.stem 
+		filename = f'Раздел ПД №9 СМ подраздел ПД №{subsection} {manager.num if manager.num else manager.file.stem}'
+		output = folder / filename
 		tree.write(output.with_suffix(file_extension), encoding='utf-8', xml_declaration=True)
 		return True
 	
@@ -644,18 +651,20 @@ class Convertor:
 		wb.close()
 		return processed
 	
-	def export_to_pdf(self, manager: BoQ_manager, mode = 0) -> bool:
+	def export_to_pdf(self, manager: BoQ_manager, mode = 0, subsection = 4) -> bool:
 		"""
 		Экспорт ведомости в PDF.
 		:param manager: объект BoQ_manager с данными
 		:param mode: форма верхней части
 		:return: True при успехе
+		:subsection: номер подраздела сметной документации
 		"""
 		try:
 			generator = PDFGenerator(manager, self.project, mode)
 			folder = manager.file.parent.parent / 'PDF'
 			folder.mkdir(parents=True, exist_ok=True)
-			output = folder / manager.file.stem
+			filename = f'Раздел ПД №9 СМ подраздел ПД №{subsection} {manager.num if manager.num else manager.file.stem}'
+			output = folder / filename
 			generator.generate(output.with_suffix('.pdf'))
 			return True
 		except Exception as e:
