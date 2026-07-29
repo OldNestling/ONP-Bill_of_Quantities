@@ -97,7 +97,7 @@
 На данный момент предполагается два сценария запуска программы:
 +  напрямую через компилятор Python (необходима версия 3.14.6 и пакеты, указанные в файле [requirements.txt](requirements.txt));
 + через исполняемый файл. В этом случае никаких дополнительнных действий не потребуется.
-[Скачать исполняемый файл.](https://github.com/OldNestling/ONP-Bill_of_Quantities/releases/tag/v1.0.2.0)
+[Скачать исполняемый файл.](https://github.com/OldNestling/ONP-Bill_of_Quantities/releases/latest/download/ONP-Bill_of_Quantities.zip)
 
 
 В теории программа должна работать кроссплатформенно, но тестирование выполнялось только для Windows 10 и 11.
