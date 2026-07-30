@@ -945,9 +945,10 @@ class BoQ_manager:
 		sub_element: SubElement = data.get('sub_element')
 
 		index_section, index_work, index_resource = indexes
-		section: Section = self.sections[index_section]
 		if not self._check_access_to_obj((index_section, index_work, None)):
 			return
+		
+		section: Section = self.sections[index_section]
 		if sub_element is None:
 			new_index_work = len(section.works) if index_work is None else index_work + 1
 		else:
@@ -994,6 +995,7 @@ class BoQ_manager:
 
 			# ----- Создаем основной ресурс элемента -----
 			main_resource = Resource(self, [index_section, new_index_work, 0])
+			self.add_filled_object(main_resource)
 			main_resource.name = f'=@{main_el.alias_resource}'
 			main_resource.raw_quantity_formula = f'=@{main_el.alias_factor}*{new_work.format_address}'
 			main_resource.raw_comment = f'=@{main_el.alias_note2}'
