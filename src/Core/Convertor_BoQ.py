@@ -121,6 +121,36 @@ class Convertor:
 		sections_tag = ET.SubElement(root, 'Sections')
 		manager.calculate_pos_nums()
 		is_dummy_links = False
+
+
+		def __link_to_xml(links_tag: ET.Element, link: Link):
+			""" Добавляет ссылку на документ в иерархию позиции """
+			link_tag = ET.SubElement(links_tag, 'Link')
+			ET.SubElement(link_tag, 'FileID').text = str(link.file_id)
+
+			pages = re.findall(r'\d+', link.pages)
+			pages = ' '.join(pages)
+
+			ET.SubElement(link_tag, 'PageNumber').text = pages
+			ET.SubElement(link_tag, 'PageDescription').text = str(link)
+
+		def __create_dummy_links(links_tag):
+			""" Создаёт ссылку-заглушку для соответствия схеме """
+			nonlocal is_dummy_links, files, all_files
+
+			if is_dummy_links is False:
+				""" Добавляем заглушку в список файлов для позиций без ссылок """
+				file = ET.SubElement(files, 'File')
+				ET.SubElement(file, 'ID').text = str(len(all_files)+1)
+				ET.SubElement(file, 'FileName').text = self.DUMMY_FILE_NAME
+				all_files[0] = {'FileID': len(all_files)+1, 'FileName': self.DUMMY_FILE_NAME}
+				is_dummy_links = True
+
+			link_tag = ET.SubElement(links_tag, 'Link')
+			ET.SubElement(link_tag, 'FileID').text = str(all_files[0]['FileID'])
+			ET.SubElement(link_tag, 'PageNumber').text = str(self.DUMMY_PAGE_NUMBER)
+			ET.SubElement(link_tag, 'PageDescription').text = self.DUMMY_DESCRIPTION
+	
 		for i, section in enumerate(manager.sections, 1):
 			section: Section
 			section_tag = ET.SubElement(sections_tag, 'Section')
@@ -145,28 +175,9 @@ class Convertor:
 
 				if work.links:
 					for link in work.links:
-						link: Link
-						link_tag = ET.SubElement(links_tag, 'Link')
-						ET.SubElement(link_tag, 'FileID').text = str(link.file_id)
-						pages = link.pages
-						if isinstance(pages, list):
-							pages = ' '.join([str(page) for page in pages])
-						else:
-							pages = str(pages)
-						ET.SubElement(link_tag, 'PageNumber').text = pages
-						ET.SubElement(link_tag, 'PageDescription').text = str(link)
+						__link_to_xml(links_tag, link)
 				else:
-					if is_dummy_links is False:
-						""" Добавляем заглушку в список файлов для позиций без ссылок """
-						file = ET.SubElement(files, 'File')
-						ET.SubElement(file, 'ID').text = str(len(all_files)+1)
-						ET.SubElement(file, 'FileName').text = self.DUMMY_FILE_NAME
-						all_files[0] = {'FileID': len(all_files)+1, 'FileName': self.DUMMY_FILE_NAME}
-						is_dummy_links = True
-					link_tag = ET.SubElement(links_tag, 'Link')
-					ET.SubElement(link_tag, 'FileID').text = str(all_files[0]['FileID'])
-					ET.SubElement(link_tag, 'PageNumber').text = str(self.DUMMY_PAGE_NUMBER)
-					ET.SubElement(link_tag, 'PageDescription').text = self.DUMMY_DESCRIPTION
+					__create_dummy_links(links_tag)
 
 				ET.SubElement(work_tag, 'Comment').text = work.comment
 
@@ -192,29 +203,10 @@ class Convertor:
 
 						if resource.links:
 							for link in resource.links:
-								link: Link
-								link_tag = ET.SubElement(links_tag, 'Link')
-								ET.SubElement(link_tag, 'FileID').text = str(link.file_id)
-								pages = link.pages
-								if isinstance(pages, list):
-									pages = ' '.join([str(page) for page in pages])
-								else:
-									pages = str(pages)
-								ET.SubElement(link_tag, 'PageNumber').text = pages
-								ET.SubElement(link_tag, 'PageDescription').text = str(link)
+								__link_to_xml(links_tag, link)
 						else:
-							if is_dummy_links is False:
-								""" Добавляем заглушку в список файлов для позиций без ссылок """
-								file = ET.SubElement(files, 'File')
-								ET.SubElement(file, 'ID').text = str(len(all_files)+1)
-								ET.SubElement(file, 'FileName').text = self.DUMMY_FILE_NAME
-								all_files[0] = {'FileID': len(all_files)+1, 'FileName': self.DUMMY_FILE_NAME}
-								is_dummy_links = True
-							link_tag = ET.SubElement(links_tag, 'Link')
-							ET.SubElement(link_tag, 'FileID').text = str(all_files[0]['FileID'])
-							ET.SubElement(link_tag, 'PageNumber').text = str(self.DUMMY_PAGE_NUMBER)
-							ET.SubElement(link_tag, 'PageDescription').text = self.DUMMY_DESCRIPTION
-						
+							__create_dummy_links(links_tag)
+
 						ET.SubElement(resource_tag, 'Comment').text = resource.comment
 
 		tree = ET.ElementTree(root)

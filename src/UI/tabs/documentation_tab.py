@@ -20,7 +20,7 @@ from PyQt6.QtWidgets import (
 	QTreeView, QHeaderView, QFileDialog
 )
 from PyQt6.QtCore import Qt, QSize, QAbstractItemModel, QModelIndex, QUrl
-from PyQt6.QtGui import QColor, QTextDocument, QIntValidator, QTextOption, QDesktopServices
+from PyQt6.QtGui import QColor, QTextDocument, QTextOption, QDesktopServices
 from Core.Documentation import DOCs_Manager, Document, Book
 from ..ui_utilities import (
 	WordWrapDelegate, IntDelegate, create_ok_cancel_buttons, Requestion, create_separator
@@ -42,7 +42,6 @@ class Documentation_Tab(QWidget):
 		self.main_layout = QHBoxLayout(self)
 
 		# ---------------------------------- Дерево ---------------------------------------
-
 		self.tree_view = QTreeView()
 		self.model = DocumentationModel(manager=self.manager, parent= self)
 		self.tree_view.setModel(self.model)
@@ -592,7 +591,7 @@ class DocumentationModel(QAbstractItemModel):
 				elif col == self.COL_NAME:
 					item.name = value
 				elif col == self.COL_PAGE:
-					item.page = int(value) if value else 0
+					item.page = str(value) if value else 0
 				elif col == self.COL_LINK:
 					item.link = value
 				else:
@@ -956,7 +955,6 @@ class DocumentationDelegate(WordWrapDelegate):
 
 		if index.column() == self.page_column:
 			editor = QLineEdit(parent)
-			editor.setValidator(QIntValidator())
 			return editor
 		else:
 			editor = QTextEdit(parent)

@@ -396,7 +396,7 @@ class Document:
 				tag = data.get('tag'),
 				code = data.get('code', ''),
 				name = data.get('name', ''),
-				page = data.get('page', 0)
+				page = data.get('page', '0')
 			)
 			obj.link = data.get('link')
 
@@ -407,7 +407,7 @@ class Document:
 			'tag': self.tag,
 			'code': self.code,
 			'name': self.name,
-			'page': self.page,
+			'page': str(self.page),
 			'link': self.link
 		}
 

@@ -1325,9 +1325,7 @@ class BoQ_Tab(QWidget):
 				f'В ведомости есть следующие проблемы:\n{"\n".join(problems)}\nПродолжить?',
 				with_cancel= False
 			)
-			if reply == QMessageBox.StandardButton.Cancel or (
-				
-			):
+			if reply != QMessageBox.StandardButton.Yes:
 				return
 		exp_dialog = Export_Dialog(self)
 		if exp_dialog.exec() == QDialog.DialogCode.Accepted:

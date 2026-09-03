@@ -250,23 +250,13 @@ class Link:
 		""" Програмно определяемый атрибут страницы документа """
 		user_pages: str = self.user_pages
 		if user_pages:
-			if ',' in user_pages:
-				user_pages: list = user_pages.replace(' ','').split(',')
-				try:
-					return [int(x) for x in user_pages]
-				except ValueError:
-					return None
-			else:
-				try:
-					return int(user_pages.strip())
-				except Exception:
-					return None
+			return user_pages
 		else:
 			if self.project is None:
 				return None
 			if self.document is None:
 				return None
-			return self.document.page
+			return str(self.document.page)
 
 	@property
 	def book_link(self) -> Path | None:
@@ -294,8 +284,6 @@ class Link:
 			doc_code = doc.code
 			doc_name = doc.name
 		pages = self.pages
-		if isinstance(pages, list):
-			pages = ', '.join(map(lambda p: str(p), pages))
 		return f'{doc_code} (Том {self.book_num}) {doc_name}, стр. {pages}'
 
 

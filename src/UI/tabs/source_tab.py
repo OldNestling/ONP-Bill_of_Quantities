@@ -582,6 +582,7 @@ class Source_Dialog(QDialog):
 		__advanced_coating = self.source.advanced_coating if self.edit_mode else 0
 		self._advanced_coating_spine_box = QSpinBox()
 		self._advanced_coating_spine_box.setMinimum(0)
+		self._advanced_coating_spine_box.setMaximum(10000)
 		self._advanced_coating_spine_box.setValue(__advanced_coating)
 		main_layout.addWidget(self._advanced_coating_spine_box)
 		# Переходный тип покрытия
@@ -589,6 +590,7 @@ class Source_Dialog(QDialog):
 		__transitional_coating = self.source.transitional_coating if self.edit_mode else 0
 		self._transitional_coating_spine_box = QSpinBox()
 		self._transitional_coating_spine_box.setMinimum(0)
+		self._transitional_coating_spine_box.setMaximum(10000)
 		self._transitional_coating_spine_box.setValue(__transitional_coating)
 		main_layout.addWidget(self._transitional_coating_spine_box)
 		# Грунтовый тип покрытия
@@ -596,6 +598,7 @@ class Source_Dialog(QDialog):
 		__ground_coating = self.source.ground_coating if self.edit_mode else 0
 		self._ground_coating_spine_box = QSpinBox()
 		self._ground_coating_spine_box.setMinimum(0)
+		self._ground_coating_spine_box.setMaximum(10000)
 		self._ground_coating_spine_box.setValue(__ground_coating)
 		main_layout.addWidget(self._ground_coating_spine_box)
 		# Тоннаж перевозки
@@ -603,6 +606,7 @@ class Source_Dialog(QDialog):
 		__tonnage = self.source._tonnage if self.edit_mode else 15
 		self._tonnage_spine_box = QSpinBox()
 		self._tonnage_spine_box.setMinimum(0)
+		self._tonnage_spine_box.setMaximum(1000)
 		self._tonnage_spine_box.setValue(__tonnage)
 		main_layout.addWidget(self._tonnage_spine_box)
 		# Транспорт
