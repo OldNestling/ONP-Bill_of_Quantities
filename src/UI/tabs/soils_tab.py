@@ -30,9 +30,13 @@ from ..icons import Icons
 
 class Soils_Tab(QWidget):
 	""" Представление пространства работы с грунтами проекта """
-	def __init__(self, project):
+	ICON = Icons.soils_tab
+	def __init__(self, project, main_window=None):
 		super().__init__()
 		self.project = project
+		self.main_window = main_window
+		self.project_widget = None			# для передачи индекса вкладки 
+		self.tab_index = -1
 
 		# единичный экземпляр менеджера взаимодействия с грунтами
 		self.manager = project.soils_manager if project else None	
@@ -86,9 +90,9 @@ class Soils_Tab(QWidget):
 		main_layout.addWidget(self.stacked)
 
 		# Создаём постоянное представление (грунты проекта)
-		project_widget = ProjectSoilsWidget(self.manager)
-		self.stacked.addWidget(project_widget)
-		self.views['project'] = project_widget
+		self.project_widget = ProjectSoilsWidget(self.manager, self.main_window, self.tab_index)
+		self.stacked.addWidget(self.project_widget)
+		self.views['project'] = self.project_widget
 		self.view_indices['project'] = 0
 
 		# Остальные представления пока не созданы
@@ -147,6 +151,12 @@ class Soils_Tab(QWidget):
 	def tab_selected(self):
 		"""Вызывается при активации вкладки."""
 		self.update_ui()
+
+	def set_tab_index(self, index):
+		self.tab_index = index
+		if self.project_widget:
+			self.project_widget.tab_index = index
+
 	
 	def settings_changed(self):
 		"""Вызывается при изменении настроек проекта (например, режима сопоставления грунтов)."""
@@ -235,9 +245,11 @@ class Soils_Tab(QWidget):
 
 class ProjectSoilsWidget(QWidget):
 	"""Представление для работы с грунтами проекта (ИГЭ)"""
-	def __init__(self, soil_manager):
+	def __init__(self, soil_manager, main_window, tab_index):
 		super().__init__()
 		self.manager: Soils_Manager = soil_manager
+		self.main_window = main_window
+		self.tab_index = tab_index
 		self.setup_ui()
 		self.soils_table.itemSelectionChanged.connect(self.on_soil_selected)
 
@@ -352,6 +364,8 @@ class ProjectSoilsWidget(QWidget):
 		):
 			btn.setEnabled(enabled)
 		self.btn_edit_lib.setEnabled(not enabled)
+		if self.main_window is not None:
+			self.main_window.set_other_tabs_except_enabled(not enabled, self.tab_index)
 		self.btn_edit_lib.setIcon(Icons.unlock if enabled else Icons.lock)
 
 

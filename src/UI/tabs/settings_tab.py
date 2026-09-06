@@ -31,11 +31,12 @@ from Core.Project import Project
 
 class SettingsTab(QWidget):
 	''' Отвечает за содержимоек вкладки "Настройки" '''
-
-	def __init__(self, project, main_window):
+	ICON = Icons.settings_tab
+	def __init__(self, project, main_window = None):
 		super().__init__()
 		self.project: Project = project
 		self.main_window = main_window
+		self.tab_index = -1
 
 		self.setup_ui()
 		self.update_ui()

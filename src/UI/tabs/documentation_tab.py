@@ -30,11 +30,14 @@ from Core.Utilities import convert_value
 from pathlib import Path
 
 class Documentation_Tab(QWidget):
+	ICON = Icons.doc_tab
 	"""Вкладка управления документацией проекта."""
-	def __init__(self, project):
+	def __init__(self, project, main_window=None):
 		super().__init__()
 		self.project = project
 		self.manager: DOCs_Manager = self.project.documentation_manager if project else None
+		self.main_window = main_window
+		self.tab_index = -1
 		self.setup_ui()
 		self.update_ui()
 	
@@ -152,12 +155,13 @@ class Documentation_Tab(QWidget):
 
 	def set_manipulation_buttons_enabled(self, enabled):
 		"""Включает/отключает кнопки добавления/удаления/перемещения."""
-		
 		for btn in (self.btn_add_book, self.btn_add_doc, self.btn_fill_from_files, 
 			  self.btn_fill_template, self.btn_remove_doc, self.btn_save, self.btn_sort,
 			  self.btn_reset_tags):
 			btn.setEnabled(enabled)
 		self.btn_edit_lib.setEnabled(not enabled)
+		if self.main_window is not None:
+			self.main_window.set_other_tabs_except_enabled(not enabled, self.tab_index)
 		self.btn_edit_lib.setIcon(Icons.unlock if enabled else Icons.lock)
 
 	def update_status(self):
@@ -188,11 +192,11 @@ class Documentation_Tab(QWidget):
 		self.update_status()
 		if lock_res:
 			if self.model is not None:
-				self.model.togle_acces(True)
+				self.model.toggle_acces(True)
 			self.set_manipulation_buttons_enabled(True)
 		else:
 			if self.model is not None:
-				self.model.togle_acces(False)
+				self.model.toggle_acces(False)
 			self.set_manipulation_buttons_enabled(False)
 			QMessageBox.warning(self, 'Редактирование',
 									'Не удалось заблокировать файл для других пользователей')
@@ -397,7 +401,7 @@ class Documentation_Tab(QWidget):
 			QMessageBox.warning(self, 'Сохранение',
 									f'Не удалось сохранить данные')
 		self.set_manipulation_buttons_enabled(False)
-		self.model.togle_acces(False)
+		self.model.toggle_acces(False)
 		self.update_ui()
 	
 	def reload_documentation(self):
@@ -405,7 +409,7 @@ class Documentation_Tab(QWidget):
 			return
 		self.model.reload_documentation()
 		self.set_manipulation_buttons_enabled(False)
-		self.model.togle_acces(False)
+		self.model.toggle_acces(False)
 		self.update_ui()
 	
 	def sort_lib(self):
@@ -625,7 +629,7 @@ class DocumentationModel(QAbstractItemModel):
 				base_flags |= Qt.ItemFlag.ItemIsEditable
 		return base_flags
 	
-	def togle_acces(self, editable):
+	def toggle_acces(self, editable):
 		""" Переключает доступность модели для редактирования """
 		self.access = editable
 	

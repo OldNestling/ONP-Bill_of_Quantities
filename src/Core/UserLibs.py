@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-import json
+import json, re
 from .Utilities import clearing_string
 from .DataLib import DataLibraryManager
 
@@ -306,8 +306,8 @@ class MainElement:
 		self.work_text: str = work_text			# Текст позиции работы
 		self.resource_text: str = resource_text	# Текст позиции ресурса
 		self._factor: str = factor				# Фактор расхода
-		self.note1: str = note1					# Примечание 1					
-		self.note2: str = note2					# Примечание 2
+		self.raw_note1: str = note1				# Примечание 1					
+		self.raw_note2: str = note2				# Примечание 2
 		self.parent: Group = parent				# Объект-родитель ресурса
 		self.sub_elements: list[SubElement] = sub_el if sub_el else []	# Накопитель ресурсов
 	
@@ -318,6 +318,35 @@ class MainElement:
 	@factor.setter
 	def factor(self, value):
 		self._factor = clearing_string(value).replace('\n','')
+
+	def __process_note(self, note: str):
+		""" Заменяет ссылки на стобцы на текст """
+		if '@' not in note:
+			return note
+		
+		text = note
+
+		work_text_replace = re.findall(r'@работа', text, re.IGNORECASE)
+		for wt in work_text_replace:
+			text = text.replace(wt, self.work_text)
+
+		resource_text_replace = re.findall(r'@ресурс', text, re.IGNORECASE)
+		for rt in resource_text_replace:
+			text = text.replace(rt, self.resource_text)
+
+		factor_text_replace = re.findall(r'@раcход', text, re.IGNORECASE)
+		for ft in factor_text_replace:
+			text = text.replace(ft, self.factor)
+		return text
+
+	@property
+	def note1(self):
+		return self.__process_note(self.raw_note1)
+
+	@property
+	def note2(self):
+		return self.__process_note(self.raw_note2)
+
 
 	# --------------------------------- Псевдонимы --------------------------------------
 	@property
@@ -381,8 +410,8 @@ class MainElement:
 		'work_text': self.work_text,
 		'resource_text': self.resource_text,
 		'factor': self.factor,
-		'note1': self.note1,				
-		'note2': self.note2,
+		'note1': self.raw_note1,				
+		'note2': self.raw_note2,
 		'sub_elements': sub_elements
 		}
 		return data
@@ -438,12 +467,38 @@ class SubElement:
 		self.alias_key = alias				# Псевдоним позиции
 		self.resource_text = resource_text	# Текст позиции
 		self._factor = factor				# Фактор расхода
-		self.note1 = note1					# Примечание 1					
-		self.note2 = note2					# Примечание 2
+		self.raw_note1 = note1				# Примечание 1					
+		self.raw_note2 = note2				# Примечание 2
 		self.parent = parent				# Объект-родитель ресурса
 
 	def __str__(self):
 		return f'{self.name}: {self.resource_text}'
+
+	
+	def __process_note(self, note: str):
+		""" Заменяет ссылки на стобцы на текст """
+		if '@' not in note:
+			return note
+		
+		text = note
+
+		resource_text_replace = re.findall(r'@ресурс', text, re.IGNORECASE)
+		for rt in resource_text_replace:
+			text = text.replace(rt, self.resource_text)
+
+		factor_text_replace = re.findall(r'@раcход', text, re.IGNORECASE)
+		for ft in factor_text_replace:
+			text = text.replace(ft, self.factor)
+		return text
+
+	@property
+	def note1(self):
+		return self.__process_note(self.raw_note1)
+
+	@property
+	def note2(self):
+		return self.__process_note(self.raw_note2)
+
 
 	# --------------------------------- Псевдонимы --------------------------------------
 	@property
@@ -483,8 +538,8 @@ class SubElement:
 		'alias': self.alias_key,
 		'resource_text': self.resource_text,
 		'factor': self.factor,
-		'note1': self.note1,				
-		'note2': self.note2,
+		'note1': self.raw_note1,				
+		'note2': self.raw_note2,
 		}
 		return data
 	

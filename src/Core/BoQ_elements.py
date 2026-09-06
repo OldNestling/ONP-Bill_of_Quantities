@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 
 from Core.Documentation import Book, Document
 from Core.Utilities import (
-	clearing_string, get_user_log, get_hash_text, fixing_decimals, fixing_spaces, decimal_round
+	clearing_string, get_hash_text, fixing_decimals, fixing_spaces, decimal_round
 )
 from abc import ABC
 from Core.Computing_Module import eval_functions, get_all_alias_request, get_from_library
@@ -39,8 +39,8 @@ class Section:
 		- :content: Содержимое (объекты PositionLine)
 	"""
 	def __init__(self, manager, name = '', works = None):
-		self.format_address_cache = None							# Для перевода объекта в архив
-		self.raw_name: str = name										# Наименование раздела
+		self.format_address_cache = None					# Для перевода объекта в архив
+		self.raw_name: str = name							# Наименование раздела
 		self.works: list[Work] = works if works is not None else list()	# Позиции раздела
 		self.manager: BoQ_manager = manager
 
@@ -170,21 +170,18 @@ class Section:
 
 	def serialization(self) -> dict:
 		""" Преобразует раздел и всё его содержимое в JSON-объект """
+		data = {
+			'format_address_cache': self.format_address_cache,
+			'name': self.raw_name,
+			'works': []
+		}
 		if not self.works:
-			data = {
-				'format_address_cache': self.format_address_cache,
-				'name': self.raw_name,
-				'works': []
-			}
+			return data
 		ser_works = []
 		for work in self.works:
 			work: Work
 			ser_works.append(work.serialization())
-		data = {
-			'format_address_cache': self.format_address_cache,
-			'name': self.raw_name,
-			'works': ser_works
-		}
+		data['works'] = ser_works
 		return data
 
 	@classmethod

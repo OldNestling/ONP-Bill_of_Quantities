@@ -1249,7 +1249,7 @@ class BoQ_manager:
 		obj = self.get_object(indexes, is_get_links)
 		if obj is None:
 			return False
-		self.project.clipboard = (obj, indexes, type(obj))
+		self.project.clipboard = (copy.deepcopy(obj), indexes, type(obj))
 		return True
 
 	def cut_obj(self, indexes: tuple, is_get_links = False) -> bool:
@@ -1269,34 +1269,45 @@ class BoQ_manager:
 
 		index_section, index_work, index_resource = indexes
 
+		# Обработка раздела
 		if index_work is None and index_resource is None:
 			obj: Section = self.sections.pop(index_section)
 			obj.prepare_to_works_remove()
-			self.project.clipboard = (obj, indexes, type(obj))
 			self.restore_addresses_in_collection(self.sections, index_section)
 			self.calculate_pos_nums()
 			old_address = indexes
+
+		# Обработка основной позиции
 		elif index_resource is None:
 			section: Section = self.sections[index_section]
+
+			# Вырезка ссылок
 			if is_get_links:
 				work: Work = section.works[index_work]
 				work.remove_links_from_manager()
 				obj = copy.deepcopy(work.links)
 				work.links = []
+			# Вырезка основной позиции
 			else:
 				obj: Work = section.works.pop(index_work)
 				obj.prepare_to_remove()
 				self.restore_addresses_in_collection(section, index_work)
 				self.calculate_pos_nums()
 				old_address = indexes
+
+		# Обработка ресурса
 		else:
 			section: Section = self.sections[index_section]
 			work: Work = section.works[index_work]
+
+			# Вырезка ссылок
 			if is_get_links:
 				resource: Resource = work.resources[index_resource]
 				resource.remove_links_from_manager()
 				obj = copy.deepcopy(resource.links)
 				resource.links = []
+
+			# Вырезка ресурса
 			else:
 				obj: Resource = work.resources.pop(index_resource)
 				obj.prepare_to_remove()
@@ -1320,87 +1331,90 @@ class BoQ_manager:
 
 		index_section, index_work, index_resource = indexes
 
-		# ---------- Вставка ссылок ----------
-		if obj_type is list and obj and is_links:
-			targ_obj: PositionLine = self.get_object(indexes)
-			targ_obj.remove_links_from_manager()
-			targ_obj.links = copy.deepcopy(obj)
-			targ_obj.add_links_to_manager()
-			self.is_modified = True
-			return True
+		try:
+			# ---------- Вставка ссылок ----------
+			if obj_type is list and obj and is_links:
+				targ_obj: PositionLine = self.get_object(indexes)
+				targ_obj.remove_links_from_manager()
+				targ_obj.links = copy.deepcopy(obj)
+				targ_obj.add_links_to_manager()
+				self.is_modified = True
+				return True
 
-		# ---------- Вставка раздела ----------
-		elif obj_type is Section:
-			old_section_index = old_addr[0]
-			new_obj: Section = copy.deepcopy(obj)
-			new_obj.manager = self
-			if index_section is None:
-				new_section_index = len(self.sections)
-				self.sections.append(new_obj)
-			else:
-				new_section_index = index_section + 1
-				self.sections.insert(new_section_index, new_obj)
+			# ---------- Вставка раздела ----------
+			elif obj_type is Section:
+				old_section_index = old_addr[0]
+				new_obj: Section = copy.deepcopy(obj)
+				new_obj.manager = self
+				if index_section is None:
+					new_section_index = len(self.sections)
+					self.sections.append(new_obj)
+				else:
+					new_section_index = index_section + 1
+					self.sections.insert(new_section_index, new_obj)
 
-			delta_section = new_section_index - old_section_index
-			new_obj.shift_references(delta_section, 0, 0)
+				delta_section = new_section_index - old_section_index
+				new_obj.shift_references(delta_section, 0, 0)
 
-			# Обновляем адреса всех разделов, начиная с нового индекса
-			self.restore_addresses_in_collection(self.sections, new_section_index)
+				# Обновляем адреса всех разделов, начиная с нового индекса
+				self.restore_addresses_in_collection(self.sections, new_section_index)
 
-			new_obj.init_works_in_system(self)
-			self.calculate_pos_nums()
-			self.is_modified = True
-			return True
+				new_obj.init_works_in_system(self)
+				self.calculate_pos_nums()
+				self.is_modified = True
+				return True
 
-		# ---------- Вставка работы ----------
-		elif obj_type is Work:
-			section: Section = self.sections[index_section]
-			old_section_index, old_work_index, _ = old_addr
-			new_obj: Work = copy.deepcopy(obj)
-			if index_work is None:
-				new_work_index = len(section.works)
-				section.works.append(new_obj)
-			else:
-				new_work_index = index_work + 1
-				section.works.insert(new_work_index, new_obj)
+			# ---------- Вставка работы ----------
+			elif obj_type is Work:
+				section: Section = self.sections[index_section]
+				old_section_index, old_work_index, _ = old_addr
+				new_obj: Work = copy.deepcopy(obj)
+				if index_work is None:
+					new_work_index = len(section.works)
+					section.works.append(new_obj)
+				else:
+					new_work_index = index_work + 1
+					section.works.insert(new_work_index, new_obj)
 
-			delta_section = index_section - old_section_index
-			delta_work = new_work_index - old_work_index
-			new_obj.shift_references(delta_section, delta_work, 0)
+				delta_section = index_section - old_section_index
+				delta_work = new_work_index - old_work_index
+				new_obj.shift_references(delta_section, delta_work, 0)
 
-			self.restore_addresses_in_collection(section, new_work_index)
+				self.restore_addresses_in_collection(section, new_work_index)
 
-			new_obj.clear_dependets()
-			new_obj.init_self_in_system(self)
-			self.calculate_pos_nums()
-			self.is_modified = True
-			return True
+				new_obj.clear_dependets()
+				new_obj.init_self_in_system(self)
+				self.calculate_pos_nums()
+				self.is_modified = True
+				return True
 
-		# ---------- Вставка ресурса ----------
-		elif obj_type is Resource:
-			section = self.sections[index_section]
-			work: Work = section.works[index_work]
-			old_section_index, old_work_index, old_resource_index = old_addr
-			new_obj: Resource = copy.deepcopy(obj)
-			if index_resource is None:
-				new_resource_index = len(work.resources)
-				work.resources.append(new_obj)
-			else:
-				new_resource_index = index_resource + 1
-				work.resources.insert(new_resource_index, new_obj)
+			# ---------- Вставка ресурса ----------
+			elif obj_type is Resource:
+				section = self.sections[index_section]
+				work: Work = section.works[index_work]
+				old_section_index, old_work_index, old_resource_index = old_addr
+				new_obj: Resource = copy.deepcopy(obj)
+				if index_resource is None:
+					new_resource_index = len(work.resources)
+					work.resources.append(new_obj)
+				else:
+					new_resource_index = index_resource + 1
+					work.resources.insert(new_resource_index, new_obj)
 
-			delta_section = index_section - old_section_index
-			delta_work = index_work - old_work_index
-			delta_resource = new_resource_index - old_resource_index
-			new_obj.shift_references(delta_section, delta_work, delta_resource)
+				delta_section = index_section - old_section_index
+				delta_work = index_work - old_work_index
+				delta_resource = new_resource_index - old_resource_index
+				new_obj.shift_references(delta_section, delta_work, delta_resource)
 
-			self.restore_addresses_in_collection(work, new_resource_index)
+				self.restore_addresses_in_collection(work, new_resource_index)
 
-			new_obj.init_self_in_system(self)
-			self.recalculate_resources_nums(work)
-			self.is_modified = True
-			return True
-
+				new_obj.init_self_in_system(self)
+				self.recalculate_resources_nums(work)
+				self.is_modified = True
+				return True
+		except Exception as e:
+			print(f'[DEBUG: paste_object] {e}')
+			return False
 		return False
 
 	# -------------------------------- Вспомогательное ------------------------------------

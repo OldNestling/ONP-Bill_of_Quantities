@@ -32,9 +32,12 @@ from ..icons import Icons
 
 class User_Libs_Tab(QWidget):
 	""" Вкладка управления пользовательскими данными """
-	def __init__(self, project: Project):
+	ICON = Icons.userlibs_tab
+	def __init__(self, project: Project, main_window=None):
 		super().__init__()
 		self.project = project
+		self.main_window = main_window
+		self.tab_index = -1
 		self.manager = project.libraries_manager if project else None
 		self.current_lib_index = None
 		self.non_set = {'',' ','-', None, 'None','...', '.'}
@@ -211,6 +214,8 @@ class User_Libs_Tab(QWidget):
 					self.btn_save, self.btn_add_lib, self.btn_remove_lib):
 			btn.setEnabled(enabled)
 		self.btn_edit_libs.setEnabled(not enabled)
+		if self.main_window is not None:
+			self.main_window.set_other_tabs_except_enabled(not enabled, self.tab_index)
 		self.btn_edit_libs.setIcon(Icons.unlock if enabled else Icons.lock)
 
 	def on_section_resized(self, logical_index, old_size, new_size):
@@ -763,9 +768,9 @@ class User_Libs_Model(QStandardItemModel):
 			elif col == 5 and not isinstance(obj, Group):
 				obj.factor = new_text
 			elif col == 6 and not isinstance(obj, Group):
-				obj.note1 = new_text
+				obj.raw_note1 = new_text
 			elif col == 7 and not isinstance(obj, Group):
-				obj.note2 = new_text
+				obj.raw_note2 = new_text
 
 		for row in range(topLeft.row(), bottomRight.row()+1):
 			for col in range(topLeft.column(), bottomRight.column()+1):

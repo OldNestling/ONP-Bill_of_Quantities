@@ -109,7 +109,21 @@ edit_note = QIcon(resource_path('UI/icons/icon_edit_note.svg'))				# Замет�
 find = QIcon(resource_path('UI/icons/icon_search_check_2.svg'))	
 
 up_arrow = QIcon(resource_path('UI/icons/icon_upgrade.svg'))	
-down_arrow = QIcon(resource_path('UI/icons/icon_vertical_align_bottom.svg'))	
+down_arrow = QIcon(resource_path('UI/icons/icon_vertical_align_bottom.svg'))
+
+# --------------------------- Иконки вкладок ----------------------------------
+project_tab = QIcon(resource_path('UI/icons/icon_lan.svg'))					# Вкладка проекта
+bills_tab = QIcon(resource_path('UI/icons/icon_table_edit.svg'))			# Вкладка ведомости
+settings_tab = QIcon(resource_path('UI/icons/icon_settings.svg'))			# Вкладка настроек
+soils_tab = QIcon(resource_path('UI/icons/icon_stroke_partial.svg'))		# Вкладка грунтов
+source_tab = QIcon(resource_path('UI/icons/icon_delivery_truck_speed.svg'))	# Вкладка трапортировки
+userlibs_tab = QIcon(resource_path('UI/icons/icon_cards_stack.svg'))		# Вкладка пользовательских библиотек
+mech_tab = QIcon(resource_path('UI/icons/icon_precision_manufacturing.svg'))# Вкладка механизации
+doc_tab = QIcon(resource_path('UI/icons/Icon_newsstand.svg'))				# Вкладка документации
+
+
+# ----------------------- Вспомогательные функции ----------------------------------
+
 
 def rotate_icon(icon: QIcon, angle: float, size: QSize = QSize(24, 24)) -> QIcon:
 	"""

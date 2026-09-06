@@ -25,9 +25,12 @@ from Core.Sources import Sources_Manager
 
 class Sources_Tab(QWidget):
 	""" Представление вкладки работы с источниками проекта """
-	def __init__(self, project):
+	ICON = Icons.source_tab
+	def __init__(self, project, main_window=None):
 		super().__init__()
 		self.project = project
+		self.main_window = main_window
+		self.tab_index = -1
 		self.manager: Sources_Manager = project.sources_manager if project else None    # еденичный экземпляр менеджера взаимодействия с источниками проекта 
 		self.setup_ui()
 		self.update_ui()
@@ -168,6 +171,8 @@ class Sources_Tab(QWidget):
 		):
 			btn.setEnabled(enabled)
 		self.btn_edit_lib.setEnabled(not enabled)
+		if self.main_window is not None:
+			self.main_window.set_other_tabs_except_enabled(not enabled, self.tab_index)
 		self.btn_edit_lib.setIcon(Icons.unlock if enabled else Icons.lock)
 
 

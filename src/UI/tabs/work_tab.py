@@ -37,6 +37,7 @@ from ..ui_utilities import create_ok_cancel_buttons, Requestion
 
 class BoQ_Tab(QWidget):
 	""" Представление вкладки работы с открытыми файлами ВОР """
+	ICON = Icons.bills_tab
 	def __init__(self, project, main_window=None):
 		super().__init__()
 		self.main_window = main_window
@@ -44,6 +45,7 @@ class BoQ_Tab(QWidget):
 		self.opened_files = {}  			# путь_файла -> индекс_вкладки
 		self._recoloring = False			# флаг для предотвращения рекурсии
 		self._original_icons = {}   		# словарь для хранения исходных иконок действий
+		self.tab_index = -1
 		self.setup_ui()
 
 	# ---------------------------------- Интерфейс -----------------------------------

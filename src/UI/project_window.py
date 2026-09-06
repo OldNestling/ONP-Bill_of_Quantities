@@ -23,7 +23,7 @@ from PyQt6.QtWidgets import (
 	QPlainTextEdit, QMessageBox, QListWidget, QAbstractItemView, QTableWidget, 
 	QTableWidgetItem, QHeaderView, QComboBox, QCompleter, QTabWidget, QFrame, 
 	QProgressDialog, QInputDialog, QTextBrowser, QMenu, QSpinBox)
-from PyQt6.QtCore import Qt, QSize, QTimer
+from PyQt6.QtCore import Qt, QSize, QTimer, QEvent
 from PyQt6.QtGui import QColor, QPixmap
 
 from Core.Project import Project, File_BoQ, FileIsBusy
@@ -51,18 +51,24 @@ class Project_Window(QWidget):
 		self.project: Project = None
 		self.main_tab = None			# ссылка на главную вкладку
 		self.other_tabs = []			# список остальных вкладок
+		self.tabs_icons = []
+		self.catalog_is_selected = False
 		self.initializeUI()
 
 	def initializeUI(self):
 		self.setWindowTitle('Система работы с ВОР')
+		self.tabs_icons = []
 
 		# Создаём TabWidget
 		self.tab_widget = QTabWidget()
 		self.tab_widget.currentChanged.connect(self.tab_changed)
+		self.tab_widget.tabBar().installEventFilter(self)
 
 		# Создаём главную вкладку
 		self.main_tab = MainProjectTab(self)   # передаём ссылку на главное окно
 		self.tab_widget.addTab(self.main_tab, "Проект")
+		self.tabs_icons.append(self.main_tab.ICON)
+		self.tab_widget.setTabIcon(0, self.tabs_icons[0])
 
 		# Создаём остальные вкладки (заглушки)
 		self.create_other_tabs()
@@ -76,49 +82,57 @@ class Project_Window(QWidget):
 		self.resize(900, 600)
 		self.center_window()
 
+	def append_tab(self, tab, name: str):
+		""" Обрабатывает созданную вкладку в системе """
+		self.tab_widget.addTab(tab, name)
+		index = self.tab_widget.indexOf(tab)
+		if hasattr(tab, 'set_tab_index'):
+			tab.set_tab_index(index)
+		else:
+			tab.tab_index = index
+		self.tabs_icons.append(tab.ICON)
+		self.tab_widget.setTabIcon(tab.tab_index, self.tabs_icons[tab.tab_index])
+		if hasattr(tab, 'main_window'):
+			tab.main_window = self
+		self.other_tabs.append(tab)
+	
 	def create_other_tabs(self):
 		"""Создаёт дополнительные вкладки и блокирует их."""
 		
 		self.BoQs_tab = BoQ_Tab(project=self.project, main_window=self)
-		self.tab_widget.addTab(self.BoQs_tab, "Ведомости")
-		self.other_tabs.append(self.BoQs_tab)
+		self.append_tab(self.BoQs_tab, "Ведомости")
 
 		self.settings_tab = SettingsTab(project=self.project, main_window=self)
-		self.tab_widget.addTab(self.settings_tab, "Настройки")
-		self.other_tabs.append(self.settings_tab)
+		self.append_tab(self.settings_tab, "Настройки")
 		
-		soils_tab = Soils_Tab(project=self.project)
-		self.tab_widget.addTab(soils_tab, "Грунты")
-		self.other_tabs.append(soils_tab)
+		soils_tab = Soils_Tab(project=self.project, main_window=self)
+		self.append_tab(soils_tab, "Грунты")
 
-		transportation_tab = Sources_Tab(project=self.project)
-		self.tab_widget.addTab(transportation_tab, "Источники и транспортировка")
-		self.other_tabs.append(transportation_tab)
+		source_tab = Sources_Tab(project=self.project, main_window=self)
+		self.append_tab(source_tab, "Источники и транспортировка")
 
-		userlib_tab = User_Libs_Tab(project=self.project)
-		self.tab_widget.addTab(userlib_tab, "Пользовательские библиотеки")
-		self.other_tabs.append(userlib_tab)
+		userlib_tab = User_Libs_Tab(project=self.project, main_window=self)
+		self.append_tab(userlib_tab, "Пользовательские библиотеки")
 
-		machines_tab = Machinery_Tab(project=self.project)
-		self.tab_widget.addTab(machines_tab, "Механизация")
-		self.other_tabs.append(machines_tab)
+		machines_tab = Machinery_Tab(project=self.project, main_window=self)
+		self.append_tab(machines_tab, "Механизация")
 
-		content_tab = Documentation_Tab(project=self.project)
-		self.tab_widget.addTab(content_tab, "Содержание ПД")
-		self.other_tabs.append(content_tab)
+		doc_tab = Documentation_Tab(project=self.project, main_window=self)
+		self.append_tab(doc_tab, "Содержание ПД")
 
-		#typical_products_tab = QWidget()	TODO
+		# TODO Область настройки типовых изделий.\nБудет реализовано в поздних версиях
+		#typical_products_tab = QWidget()
 		#typical_products_tab.setLayout(QVBoxLayout())
-		#typical_products_tab.layout().addWidget(QLabel("Область настройки типовых изделий.\nБудет реализовано в поздних версиях"))
+		#typical_products_tab.layout().addWidget(QLabel(""))
 		#self.tab_widget.addTab(typical_products_tab, "Типовые изделия")
 		#self.other_tabs.append(typical_products_tab)
 
-		#typical_work_tab = QWidget()	TODO
+		# TODO Область настройки типовых работ.\nБудет реализовано в поздних версиях
+		#typical_work_tab = QWidget()
 		#typical_work_tab.setLayout(QVBoxLayout())
-		#typical_work_tab.layout().addWidget(QLabel("Область настройки типовых работ.\nБудет реализовано в поздних версиях"))
+		#typical_work_tab.layout().addWidget(QLabel(""))
 		#self.tab_widget.addTab(typical_work_tab, "Типовые работы")
 		#self.other_tabs.append(typical_work_tab)
-
 
 		# Блокируем дополнительные вкладки
 		self.set_other_tabs_enabled(False)
@@ -279,6 +293,7 @@ class Project_Window(QWidget):
 		self.project = Project(base_dir=selected_dir, sourсes_folder=r'Data')
 		# Разблокируем остальные вкладки
 		self.set_other_tabs_enabled(True)
+		self.catalog_is_selected = True
 		# Уведомляем главную вкладку
 		self.main_tab.on_project_dir_changed()
 		self.update_all_tabs_project()
@@ -433,12 +448,50 @@ class Project_Window(QWidget):
 		dialog.setMaximumHeight(700)
 		dialog.setMaximumWidth(450)
 		dialog.exec()
+
+	def eventFilter(self, obj, event):
+		if self.catalog_is_selected:
+			reason = 'Эта вкладка временно недоступна, так как вы редактируете данные.\n' \
+			'Сохраните или перезагрузите библиотеку, чтобы разблокировать вкладки.'
+		else:
+			reason = 'Эта вкладка временно недоступна, так как вы не задали каталог.\n' \
+			'Назначьте каталог проекта.'
+		if obj is self.tab_widget.tabBar() and event.type() == QEvent.Type.MouseButtonPress:
+			pos = event.pos()
+			index = self.tab_widget.tabBar().tabAt(pos)
+			if index != -1 and not self.tab_widget.isTabEnabled(index):
+				QMessageBox.information(
+					self,
+					"Вкладка заблокирована",
+					reason
+				)
+				return True   # событие поглощено – переключения не будет
+		return super().eventFilter(obj, event)
+
+
+	def set_other_tabs_except_enabled(self, enabled, index):
+		""" 
+		Включает/отключает все вкладки, кроме вкладки вызвавшей блокировку библиотеки
+		### Args:
+			- :enabled: передаваемое состояние
+			- :index: текущая вкладка
+		"""
+		for i in range(self.tab_widget.count()):
+			if enabled:
+				icon = self.tabs_icons[i]
+			else:
+				icon = Icons.recolor_icon(Icons.lock, QColor("#000000"))
+			if i != index:
+				self.tab_widget.setTabIcon(i, icon)
+				self.tab_widget.setTabEnabled(i, enabled)
+
 # --------------------------------------------------------------------------------------
 # =================================== ВКЛАДКА: ПРОЕКТ ==================================
 # --------------------------------------------------------------------------------------
 
 class MainProjectTab(QWidget):
 	"""Первая вкладка с управлением проектом и разделами."""
+	ICON = Icons.project_tab
 	def __init__(self, main_window):
 		super().__init__()
 		self.main_window: Project_Window = main_window

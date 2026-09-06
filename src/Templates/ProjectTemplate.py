@@ -88,7 +88,11 @@ UNITS_TEMPLATE = {
 	'machine_hours':{
 		'label':'маш.-ч',
 		'round':2
-		}
+		},
+	'set': {
+		'label': 'компл.',
+		'round': 0
+	}
 
 }
 

@@ -24,10 +24,13 @@ from Core.Machinery import Machinery_Manager, Machine
 
 class Machinery_Tab(QWidget):
 	""" Представление вкладки работы с материалами """
-	def __init__(self, project):
+	ICON = Icons.mech_tab
+	def __init__(self, project, main_window=None):
 		super().__init__()
 		self.project = project
+		self.main_window = main_window
 		self.manager: Machinery_Manager = project.machinery_manager if project else None    # еденичный экземпляр менеджера
+		self.tab_index = -1
 		self.setup_ui()
 		self.update_ui()
 	
@@ -135,6 +138,8 @@ class Machinery_Tab(QWidget):
 		):
 			btn.setEnabled(enabled)
 		self.btn_edit_lib.setEnabled(not enabled)
+		if self.main_window is not None:
+			self.main_window.set_other_tabs_except_enabled(not enabled, self.tab_index)
 		self.btn_edit_lib.setIcon(Icons.unlock if enabled else Icons.lock)
 
 	
