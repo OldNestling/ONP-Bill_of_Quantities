@@ -152,6 +152,7 @@ class Soils_Tab(QWidget):
 		"""Вызывается при активации вкладки."""
 		self.update_ui()
 
+
 	def set_tab_index(self, index):
 		self.tab_index = index
 		if self.project_widget:
@@ -915,7 +916,7 @@ class Gesn1Widget(QWidget):
 		if reply == QMessageBox.StandardButton.Yes:
 			export_dict = {}
 			for row in range(self.gesn1_table.rowCount()-2):
-				key = text_before(self.gesn1_table.item(row+2,0).text(),'.')
+				key = text_before(self.gesn1_table.item(row+2,0).text(),'_')
 				row_data = {}
 				sub_keys = list(Gesn1.short_names.keys())
 				column = 0

@@ -41,6 +41,9 @@ class DOCs_Manager(DataLibraryManager):
 		self.load_lib()
 
 	# ---------------------------- Загрузка / Сохранение --------------------------------
+	def deserialization_function(data):
+		return Book.deserialization(data)
+
 	def load_lib(self):
 		if self.project:
 			try:

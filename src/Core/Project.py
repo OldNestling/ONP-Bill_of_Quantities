@@ -18,6 +18,7 @@ import json, shutil, os, time
 from pathlib import Path
 from datetime import datetime
 from .Utilities import text_after, requesting_value, get_user_log, open_folder
+from .DataLib import DataLibraryManager
 from .Soils import Soils_Manager
 from .Sources import Sources_Manager
 from .Machinery import Machinery_Manager
@@ -25,7 +26,7 @@ from .Documentation import DOCs_Manager
 from .BoQ import BoQ_manager
 from .UserLibs import LibManager
 
-from Templates.About import PROGRAM_SETTINGS_FOLDER, RECENT_DIRS_LOG
+from Templates.About import PROGRAM_SETTINGS_FOLDER, RECENT_DIRS_LOG, TEMPLATE_PROJECT_FILE
 
 
 
@@ -38,6 +39,7 @@ class Project:
 	:settings_file_name: Корневой файл с настройками проекта. По умолчанию "Core.json"
 	'''
 
+	# ---------------------------- Работа с каталогом -----------------------------------
 	@staticmethod
 	def get_app_data_dir(app_name=PROGRAM_SETTINGS_FOLDER) -> Path:
 		"""Возвращает путь к папке для сохранения данных приложения"""
@@ -84,38 +86,55 @@ class Project:
 			json.dump(dirs, f, indent=4, ensure_ascii=False)
 	
 	@staticmethod
-	def remove_recent_dir(dir_path: str) -> None:
-		""" Удаляет не существующий путь из истории """
-		dirs = Project.load_recent_dirs()
+	def get_path_to_template() -> Path:
+		""" Получает путь до глобального проекта-шаблона. 
+		Шаблон содержит персонал организации, пользовательские библиотеки, источники.
+		Используется для быстрой инициализации нового проекта
+		"""
+		app_dirr = Project.get_app_data_dir()
+		filename = app_dirr / TEMPLATE_PROJECT_FILE
+		path = None	# путь к проекту-шаблону
 		try:
-			dirs.remove(dir_path)
-			print(f'[DEBUG] {dir_path=} removed')
-			app_dir = Project.get_app_data_dir()
-			filename = app_dir / RECENT_DIRS_LOG
-			with open(filename, "w", encoding="utf-8") as f:
-				json.dump(dirs, f, indent=4, ensure_ascii=False)
-			
-		except ValueError:
+			with open(filename, "r", encoding="utf-8") as f:
+				data = json.load(f)
+				if isinstance(data, dict):
+					path = data.get('path')
+		except FileNotFoundError:
 			return
+		if not path:
+			return
+		
+		path = Path(path)
+		if path.exists():
+			return path
+
+	@staticmethod
+	def save_path_to_template(path: Path):
+		""" Сохраняет файл с путем к шаблонному проекту в папке настроек программы """
+		app_dirr = Project.get_app_data_dir()
+		filename = app_dirr / TEMPLATE_PROJECT_FILE
+
+		with open(filename, "w", encoding="utf-8") as f:
+			json.dump({'path': path}, f, indent=4, ensure_ascii=False)
 
 	# ================================== Инициализация ==================================
 
 	def __init__(
 			self, 
 			base_dir = None, 
-			sourсes_folder = r'Data', 
+			sourсes_folder = 'Data', 
 			settings_file_name = 'Project.json', 
 			project_BoQs_folder = 'ВОР'
 	):
 		
 		# ------------------------------- пути к файлам ---------------------------------
 
-		self.base_dir = Path(base_dir) if base_dir else Path(__file__).parent # Определение директории проекта
-		self.sourсes_folder = sourсes_folder # Дирректория базы данных
-		self.settings_file_name = settings_file_name # Файл с основными настройками проекта
+		self.base_dir = Path(base_dir) if base_dir else Path(__file__).parent	# Определение директории проекта
+		self.sourсes_folder = sourсes_folder 									# Дирректория базы данных
+		self.settings_file_name = settings_file_name 							# Файл с основными настройками проекта
 		self.settings_file_path: Path = self.base_dir / sourсes_folder / settings_file_name # полный путь к файлу настроек
-		self.project_BoQs_folder = project_BoQs_folder # Наименование рабочей папки с файлам ВОР
-		self.project_BoQs_path: Path = self.base_dir / project_BoQs_folder # путь к рабочей папки с фалами ВОР
+		self.project_BoQs_folder = project_BoQs_folder 						# Наименование рабочей папки с файлам ВОР
+		self.project_BoQs_path: Path = self.base_dir / project_BoQs_folder	# путь к рабочей папки с фалами ВОР
 
 		# ------------------------------ атрибуты проекта -------------------------------
 
@@ -144,6 +163,7 @@ class Project:
 		# ---------------- Автоматическая загрузка при создании объекта -----------------
 
 		self.start_project_settings()
+		DataLibraryManager.DATA = self.sourсes_folder			# сводим всех наследников к единому атрибуту
 		self.soils_manager = Soils_Manager(self)				# единый менеджер грунтов
 		self.sources_manager = Sources_Manager(self)			# единый менеджер источников
 		self.libraries_manager = LibManager(self)				# менеджер управления пользовательскими библиотеками
@@ -230,6 +250,7 @@ class Project:
 			self._get_clean_start() # инициация базы данных из шаблона
 
 	def saving_settings(self):
+		""" Сохраняет параметры и настройки проекта """
 		export_elements = {
 			'ConstructionSite': self.construction_site,
 			'Verifier': self.verifier,
@@ -535,7 +556,7 @@ class Project:
 	def get_user_libs_data(self) -> list:
 		if not self.libraries_manager:
 			return
-		return self.libraries_manager.libraries
+		return self.libraries_manager.library
 	
 	# -------------------------------- Вспомогательное ---------------------------------
 	def open_project_folder(self):
@@ -564,6 +585,176 @@ class Project:
 			name = file.stem  # например "00_Наименование__user"
 			new_name = name + '_' + timestamp + '.json'
 			file.rename(self.project_BoQs_path / new_name)
+
+	# ============================== Импорт библиотек проекта ============================
+
+	def get_data_from_other_project (self, path: str | Path) -> dict | None:
+		""" Проверяет, какие данные из проекта доступны для импорта  и агрегирует их в словарь"""
+		if isinstance(path, Path):
+			path_to_project = path
+		elif isinstance(path, str):
+			path_to_project = Path(path)
+		else:
+			return
+
+		if not path_to_project.exists():
+			return
+
+		project_data = None
+		try:
+			project_json = path_to_project / self.sourсes_folder / self.settings_file_name
+			with open(project_json, "r", encoding="utf-8") as f:
+				project_data = json.load(f)
+		except Exception:
+			return None
+
+		def __get_library_file_data(root_path: Path, library_manager: DataLibraryManager):
+			path = root_path / self.sourсes_folder / (library_manager.FILE+'.json')
+			try:
+				with open(path, "r", encoding="utf-8") as f:
+					return json.load(f)
+			except Exception:
+				return None
+
+		data = {
+			'performers_lib': project_data.get('performers_lib') if isinstance(project_data, dict) else None,
+			'chiefs_lib': project_data.get('chiefs_lib') if isinstance(project_data, dict) else None,
+			'posts_lib': project_data.get('posts_lib') if isinstance(project_data, dict) else None,
+			'units_settings': project_data.get('units_settings') if isinstance(project_data, dict) else None,
+			'soils_lib': __get_library_file_data(path_to_project, self.soils_manager),
+			'sources_lib': __get_library_file_data(path_to_project, self.sources_manager),
+			'user_libs': __get_library_file_data(path_to_project, self.libraries_manager),
+			'machinery_lib': __get_library_file_data(path_to_project, self.machinery_manager)
+		}
+		return data
+		
+
+	def import_data_from_other_project(
+			self, 
+			instructions: dict[str, bool | list],
+			data: dict
+	) -> dict[str, bool | None] | None:
+		""" Импортирует библиотеки данных из других проектов в текущие библиотеки
+		### Args:
+			- :instuctions: словарь с опциями импорта
+			- :data: словарь со всеми библиотеками
+		
+		### Returns: 
+			отчёт о результатах импорта данных
+		"""
+		if not data and not isinstance(data, dict):
+			return
+
+		# ----- Предварительная подготовка ----
+		# библиотеки проекта за исключением едениц измерения
+		LIB_KEYS = ('performers_lib', 'chiefs_lib', 'posts_lib', 'units_settings',
+			'soils_lib', 'sources_lib', 'user_libs', 'machinery_lib')	
+
+		# результат импорта данных для отчёта
+		# None - не было импорта, False - не удалось, True — удалось
+		results = {key: None for key in LIB_KEYS}
+		# -----//-----
+
+		# ----- Импорт библиотек объекта Project ----
+		def __get_instruction(key: str, fail_value: False | None = False) -> bool:
+			return instructions.get(key, fail_value)
+		
+		is_was_project_import = False
+		# еденицы измерения
+		if __get_instruction('units_settings'):
+			other_units = data.get('units_settings', {})
+			if other_units and isinstance(other_units, dict):
+				self.units.update(other_units)
+				is_was_project_import = True
+				results['units_settings'] = True
+			else:
+				results['units_settings'] = False
+
+		def __process_project_list_data(current_lib: list, key: str):
+			""" Импортирует в коллекции self.performers, self.chiefs, self.posts новые данные """
+			nonlocal results, is_was_project_import, data
+
+			if not __get_instruction(key):
+				return
+
+			lib_data = data.get(key, [])
+			if lib_data and isinstance(lib_data, list):
+				current_lib.extend(lib_data)
+				# мутируем список in-place, чтобы изменения отразились в self.<collection>
+				current_lib[:] = sorted(set(current_lib))
+				is_was_project_import = True
+				results[key] = True
+			else:
+				results[key] = False
+
+		project_libs = zip(
+			('performers_lib', 'chiefs_lib', 'posts_lib'),
+			(self.performers, self.chiefs, self.posts)
+		)
+
+		for key, lib in project_libs:
+			__process_project_list_data(lib, key)
+		
+		if is_was_project_import: # сохранение новых данных
+			self.saving_settings()
+
+		# -----//-----
+
+		# ----- Импорт библиотек из менеджеров данных ----
+
+		def __get_selected_libs(libs: list, selection: list[int]) -> list | None:
+			""" Получает определённые библиотеки из всех выбранных в другом проекте
+			### Args:
+				- :libs: полная библиотека данных из другого проекта
+				- :selection: список с индексами выбранных библиотек
+			"""
+			if not libs or not isinstance(libs, list):
+				return
+			import_libs = []
+			for index in selection:
+				try: import_libs.append(libs[index])
+				except IndexError: continue
+
+			return import_libs
+		
+		def __import_lib_data(key: str, manager: DataLibraryManager):
+			""" Импортирует из другого проекта данные указанной библиотеки , добавляет к текущей, сохраняет
+			### Args:
+				- :key: словарь результатов импорта
+			"""
+			nonlocal results, data
+
+			lib_data = data.get(key, [])
+			if not isinstance(lib_data, list) or not manager.lock_libs():
+				results[key] = False
+				return
+
+			# получаем выбранные элементы, если был передан список выбора
+			selected_libs = __get_instruction(f'{key}_selection', None)
+			if selected_libs is not None:
+				lib_data = __get_selected_libs(lib_data, selected_libs)
+
+			for raw_obj in lib_data:
+				obj = manager.deserialization_function(raw_obj)
+				if key != 'soils_lib': manager.library.append(obj)
+
+			manager.save_lib()
+			results[key] = True
+
+		# библиотеки из менеджеров данных
+		managers = (self.soils_manager, self.sources_manager,
+			self.libraries_manager, self.machinery_manager)
+
+		for i, key in enumerate(LIB_KEYS[4:]):
+			if __get_instruction(key) is False: #не долежит импорту
+				continue
+			manager = managers[i]
+			__import_lib_data(key, manager)
+		# -----//-----
+		
+		return results
+
+
 
 class File_BoQ:
 	"""Представляет один файл раздела ВОР. Управляет чтением, записью, блокировками."""
@@ -719,3 +910,4 @@ class FileIsBusy(Exception):
 	
 	def get_data(self):
 		return self.username
+

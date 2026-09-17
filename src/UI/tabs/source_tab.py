@@ -671,19 +671,14 @@ class Source_Dialog(QDialog):
 	def accept(self):
 		none_list = {None, 'None', ' ', '', '-'}
 		solution = True
-		checed_items = (
-			self._name_edit_plane.toPlainText(),
-			self._alias_combobox.currentText(),
-			self._note_edit_plane.toPlainText()
-		)
 
-		for i in checed_items:
+		for i in (self._name_edit_plane.toPlainText(), self._alias_combobox.currentText()):
 			if i in none_list:
 				solution = False
 				break
 
 		if solution is False:
-			QMessageBox.warning(self, "Ошибка", "Наименование, псевдоним и примечания должны быть заполнены.")
+			QMessageBox.warning(self, "Ошибка", "Наименование, псевдоним должны быть заполнены.")
 			return
 		
 		return super().accept()

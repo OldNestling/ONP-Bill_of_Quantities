@@ -54,44 +54,9 @@ class Sources_Manager(DataLibraryManager):
 		Source._transportation_mode = self.project.work_modes.get('transportation_mode',False) if self.project else False
 
 	# ---------------------------- Загрузка / Сохранение --------------------------------
-	def load_lib(self):
-		if self.project:
-			try:
-				with open(self._file_path, "r", encoding="utf-8") as f:
-					data = json.load(f)
-					for source in data:
-						obj = Source.deserialization(source)
-						self.library.append(obj)
-			except FileNotFoundError:
-				self.library = []
-			except json.JSONDecodeError:
-				pass
-			except Exception as e:
-				raise RuntimeError(f'{"-"*40}\nОшибка загрузки файла {self._file_path}: {e}')
-
-	def save_lib(self):
-		if not self.project or not self.lock_owned:
-			return False
-		try:
-			tmp_path = self._file_path.with_suffix(".tmp")
-			with open(tmp_path, 'w', encoding='utf-8') as f:
-				data = []
-				for source in self.library:
-					data.append(source.serialization())
-				json.dump(data, f, indent=4, ensure_ascii=False)
-			tmp_path.replace(self._file_path)
-			self.unlock()
-			return True
-		except Exception as e:
-			print(f'{"-"*40}\nПроизошла ошибка: {e}')
-			if tmp_path.exists():
-				tmp_path.unlink(missing_ok=True)
-			return False
-		
-	def reload_lib(self):
-		self.library = []
-		self.load_lib()
-		self.unlock()
+	@staticmethod
+	def deserialization_function(data):
+		return Source.deserialization(data)
 
 	# ----------------------------------- Работа с БД -----------------------------------
 	def set_work_mode(self):

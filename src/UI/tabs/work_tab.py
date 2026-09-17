@@ -1091,7 +1091,7 @@ class BoQ_Tab(QWidget):
 		"""
 		Вызывает диалоговое окно для создания позиций на основании пользовательских библиотек
 		"""
-		if not self.project.libraries_manager.libraries:
+		if not self.project.libraries_manager.library:
 			QMessageBox.warning(
 				self,
 				'Отсутствуют данные',

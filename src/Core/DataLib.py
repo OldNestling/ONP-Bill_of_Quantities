@@ -8,13 +8,16 @@ import os, time, json
 class DataLibraryManager(ABC):
 	""" Данный класс используется для создания менеджеров библиотек """
 	DATA = 'Data' 			# Папка с базами данных	
-	FILE = '' 				# Файл с данными. Необходимо переопределить в наследника
+	FILE = '' 				# Файл с данными. Необходимо переопределить у наследника
 	LOCK_TIMEOUT = 10		# максимальное время ожидания блокировки (сек)
 
 	def __init__(self):
 		super().__init__()
 		self._lock: FileLock = None
 		self.lock_owned = False
+		self.project = None
+		self.library = []
+		
 
 	# ------------------------------------ Пути -----------------------------------------
 
@@ -120,3 +123,56 @@ class DataLibraryManager(ABC):
 						return json.load(f)
 				except:
 					return {"user": "неизвестен", "pid": None, "timestamp": None}
+
+	# ---------------------------- Загрузка / Сохранение --------------------------------
+
+	@abstractmethod
+	def deserialization_function(data) -> object:
+		""" Функция десериализации для конкретной библиотеки данных 
+			
+			:data: словарь с данными единичноо объекта из json"""
+		pass
+
+	def load_lib(self):
+		""" Загружает данные библиотеки из JSON-файл """
+		if not self.project:
+			return
+		try:
+			with open(self._file_path, "r", encoding="utf-8") as f:
+				data = json.load(f)
+				for element in data:
+					obj = self.deserialization_function(element)
+					self.library.append(obj)
+		except FileNotFoundError:
+			self.library = []
+		except json.JSONDecodeError:
+			pass
+		except Exception as e:
+			raise RuntimeError(f'{"-"*40}\nОшибка загрузки файла {self._file_path}: {e}')
+
+	def save_lib(self):
+		""" Сохраняет данные библиотеки в JSON-файл """
+		if not self.project or not self.lock_owned:
+			return False
+		try:
+			tmp_path = self._file_path.with_suffix(".tmp")
+			with open(tmp_path, 'w', encoding='utf-8') as f:
+				data = []
+				for obj in self.library:
+					data.append(obj.serialization())
+				json.dump(data, f, indent=4, ensure_ascii=False)
+			tmp_path.replace(self._file_path)
+			return True
+		except Exception as e:
+			print(f'{"-"*40}\nПроизошла ошибка: {e}')
+			if tmp_path.exists():
+				tmp_path.unlink(missing_ok=True)
+			return False
+		finally:
+			self.unlock()
+		
+	def reload_lib(self):
+		""" Сбрасывает данные библиотеки и повторно их загружает"""
+		self.library = []
+		self.load_lib()
+		self.unlock()

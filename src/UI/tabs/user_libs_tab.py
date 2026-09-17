@@ -245,7 +245,7 @@ class User_Libs_Tab(QWidget):
 			for lib in libs_data:
 				self.lib_selector.addItem(lib.get('name', ''), lib.get('lib'))
 		self.lib_selector.blockSignals(False)
-		if self.manager and self.manager.libraries:
+		if self.manager and self.manager.library:
 			if isinstance(self.current_lib_index, int):
 				self.lib_selector.setCurrentIndex(self.current_lib_index)
 			else:	
@@ -253,7 +253,7 @@ class User_Libs_Tab(QWidget):
 
 	def update_tree_view(self):
 		"""Пересоздаёт модель для текущей библиотеки."""
-		if self.manager and self.manager.libraries:
+		if self.manager and self.manager.library:
 			current_lib = self.lib_selector.currentData()
 			if current_lib:
 				self.model.set_lib(current_lib)
@@ -277,9 +277,13 @@ class User_Libs_Tab(QWidget):
 	def set_project(self, project: Project):
 			self.project = project
 			self.manager = self.project.libraries_manager if project else None
-			if self.manager.libraries:
-				self.model.set_lib(self.manager.libraries[0])
+			if self.manager.library:
+				self.model.set_lib(self.manager.library[0])
 			self.update_ui()
+
+	def tab_selected(self):
+		self.update_status()
+		self.update_ui()
 
 	def _get_selected_item_path(self) -> tuple | None:
 		"""Возвращает кортеж (type, group_index, main_index, sub_index) или None."""
@@ -410,13 +414,11 @@ class User_Libs_Tab(QWidget):
 		if not self.manager:
 			return
 		self.manager.create_lib()
-		new_lib = self.manager.libraries[-1]
 
 		# Выбираем новую библиотеку
-		self.lib_selector.addItem(new_lib.name, new_lib)
-		self.lib_selector.setCurrentIndex(-1)
-		self.model.set_lib(new_lib)
+		self.current_lib_index = len(self.manager.library) - 1
 		self.update_ui()
+
 		# Включаем редактирование для переименования
 		self.lib_name_edit.setFocus()
 		self.lib_name_edit.selectAll()
@@ -503,7 +505,10 @@ class User_Libs_Tab(QWidget):
 		else:
 			QMessageBox.information(self, 'Добавление подпозиции', 'Выберите основную позицию или подпозицию.')
 			return
-		main_el.create_sub_element(name='Новая подпозиция', alias='new_sub', resource_text='', factor='', note1='', note2='')
+		main_el.create_sub_element(
+			name='Новая подпозиция', alias='Новый_псевдоним', 
+			resource_text='', factor='', note1='', note2=''
+		)
 		self.update_ui()
 		new_idx = len(main_el.sub_elements) - 1
 		self._select_tree_row_by_path(('SubElement', group_idx, main_idx, new_idx))
@@ -548,21 +553,20 @@ class User_Libs_Tab(QWidget):
 		""" Сохраняет данные пользовательских библиотек и снимает блокировку """
 		if not self.manager:
 			return
-		res = self.manager.save_libs()
+		res = self.manager.save_lib()
 		if not res:
 			QMessageBox.warning(self, 'Сохранение',
 									f'Не удалось сохранить данные')
 		self.set_manipulation_buttons_enabled(False)
 		self.model.togle_acces(False)
-		self.manager.load_libs()
+		self.manager.reload_lib()
 		self.update_ui()
 	
 	def reload_library(self):
 		""" Перезагружает данные из файла без сохранения """
 		self.set_manipulation_buttons_enabled(False)
 		self.model.togle_acces(False)
-		self.manager.load_libs()
-		self.manager.unlock()
+		self.manager.reload_lib()
 		self.update_ui()
 
 	def _move_obj(self, direction):

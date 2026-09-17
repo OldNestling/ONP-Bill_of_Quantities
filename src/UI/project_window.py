@@ -290,7 +290,7 @@ class Project_Window(QWidget):
 
 		# Создаём или пересоздаём проект
 		self.project_directory = selected_dir
-		self.project = Project(base_dir=selected_dir, sourсes_folder=r'Data')
+		self.project = Project(base_dir=selected_dir)
 		# Разблокируем остальные вкладки
 		self.set_other_tabs_enabled(True)
 		self.catalog_is_selected = True

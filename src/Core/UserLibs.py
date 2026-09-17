@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-import json, re
+import re
 from .Utilities import clearing_string
 from .DataLib import DataLibraryManager
 
@@ -33,44 +33,19 @@ class LibManager(DataLibraryManager):
 	def __init__(self, project):
 		super().__init__()
 		self.project = project				# Единый глобальный объект проекта
-		self.libraries: list[Library] = []
-		self.load_libs()
+		self.library: list[Library] = []
+		self.load_lib()
 	
 	# ---------------------------- Загрузка / Сохранение --------------------------------
-	def load_libs(self):
-		if not self.project or self._file_path is None or self._file_path is None:
-			return
-		try:
-			with open(self._file_path, "r", encoding="utf-8") as f:
-				data = json.load(f)
-				self.libraries = [Library.deserialization(lib) for lib in data]
-		except FileNotFoundError:
-			self.libraries = []
-		except Exception as e:
-			print(f'{"-"*40}\nПроизошла ошибка: {e}')
-
-	def save_libs(self):
-		if not self.project or not self.lock_owned:
-			return False
-		try:
-			tmp_path = self._file_path.with_suffix(".tmp")
-			with open(tmp_path, 'w', encoding='utf-8') as f:
-				data = [lib.serialization() for lib in self.libraries]
-				json.dump(data, f, indent=4, ensure_ascii=False)
-			tmp_path.replace(self._file_path)
-			self.unlock()
-			return True
-		except Exception as e:
-			print(f'{"-"*40}\nПроизошла ошибка: {e}')
-			if tmp_path.exists():
-				tmp_path.unlink(missing_ok=True)
-			return False
+	@staticmethod
+	def deserialization_function(data):
+		return Library.deserialization(data)
 
 	# --------------------------- Взаимодействие с БД -----------------------------------
 
 	def get_libs_list(self) -> list[dict]:
 		output = []
-		for lib in self.libraries:
+		for lib in self.library:
 			output.append(
 				{
 					'name': lib.name,
@@ -84,21 +59,21 @@ class LibManager(DataLibraryManager):
 		if not self.project:
 			return
 		obj = Library()
-		self.libraries.append(obj)
+		self.library.append(obj)
 	
 	def remove_lib(self, index):
 		if not  self.project:
 			return
 		try:
-			del self.libraries[index]
+			del self.library[index]
 		except IndexError:
 			return
 		
 	def create_group(self, lib_idx):
 		if not self.project:
 			return
-		if lib_idx < len(self.libraries):
-			lib = self.libraries[lib_idx]
+		if lib_idx < len(self.library):
+			lib = self.library[lib_idx]
 			lib.create_group()
 
 	def move_lib(self, from_index: int, to_index: int) -> bool:
@@ -106,14 +81,14 @@ class LibManager(DataLibraryManager):
 		Возвращает True при успехе, иначе False."""
 		if not self.project:
 			return False
-		if 0 <= from_index < len(self.libraries) and 0 <= to_index < len(self.libraries):
-			self.libraries.insert(to_index, self.libraries.pop(from_index))
+		if 0 <= from_index < len(self.library) and 0 <= to_index < len(self.library):
+			self.library.insert(to_index, self.library.pop(from_index))
 			return True
 		return False
 
 	def build_library(self) -> dict:
 		dictionary = {}
-		for lib in self.libraries:
+		for lib in self.library:
 			lib_content = {}
 			for group in lib.groups:
 				group_content = {}

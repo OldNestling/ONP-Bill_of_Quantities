@@ -58,45 +58,9 @@ class Machinery_Manager(DataLibraryManager):
 		
 
 	# ----------------------------------- Работа с БД -----------------------------------
-	def load_lib(self):
-		if self.project:
-			try:
-				with open(self._file_path, "r", encoding="utf-8") as f:
-					data = json.load(f)
-					for machine in data:
-						obj = Machine.deserialization(machine)
-						self.library.append(obj)
-			except FileNotFoundError:
-				self.library = []
-			except json.JSONDecodeError:
-				pass
-			except Exception as e:
-				raise RuntimeError(f'{"-"*40}\nОшибка загрузки файла {self._file_path}: {e}')
-
-	def save_lib(self):
-		if not self.project or not self.lock_owned:
-			return False
-		try:
-			tmp_path = self._file_path.with_suffix(".tmp")
-			with open(tmp_path, 'w', encoding='utf-8') as f:
-				data = []
-				for obj in self.library:
-					obj: Machine
-					data.append(obj.serialization())
-				json.dump(data, f, indent=4, ensure_ascii=False)
-			tmp_path.replace(self._file_path)
-			self.unlock()
-			return True
-		except Exception as e:
-			print(f'{"-"*40}\nПроизошла ошибка: {e}')
-			if tmp_path.exists():
-				tmp_path.unlink(missing_ok=True)
-			return False
-
-	def reload_lib(self):
-		self.library = []
-		self.load_lib()
-		self.unlock()	
+	@staticmethod
+	def deserialization_function(data):
+		return Machine.deserialization(data)
 
 	# --------------------------- Взаимодействие с БД -----------------------------------
 	def get_machines_data(self)-> dict:
@@ -155,10 +119,8 @@ class Machinery_Manager(DataLibraryManager):
 	
 	def remove_object(self, index):
 		""" Удаляет элемент из списка """
-		if self.project:
+		if self.project and index in (range(len(self.library))):
 			del self.library[index]
-	
-
 
 	def show_lib(self):
 		""" Функция для отладки. Выводит информацию о объектах """

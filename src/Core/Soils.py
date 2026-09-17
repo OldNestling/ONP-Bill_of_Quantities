@@ -33,13 +33,16 @@ class Soils_Manager(DataLibraryManager):
 	def __init__(self, project):
 		super().__init__()
 		self.project = project # Единый глобальный объект, хранящий настройки и артубты для всех модулей
-		self.library = {}  #  словарь всех созданных объектов Soil
+		self.library: dict[str, Soil] = {}  #  словарь всех созданных объектов Soil
 		self.load_lib()
 		# Устанавливка режима сопоставления
 		Soil._compare_mode = self.project.work_modes.get('ground_complementation_mode',False) if self.project else False 
 	
 
 	# ------------------------------- Загрузка и сохранение БД -----------------------------
+	def deserialization_function(self, data):
+		return self.soil_deserializer(data)
+	
 	def load_lib(self):
 		if not self.project or self._file_path is None or self._file_path is None:
 			return

@@ -16,10 +16,11 @@
 
 # Данные для вывода информации о программе
 PROGRAM_NAME = 'ONP: Система ВОР'
-PROGRAM_VERSION = '1.0.3.0 (от 2026.09.05)'
+PROGRAM_VERSION = '1.0.3.0 (от 2026.09.17)'
 COPYRIGHT = "Copyright © 2026 OldNestling"
-PROGRAM_SETTINGS_FOLDER = "ONP_Система_ВОР"	# папка с настройками по пути C:\Users\User\AppData\Roaming\
-RECENT_DIRS_LOG ='recent_dirs.json'			# файл с реестром последних открытых каталогов
+PROGRAM_SETTINGS_FOLDER = "ONP_Система_ВОР"			# папка с настройками по пути C:\Users\User\AppData\Roaming\
+RECENT_DIRS_LOG ='recent_dirs.json'					# файл с реестром последних открытых каталогов
+TEMPLATE_PROJECT_FILE = 'template_project.json'		# файл с указанием пути к проекту-шаблону
 GITHUB = r'https://github.com/OldNestling/ONP-Bill_of_Quantities.git'
 ABOUT = 'Программа создана для автоматизированного формирования ведомости объемов работ в формате XML-схемы, утвержденной Минстроем, с акцентом на применение в дорожно-строительной области.'
 PARTICIPANTS ='''<p "align" = "left"> \

@@ -16,13 +16,13 @@
 
 from PyQt6.QtWidgets import (
 	QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QGroupBox, QTableWidget, 
-	QTableWidgetItem, QHeaderView)
+	QTableWidgetItem, QHeaderView, QDialog, QFileDialog,
+	)
 from PyQt6.QtCore import Qt
-from ..ui_utilities import Switch
-from ..ui_utilities import IntDelegate
+from ..ui_utilities import Switch, IntDelegate
 from ..icons import Icons
 from Core.Project import Project
-
+from ..support.libs_import import ProjectDataImporter
 
 
 # ---------------------------------------------------------------------------------------
@@ -100,7 +100,7 @@ class SettingsTab(QWidget):
 		btn_remove_chiefs = QPushButton('Удалить')
 		btn_remove_chiefs.clicked.connect(self.remove_chiefs_row)
 
-		## ================== Таблица Исполнителей ==========================
+		# ================== Таблица Исполнителей ==========================
 		self.performers_table = QTableWidget()
 		self.performers_table.setColumnCount(1)
 		self.performers_table.setHorizontalHeaderLabels(['Исполнитель'])
@@ -114,7 +114,7 @@ class SettingsTab(QWidget):
 		btn_remove_performer = QPushButton('Удалить')
 		btn_remove_performer.clicked.connect(self.remove_performer_row)
 
-		## ================== Таблица Должностей ============================
+		# ================== Таблица Должностей ============================
 		self.posts_table = QTableWidget()
 		self.posts_table.setColumnCount(1)
 		self.posts_table.setHorizontalHeaderLabels(['Должность'])
@@ -132,9 +132,33 @@ class SettingsTab(QWidget):
 		posts_buttons.addWidget(btn_add_post)
 		posts_buttons.addWidget(btn_remove_post)
 
+		# =================== Панель функций ===============================
+		#  Кнопка сохранения 
+		self.btn_save = QPushButton('Сохранить настройки')
+		self.btn_save.setIcon(Icons.save)
+		self.btn_save.setMaximumWidth(450)
+
+		# Кнопка указания шаблона
+		self.btn_template = QPushButton('Задать шаблон')
+		self.btn_template.clicked.connect(self.select_template_project)
+
+		# Кнопка импорта
+		btn_import = QPushButton('Импортировать библиотеки')
+		btn_import.clicked.connect(self.open_import_dialog)
+
+		functions_group = QGroupBox(' Функции ')
+		functions_layout = QVBoxLayout()
+
+		functions_layout.addWidget(self.btn_save)
+		functions_layout.addWidget(self.btn_template)
+		functions_layout.addWidget(btn_import)
+
+		functions_group.setLayout(functions_layout)
+		functions_group.setMaximumWidth(250)   # как у других колонок
+
 		# ============================ Сборка окна ======================================
-		# ------ Первая колонка ------
-		# Сборка переключателей
+		# ------ 1 колонка (Сборка переключателей) ------
+		# 
 		settings_box = QVBoxLayout()
 
 		settings_box.addLayout(position_mode_subbox)
@@ -153,18 +177,11 @@ class SettingsTab(QWidget):
 		units_group.setLayout(units_table_subbox)
 		units_group.setMaximumWidth(450)
 		
-		#  Кнопка сохранения 
-		self.btn_save = QPushButton('Сохранить настройки')
-		self.btn_save.setIcon(Icons.save)
-		self.btn_save.setMaximumWidth(450)
-
-		
 		column_1 = QVBoxLayout()
 		column_1.addWidget(setting_group)
 		column_1.addWidget(units_group)
 
-		# ------ Вторая колонка ------
-		# ГИПы
+		# ------ 2 колонка (ГИПы) ------
 		chiefs_buttons = QHBoxLayout()
 		chiefs_buttons.addWidget(btn_add_chiefs)
 		chiefs_buttons.addWidget(btn_remove_chiefs)
@@ -187,8 +204,7 @@ class SettingsTab(QWidget):
 		column_2.addWidget(chiefs_group)
 		column_2.addWidget(posts_group)
 
-		# ------ Третья колонка ------
-		# Исполнители
+		# ------ 3 колонка (Исполнители) ------
 		performers_buttons = QHBoxLayout()
 		performers_buttons.addWidget(btn_add_performer)
 		performers_buttons.addWidget(btn_remove_performer)
@@ -203,15 +219,21 @@ class SettingsTab(QWidget):
 		column_3 = QVBoxLayout()
 		column_3.addWidget(performers_group)
 
+		# ---- 4 колонка (функции) ------
+		column_4 = QVBoxLayout()
+		column_4.addWidget(functions_group)
+		column_4.addStretch() 
+
+		# ---- агрегация колонок ----
 		groups_layout = QHBoxLayout() # Главный слой вкладки
 		groups_layout.addLayout(column_1)
 		groups_layout.addLayout(column_2)
 		groups_layout.addLayout(column_3)
+		groups_layout.addLayout(column_4)
 		groups_layout.addStretch()
 
 		main_layout = QVBoxLayout(self)
 		main_layout.addLayout(groups_layout)
-		main_layout.addWidget(self.btn_save)
 
 
 	def update_ui(self):
@@ -238,6 +260,9 @@ class SettingsTab(QWidget):
 		"""Вызывается главным окном при изменении проекта"""
 		self.project = project
 		self.update_ui()
+
+		path_to_template = self.project.get_path_to_template()
+		self.btn_template.setToolTip(f'Проект-шаблон: {path_to_template}')
 	
 	def tab_selected(self):
 		"""Вызывается при активации вкладки"""
@@ -406,3 +431,18 @@ class SettingsTab(QWidget):
 
 	def remove_performer_row(self):
 		self._remove_row(self.performers_table, self.project.performers)
+
+	# ---------------------------------- Функции ----------------------------------------
+	def open_import_dialog(self):
+		if self.project is None:
+			return
+		dialog = ProjectDataImporter(self, self.project)
+		if dialog.exec() == QDialog.DialogCode.Accepted:
+			self.update_ui()
+
+	def select_template_project(self):
+		directory = QFileDialog.getExistingDirectory(self, "Выберите папку")
+		if directory and self.project:
+			self.project.save_path_to_template(directory)
+			self.btn_template.setToolTip(f'Проект-шаблон: {directory}')
+			

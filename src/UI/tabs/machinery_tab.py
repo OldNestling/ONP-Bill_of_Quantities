@@ -196,16 +196,13 @@ class Machinery_Tab(QWidget):
 		
 
 		if self.manager is None:
+			self.machinery_table.setRowCount(0)
 			self.machinery_table.blockSignals(False)
 			return
 		
 		objects = self.manager.library
-
-		if not objects or len(objects) == 0:
-			self.machinery_table.blockSignals(False)
-			return
-		
 		self.machinery_table.setRowCount(len(objects))
+
 
 		for row, obj in enumerate(objects):
 			obj: Machine

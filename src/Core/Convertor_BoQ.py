@@ -150,7 +150,36 @@ class Convertor:
 			ET.SubElement(link_tag, 'FileID').text = str(all_files[0]['FileID'])
 			ET.SubElement(link_tag, 'PageNumber').text = str(self.DUMMY_PAGE_NUMBER)
 			ET.SubElement(link_tag, 'PageDescription').text = self.DUMMY_DESCRIPTION
-	
+
+		def __create_position_element(element_tag: ET.Element, element: Work | Resource):
+			""" Заполняет XLM-элемент  данными основной или ресурсообразующей позиции """
+
+			if manager.position_mode:
+				if isinstance(element, Work):
+					num = str(element.num)
+				else:
+					num = text_after(str(element.num), '.')
+			else:
+				num = str(element.num)
+
+			ET.SubElement(element_tag, 'Num').text = num
+			ET.SubElement(element_tag, 'Type').text = element.type
+			ET.SubElement(element_tag, 'Name').text = element.name
+			ET.SubElement(element_tag, 'Unit').text = element.unit
+			ET.SubElement(element_tag, 'Quantity').text = str(element.quantity)
+			ET.SubElement(element_tag, 'QuantityFormula').text = str(element.quantity_formula)
+
+			# Ссылка для работы
+			links_tag = ET.SubElement(element_tag, 'Links')
+
+			if element.links:
+				for link in element.links:
+					__link_to_xml(links_tag, link)
+			else:
+				__create_dummy_links(links_tag)
+
+			ET.SubElement(element_tag, 'Comment').text = element.comment
+
 		for i, section in enumerate(manager.sections, 1):
 			section: Section
 			section_tag = ET.SubElement(sections_tag, 'Section')
@@ -162,24 +191,7 @@ class Convertor:
 				work: Work
 
 				work_tag = ET.SubElement(works_tag, 'Work')
-
-				ET.SubElement(work_tag, 'Num').text = str(work.num)
-				ET.SubElement(work_tag, 'Type').text = work.type
-				ET.SubElement(work_tag, 'Name').text = work.name
-				ET.SubElement(work_tag, 'Unit').text = work.unit
-				ET.SubElement(work_tag, 'Quantity').text = str(work.quantity)
-				ET.SubElement(work_tag, 'QuantityFormula').text = str(work.quantity_formula)
-
-				# Ссылка для работы
-				links_tag = ET.SubElement(work_tag, 'Links')
-
-				if work.links:
-					for link in work.links:
-						__link_to_xml(links_tag, link)
-				else:
-					__create_dummy_links(links_tag)
-
-				ET.SubElement(work_tag, 'Comment').text = work.comment
+				__create_position_element(work_tag, work)
 
 				if work.resources:
 					resources_tag = ET.SubElement(work_tag, 'Resources')
@@ -187,27 +199,7 @@ class Convertor:
 						resource: Resource
 
 						resource_tag = ET.SubElement(resources_tag, 'Resource')
-						if manager.position_mode:
-							num = text_after(str(resource.num), '.')
-						else:
-							num = str(resource.num)
-						ET.SubElement(resource_tag, 'Num').text = num
-						ET.SubElement(resource_tag, 'Type').text = resource.type
-						ET.SubElement(resource_tag, 'Name').text = resource.name
-						ET.SubElement(resource_tag, 'Unit').text = resource.unit
-						ET.SubElement(resource_tag, 'Quantity').text = str(resource.quantity)
-						ET.SubElement(resource_tag, 'QuantityFormula').text = str(resource.quantity_formula)
-
-						# Ссылка для работы
-						links_tag = ET.SubElement(resource_tag, 'Links')
-
-						if resource.links:
-							for link in resource.links:
-								__link_to_xml(links_tag, link)
-						else:
-							__create_dummy_links(links_tag)
-
-						ET.SubElement(resource_tag, 'Comment').text = resource.comment
+						__create_position_element(resource_tag, resource)
 
 		tree = ET.ElementTree(root)
 		try:
