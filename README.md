@@ -96,8 +96,8 @@
 ## Использование (установка)
 На данный момент предполагается два сценария запуска программы:
 +  напрямую через компилятор Python (необходима версия 3.14.6 и пакеты, указанные в файле [requirements.txt](requirements.txt));
-+ через исполняемый файл. В этом случае никаких дополнительнных действий не потребуется.
-[Скачать исполняемый файл.](https://github.com/OldNestling/ONP-Bill_of_Quantities/releases/latest/download/ONP-Bill_of_Quantities.zip)
++ через исполняемый файл. В этом случае никаких дополнительнных действий не потребуется. Скачать исполняемый файл можно по следующим ссылкам для 
+[Windows](https://github.com/OldNestling/ONP-Bill_of_Quantities/releases/latest/download/ONP-Bill_of_Quantities.windows.zip) и [Linux](https://github.com/OldNestling/ONP-Bill_of_Quantities/releases/latest/download/ONP-Bill_of_Quantities.linux.zip) или через раздел релизов в репозитории.
 
 
 Работоспособность программы протестирована на:
