@@ -23,7 +23,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtGui import QIntValidator
 from PyQt6.QtCore import Qt, pyqtSignal, QModelIndex, QDate
 from ..ui_utilities import create_separator
-from ..icons import Icons
+from ..resources.icons import Icons
 from ..support.Calculator import CalculatorWidget 
 from Core.BoQ import BoQ_manager, Section, Link
 from Core.Utilities import convert_value

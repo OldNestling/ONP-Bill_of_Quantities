@@ -19,7 +19,7 @@ from PyQt6.QtWidgets import (
 	QTableWidgetItem, QHeaderView, QMenu, QApplication, QStyledItemDelegate, QComboBox)
 from PyQt6.QtCore import Qt
 from ..ui_utilities import create_separator
-from ..icons import Icons
+from ..resources.icons import Icons
 from Core.Machinery import Machinery_Manager, Machine
 
 class Machinery_Tab(QWidget):

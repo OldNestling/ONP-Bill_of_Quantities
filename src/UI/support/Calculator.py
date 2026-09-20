@@ -19,7 +19,7 @@ from PyQt6.QtWidgets import (
 	QLineEdit, QApplication, QScrollArea, QFrame, QListWidget
 	)
 from PyQt6.QtCore import Qt, QSize, pyqtSignal, QTimer
-from ..icons import Icons
+from ..resources.icons import Icons
 from Core.Utilities import clearing_string
 import re, math
 

@@ -29,14 +29,14 @@
 
 import sys, traceback
 
-from Templates.styles import CSS_SETTING
+from Templates.styles import get_css
 from UI.project_window import Project_Window
 from Core.Utilities import resource_path
 
 
 from PyQt6.QtWidgets import QApplication, QMessageBox
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QPalette, QColor, QIcon
+from PyQt6.QtGui import QPalette, QColor, QIcon, QFont, QFontDatabase
 
 # ---------- Глобальная ссылка на окно (для обработчика) ----------
 _main_window = None
@@ -90,7 +90,22 @@ class CustomApplication(QApplication):
 
 def main():
 	app = CustomApplication(sys.argv)
-	#app = QApplication(sys.argv)
+
+	system_platform = sys.platform
+	# --- Загрузка встроенного шрифта ---
+	if system_platform.startswith('linux'):
+		font_path = resource_path('UI/resources/fonts/MPLUSRounded1c-Regular.ttf')
+		font_id = QFontDatabase.addApplicationFont(font_path)
+
+		if font_id != -1:
+			# Получаем имя семейства, которое Qt присвоила шрифту
+			families = QFontDatabase.applicationFontFamilies(font_id)
+			# Создаём шрифт с нужным размером
+			app_font = QFont(families[0], 10)
+			app.setFont(app_font)
+		else:
+			app.setFont(QFont("Noto Sans", 10))
+
 
 	light_palette = app.style().standardPalette()
 	# Меняем роли на светлые
@@ -99,7 +114,7 @@ def main():
 	app.setPalette(light_palette)	
 
 	
-	app.setStyleSheet(CSS_SETTING)
+	app.setStyleSheet(get_css(system_platform.startswith('linux')))
 
 	icon = QIcon(resource_path(r'UI\icons\icon_main.ico'))
 	app.setWindowIcon(icon)

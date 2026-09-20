@@ -28,7 +28,7 @@ from PyQt6.QtGui import (
 from Core.UserLibs import Library, Group, MainElement, SubElement
 from Core.Project import Project
 from ..ui_utilities import create_separator, Requestion
-from ..icons import Icons
+from ..resources.icons import Icons
 
 class User_Libs_Tab(QWidget):
 	""" Вкладка управления пользовательскими данными """
@@ -113,8 +113,6 @@ class User_Libs_Tab(QWidget):
 		self.control_panel.addWidget(create_separator())	# ---
 
 		# --- Кнопки манипуляции элементами ---
-
-		#self.control_panel.setAlignment(Qt.AlignmentFlag.AlignTop)
 		self.btn_create_group = QPushButton("Создать группу")
 		self.btn_create_group.clicked.connect(self.add_group)
 

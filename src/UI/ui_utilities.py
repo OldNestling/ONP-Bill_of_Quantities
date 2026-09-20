@@ -107,9 +107,9 @@ class WordWrapDelegate(QStyledItemDelegate):
 			painter.setFont(option.font)
 			text_rect = option.rect.adjusted(self.margin, self.margin, -self.margin, -self.margin)
 			if option.state & QStyle.StateFlag.State_Selected:
-				color = option.palette.highlightedText().color()
+				color = QColor('#ffffff')
 			else:
-				color = option.palette.text().color()
+				color = QColor('#000000')
 			painter.setPen(color)
 			painter.drawText(text_rect, Qt.TextFlag.TextSingleLine | Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, text)
 		else:
@@ -119,9 +119,9 @@ class WordWrapDelegate(QStyledItemDelegate):
 			text_width = option.rect.width() - 2 * self.margin
 			doc.setTextWidth(max(text_width, 1))
 			if option.state & QStyle.StateFlag.State_Selected:
-				color = option.palette.highlightedText().color()
+				painter.setPen(QColor('#ffffff'))
 			else:
-				color = option.palette.text().color()
+				painter.setPen(QColor('#000000'))
 			doc.setDefaultStyleSheet(f"body {{ color: {color.name()}; }}")
 			painter.translate(option.rect.x() + self.margin, option.rect.y() + self.margin)
 			doc.drawContents(painter)

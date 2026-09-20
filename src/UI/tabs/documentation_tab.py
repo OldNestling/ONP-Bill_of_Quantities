@@ -20,12 +20,15 @@ from PyQt6.QtWidgets import (
 	QTreeView, QHeaderView, QFileDialog
 )
 from PyQt6.QtCore import Qt, QSize, QAbstractItemModel, QModelIndex, QUrl
-from PyQt6.QtGui import QColor, QTextDocument, QTextOption, QDesktopServices
+from PyQt6.QtGui import (
+	QColor, QTextDocument, QTextOption, QDesktopServices,
+	QTextCursor, QTextCharFormat, QBrush
+)
 from Core.Documentation import DOCs_Manager, Document, Book
 from ..ui_utilities import (
 	WordWrapDelegate, IntDelegate, create_ok_cancel_buttons, Requestion, create_separator
 )
-from ..icons import Icons
+from ..resources.icons import Icons
 from Core.Utilities import convert_value
 from pathlib import Path
 
@@ -65,7 +68,7 @@ class Documentation_Tab(QWidget):
 			header.setSectionResizeMode(col, QHeaderView.ResizeMode.Fixed)
 		for col in stretch_columns:
 			header.setSectionResizeMode(col, QHeaderView.ResizeMode.Stretch)
-		header.resizeSections()
+		self.tree_view.header().resizeSections(QHeaderView.ResizeMode.Interactive)
 		
 
 		header.sectionResized.connect(self.on_section_resized)
@@ -903,12 +906,20 @@ class DocumentationDelegate(WordWrapDelegate):
 			doc.setTextWidth(max(text_width, 1))
 
 			# Цвет текста
+			# setDefaultStyleSheet действует только на setHtml(), не на setPlainText(),
+			# поэтому перекрашиваем содержимое через QTextCursor + QTextCharFormat.
 			if option.state & QStyle.StateFlag.State_Selected:
-				color = option.palette.highlightedText().color()
+				color = QColor('#ffffff')   # на синем highlight — белый
 			else:
-				color = option.palette.text().color()
+				color = QColor('#000000')   # на светлом фоне — чёрный
 			doc.setDefaultStyleSheet(f"body {{ color: {color.name()}; }}")
 
+			cursor = QTextCursor(doc)
+			cursor.select(QTextCursor.SelectionType.Document)
+			fmt = QTextCharFormat()
+			fmt.setForeground(QBrush(color))
+			cursor.mergeCharFormat(fmt)
+			
 			# Устанавливаем выравнивание, если столбец в списке центрируемых
 			if index.column() in self.centered_columns:
 				doc.setDefaultTextOption(QTextOption(Qt.AlignmentFlag.AlignCenter))

@@ -20,7 +20,7 @@ from PyQt6.QtWidgets import (
 	)
 from PyQt6.QtCore import Qt
 from ..ui_utilities import Switch, IntDelegate
-from ..icons import Icons
+from ..resources.icons import Icons
 from Core.Project import Project
 from ..support.libs_import import ProjectDataImporter
 

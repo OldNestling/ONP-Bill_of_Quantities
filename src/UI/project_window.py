@@ -40,7 +40,7 @@ from .tabs.machinery_tab import Machinery_Tab
 from .tabs.documentation_tab import Documentation_Tab
 from .tabs.work_tab import BoQ_Tab
 from .tabs.user_libs_tab import User_Libs_Tab
-from .icons import Icons
+from .resources.icons import Icons
 
 
 class Project_Window(QWidget):

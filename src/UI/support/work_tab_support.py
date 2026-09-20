@@ -24,7 +24,7 @@ from PyQt6.QtGui import (QColor, QTextCursor, QTextCharFormat, QIntValidator, QF
 						QTextDocument, QTextBlockFormat, QSyntaxHighlighter)
 from PyQt6.QtCore import Qt, pyqtSignal, QModelIndex, QEvent, QTimer
 from ..ui_utilities import create_separator
-from ..icons import Icons
+from ..resources.icons import Icons
 from Core.BoQ import Section
 from Core.Computing_Module import FUNCTIONS
 

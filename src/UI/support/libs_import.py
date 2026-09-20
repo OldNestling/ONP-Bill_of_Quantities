@@ -21,7 +21,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt, QSize
 from PyQt6.QtGui import QAction, QColor
 from ..ui_utilities import create_separator, create_ok_cancel_buttons
-from ..icons import Icons
+from ..resources.icons import Icons
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:

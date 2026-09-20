@@ -20,7 +20,7 @@ from PyQt6.QtWidgets import (
 	QHeaderView, QComboBox, QSpinBox, QDialogButtonBox, QMenu, QApplication)
 from PyQt6.QtCore import Qt
 from ..ui_utilities import TableWithNotes, create_ok_cancel_buttons, Switch, create_separator
-from ..icons import Icons
+from ..resources.icons import Icons
 from Core.Sources import Sources_Manager
 
 class Sources_Tab(QWidget):

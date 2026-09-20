@@ -23,7 +23,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtGui import QAction, QColor, QCursor, QTextCursor
 from PyQt6.QtCore import Qt, QSize, QModelIndex, QEvent, QTimer
 from ..ui_utilities import create_ok_cancel_buttons
-from ..icons import Icons
+from ..resources.icons import Icons
 
 from Core.BoQ import BoQ_manager, Section, Work, Resource, PositionLine
 from Core.Project import Project
@@ -83,7 +83,7 @@ class BoQ_Tab(QWidget):
 		self.boq_views_container.tabCloseRequested.connect(self.close_boq_tab)
 		self.boq_views_container.currentChanged.connect(self.on_tab_changed)
 		# Применяем стиль к кнопкам закрытия этой вкладки
-		close_icon_path = Icons.resource_path('UI/icons/icon_close.svg').replace('\\', '/')
+		close_icon_path = Icons.resource_path('UI/resources/icons/icon_close.svg').replace('\\', '/')
 		self.boq_views_container.tabBar().setStyleSheet(f"""
 			QTabBar::close-button {{
 				image: url({close_icon_path});

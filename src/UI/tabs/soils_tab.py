@@ -26,7 +26,7 @@ from Core.Utilities import text_after, text_before, convert_value
 from ..ui_utilities import (
 	TableWithNotes, create_ok_cancel_buttons, Switch, Requestion, create_separator
 )
-from ..icons import Icons
+from ..resources.icons import Icons
 
 class Soils_Tab(QWidget):
 	""" Представление пространства работы с грунтами проекта """
