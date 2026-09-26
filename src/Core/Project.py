@@ -767,7 +767,7 @@ class File_BoQ:
 		self.composer = ''
 		self.composer_position = ''
 		self.date = ''
-		self.status_done = False
+		self.status = False
 		self.local_estimate = ''
 		self.log_list = {}
 		self.note = ''
@@ -800,7 +800,16 @@ class File_BoQ:
 				self.composer = sig.get('Composer','')
 				self.composer_position = sig.get('Composer_Position','')
 				self.date = content.get('Date', self.project.now.strftime("%d.%m.%Y"))
-				self.status_done = content.get('Status_Done', False)
+
+				# для совместимости со старыми файлами
+				status_done = content.get('Status_Done')
+				if status_done is None:
+					self.status = content.get('Status', 0)
+				elif status_done is False:
+					self.status = 0
+				else:
+					self.status = 2
+
 				self.local_estimate = content.get('local_estimate','')
 				self.log_list = content.get('log_list',{})
 				self.note = content.get('note', '')

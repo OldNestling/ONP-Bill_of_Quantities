@@ -74,17 +74,23 @@ class BoQ_manager:
 		text_3 = 'готово' if self.status else 'не готово'
 		return f'{text_1}\n{text_2}\n{text_3}'
 
+
 	@property
 	def status(self) -> bool:
 		""" Проверяет и возвращает готовность ведомости """
-		sections = self.sections
-		if not sections:
-			return False
-		for section in sections:
-			section: Section
-			if not section.status:
-				return False
-		return True
+		if not self.sections:
+			return 0
+		all_status_codes = set()
+		for section in self.sections:
+			all_status_codes.update(section.status)
+		if 0 in all_status_codes:
+			result = 0
+		elif 1 in all_status_codes:
+			result = 1
+		else:
+			result = 2
+		return result
+	
 	
 	@property
 	def reason(self) -> str:
@@ -197,7 +203,7 @@ class BoQ_manager:
 				'Composer_Position': self.signatures.get('Composer_Position', '')
 			},
 			'Verifier': self.verifier,
-			'Status_Done': self.status,
+			'Status': self.status,
 			'log_list': self.log_list,	# список со словарями. Должен корректно обработаться сам
 			'note': self.note
 		}
@@ -488,12 +494,12 @@ class BoQ_manager:
 			for work in section.works:
 				
 				if not work.compare_name(): is_changed = True
-				work.qnt_check()
+				work.check_qnt_and_depends()
 				if not work.compare_comment(): is_changed = True
 
 				for resource in work.resources:
 					if not resource.compare_name(): is_changed = True
-					resource.qnt_check()
+					resource.check_qnt_and_depends()
 					if not resource.compare_comment(): is_changed = True
 		if is_changed:
 			self.is_modified = True
@@ -1479,32 +1485,32 @@ class BoQ_manager:
 					for link in resource.links:
 						self.links.add(link)
 
-	def _go_through_the_collections(
-			self, 
-			sec_func: function | None = None,  
-			work_func:  function | None = None,
-			res_func:  function | None = None
-	):
-		""" 
-		Проходит по всем коллекциям и выполняет операции с объектами через переданную функцию
-		TODO для рефакторинга в будущем, оценить целесообразность с учётом возврата значений 
-		для реакции на результат. 
-		TODO Подумать над вызовом ошибки для перехвата результата
+	# def _go_through_the_collections(
+	# 		self, 
+	# 		sec_func: function | None = None,  
+	# 		work_func:  function | None = None,
+	# 		res_func:  function | None = None
+	# ):
+	# 	""" 
+	# 	Проходит по всем коллекциям и выполняет операции с объектами через переданную функцию
+	# 	TODO для рефакторинга в будущем, оценить целесообразность с учётом возврата значений 
+	# 	для реакции на результат. 
+	# 	TODO Подумать над вызовом ошибки для перехвата результата
 
-		### Args:
-			:sec_func: функция взаимодействия с разделом
-			:work_func: функция взаимодействия с позицией работы
-			:res_func: функция взаимодействия с позицией ресурса
-		"""
-		def __apply_func(func: function | None, obj: Section | Work | Resource):
-			if func is None:
-				pass
-			else:
-				func(obj)
+	# 	### Args:
+	# 		:sec_func: функция взаимодействия с разделом
+	# 		:work_func: функция взаимодействия с позицией работы
+	# 		:res_func: функция взаимодействия с позицией ресурса
+	# 	"""
+	# 	def __apply_func(func: function | None, obj: Section | Work | Resource):
+	# 		if func is None:
+	# 			pass
+	# 		else:
+	# 			func(obj)
 
-		for section in self.sections:
-			__apply_func(sec_func, section)
-			for work in section.works:
-				__apply_func(work_func, work)
-				for resource in work.resources:
-					__apply_func(res_func, resource)
+	# 	for section in self.sections:
+	# 		__apply_func(sec_func, section)
+	# 		for work in section.works:
+	# 			__apply_func(work_func, work)
+	# 			for resource in work.resources:
+	# 				__apply_func(res_func, resource)

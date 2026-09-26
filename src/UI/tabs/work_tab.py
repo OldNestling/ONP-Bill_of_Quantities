@@ -896,7 +896,7 @@ class BoQ_Tab(QWidget):
 
 		if is_paste:
 			model.layoutChanged.emit()
-			view.view.expandAll()	
+			#view.view.expandAll()	
 		
 
 	# ------------- Добавление -------------
@@ -934,7 +934,7 @@ class BoQ_Tab(QWidget):
 		if section_index is not None:
 			manager.add_work(section_index)
 			model.layoutChanged.emit()
-			view.view.expandAll()
+			#view.view.expandAll()
 
 	def add_resource(self):
 		view = self.current_boq_view()
@@ -955,7 +955,7 @@ class BoQ_Tab(QWidget):
 		#if section_index is not None and work_index is not None:
 			manager.add_resource(section_index, work_index)
 			model.layoutChanged.emit()
-			view.view.expandAll()
+			#view.view.expandAll()
 
 	# ------------- Удаление -------------	
 	def remove_selected(self):
@@ -1217,8 +1217,7 @@ class BoQ_Tab(QWidget):
 
 
 		model.layoutChanged.emit()
-		view.view.expandAll()
-
+		#view.view.expandAll()
 		self.select_item_by_address(view, new_addr)
 	
 	# ---------- Свёртывание / Развёртывание -----------
@@ -1912,8 +1911,9 @@ class BoQ_View(QWidget):
 		"""Копирует ключ и округление в буфер обмена."""
 		key = item.raw_unit
 		rnd = item.custom_round
+		crm = item.custom_round_mode
 		clipboard = QApplication.clipboard()
-		clipboard.setText(f'{key}|{rnd}')
+		clipboard.setText(f'{key}|{rnd}|{crm}')
 
 	# ------------------------------- Вставка текста --------------------------------
 	def _paste_unit(self):
@@ -1923,13 +1923,19 @@ class BoQ_View(QWidget):
 		text = clipboard.text()
 		if not '|' in text:
 			return
-		key, rnd = text.split('|')
+		key, rnd, crm = text.split('|')
 		if rnd == 'None':
 			rnd = None
 		else:
-			rnd = convert_value(rnd) 
-		if isinstance(rnd, str) or isinstance(rnd, float):
+			rnd = convert_value(rnd)
+		if crm == 'None':
+			crm = None
+		else:
+			crm = convert_value(crm)
+		if isinstance(rnd, (str, float)):
 			return 											# Не подходящий формат данных 
+		if isinstance(crm, (str, float)):
+			return 											# Не подходящий формат данных 		
 		if not key in self.project.units:
 			return
 		indexes = self._get_selected_units_indexes()
@@ -1940,6 +1946,7 @@ class BoQ_View(QWidget):
 			if isinstance(item, (Work, Resource)):
 				item.unit = key
 				item.custom_round = rnd
+				item.custom_round_mode = crm
 		for idx in indexes:
 			self.model.dataChanged.emit(idx, idx, [Qt.ItemDataRole.DisplayRole])
 	

@@ -223,29 +223,36 @@ class Documentation_Tab(QWidget):
 		index = self.tree_view.indexAt(pos)
 		if not index.isValid():
 			return
-		# Проверяем, что это столбец ссылок и ячейка редактируема
-		if index.column() == self.model.COL_LINK and (index.flags() & Qt.ItemFlag.ItemIsEditable):
-			menu = QMenu()
-			action_select = menu.addAction("Выбрать файл...")
-			action_open = None
-			link = index.data(Qt.ItemDataRole.DisplayRole)
-			if link and isinstance(link, str) and link.strip():
-				action_open = menu.addAction("Открыть файл")
-			chosen = menu.exec(self.tree_view.viewport().mapToGlobal(pos))
-			if chosen == action_select:
-				file_path, _ = QFileDialog.getOpenFileName(
-					self,
-					"Выберите файл",
-					"",
-					"Все файлы (*.*)"
-				)
-				if file_path:
-					self.model.setData(index, file_path, Qt.ItemDataRole.EditRole)
-			elif chosen == action_open:
-				if not Path(link).is_file():
-					QMessageBox.warning(self, 'Внимание', 'Ссылка не корректа')
-					return
-				QDesktopServices.openUrl(QUrl.fromLocalFile(link))
+		if index.column() != self.model.COL_LINK:
+			return
+		
+		link = index.data(Qt.ItemDataRole.DisplayRole)
+		has_link = bool(link and isinstance(link, str) and link.strip())
+		is_editable = bool(index.flags() & Qt.ItemFlag.ItemIsEditable)
+
+		# Нечего показывать, если ни открывать, ни выбирать нельзя
+		if not has_link and not is_editable:
+			return
+		
+		menu = QMenu()
+		action_select = menu.addAction("Выбрать файл...") if is_editable else None
+		action_open = menu.addAction("Открыть файл") if has_link else None
+		chosen = menu.exec(self.tree_view.viewport().mapToGlobal(pos))
+
+		if chosen is None:
+			return
+		
+		if chosen == action_select:
+			file_path, _ = QFileDialog.getOpenFileName(
+				self, 'Выберите файл', '', 'Все файлы (*.*)'
+			)
+			if file_path:
+				self.model.setData(index, file_path, Qt.ItemDataRole.EditRole)
+		elif chosen == action_open:
+			if not Path(link).is_file():
+				QMessageBox.warning(self, 'Внимание', 'Ссылка не корректа')
+				return
+			QDesktopServices.openUrl(QUrl.fromLocalFile(link))
 
 	# ----------------------------- Обработка кнопок ------------------------------------
 
@@ -615,12 +622,17 @@ class DocumentationModel(QAbstractItemModel):
 		
 	def flags(self, index: QModelIndex) -> Qt.ItemFlag:
 		"""Определяет флаги элемента: можно ли редактировать, выбирать и т.д."""
-		if not index.isValid() or not self.access:
+		if not index.isValid():
 			return Qt.ItemFlag.NoItemFlags
+		
 		base_flags = Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable
+		if not self.access:
+			return base_flags
+
 		item = index.internalPointer()
 		if item is None: 
-			return None
+			return base_flags
+
 		col = index.column()
 		if isinstance(item, Book):
 			# Тома: редактируем шифр, наименование, ссылку (страницу – нет)

@@ -16,7 +16,7 @@
 
 # Данные для вывода информации о программе
 PROGRAM_NAME = 'ONP: Система ВОР'
-PROGRAM_VERSION = '1.0.3.0 (от 2026.09.17)'
+PROGRAM_VERSION = '1.0.3.1 (от 2026.09.26)'
 COPYRIGHT = "Copyright © 2026 OldNestling"
 PROGRAM_SETTINGS_FOLDER = "ONP_Система_ВОР"			# папка с настройками по пути C:\Users\User\AppData\Roaming\
 RECENT_DIRS_LOG ='recent_dirs.json'					# файл с реестром последних открытых каталогов

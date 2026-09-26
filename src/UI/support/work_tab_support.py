@@ -18,11 +18,11 @@ import re
 from PyQt6.QtWidgets import (
 	QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout,	QLineEdit, QPlainTextEdit, 
 	QTextEdit, QComboBox, QTreeView, QFrame, QStyledItemDelegate, QStyle, QAbstractItemDelegate,
-	QCompleter, QCheckBox, QFrame
+	QCompleter, QCheckBox, QFrame, QGridLayout, QToolButton
 	)
 from PyQt6.QtGui import (QColor, QTextCursor, QTextCharFormat, QIntValidator, QFont,
-						QTextDocument, QTextBlockFormat, QSyntaxHighlighter)
-from PyQt6.QtCore import Qt, pyqtSignal, QModelIndex, QEvent, QTimer
+						QTextDocument, QTextBlockFormat, QSyntaxHighlighter, QCursor)
+from PyQt6.QtCore import Qt, pyqtSignal, QModelIndex, QEvent, QTimer, QSize
 from ..ui_utilities import create_separator
 from ..resources.icons import Icons
 from Core.BoQ import Section
@@ -42,74 +42,52 @@ class DataEditorWidget(QWidget):
 		self.set_project(project)
 
 	def setup_ui(self):
-		main_layout = QHBoxLayout(self)
+		main_layout = QGridLayout(self)
 		main_layout.setContentsMargins(0, 0, 0, 0)
 		main_layout.setSpacing(5)
-
-		# --- Левая панель с псевдонимами и функциями ---
-		left_panel = QWidget()
-		left_layout = QVBoxLayout(left_panel)
-		left_layout.setContentsMargins(0, 0, 0, 0)
-		left_layout.setSpacing(3)
-
-		# 1. Строка для псевдонимов проекта
-		alias_row = QWidget()
-		alias_layout = QHBoxLayout(alias_row)
-		alias_layout.setContentsMargins(0, 0, 0, 0)
-		alias_layout.setSpacing(2)
 
 		self.alias_edit = QLineEdit()
 		self.alias_edit.setPlaceholderText("Псевдоним данных")
 		self.alias_edit.setFixedWidth(200)
-		alias_layout.addWidget(self.alias_edit)
+		main_layout.addWidget(self.alias_edit, 0, 0)
 
 		alias_btn = QPushButton()
 		alias_btn.setIcon(Icons.move_right)
 		alias_btn.setFixedWidth(25)
 		alias_btn.setToolTip("Добавить псевдоним в конец формулы")
 		alias_btn.clicked.connect(self.insert_alias)
-		alias_layout.addWidget(alias_btn)
-
-		left_layout.addWidget(alias_row)
-
-		# 2. Строка для выбора функций
-		func_row = QWidget()
-		func_layout = QHBoxLayout(func_row)
-		func_layout.setContentsMargins(0, 0, 0, 0)
-		func_layout.setSpacing(2)
+		main_layout.addWidget(alias_btn, 0, 1)
 
 		self.func_combo = QComboBox()
 		self.func_combo.setEditable(False)
 		self.func_combo.setToolTip("Выберите функцию для вставки")
 		self.func_combo.setFixedWidth(200)
 		self.populate_functions()
-		func_layout.addWidget(self.func_combo)
+		main_layout.addWidget(self.func_combo, 1, 0)
 
 		func_btn = QPushButton()
 		func_btn.setIcon(Icons.move_right)
 		func_btn.setFixedWidth(25)
 		func_btn.setToolTip("Добавить функцию в конец формулы")
 		func_btn.clicked.connect(self.insert_function)
-		func_layout.addWidget(func_btn)
-
-		left_layout.addWidget(func_row)
-		left_layout.addStretch()
-
-		main_layout.addWidget(left_panel)
+		main_layout.addWidget(func_btn, 1, 1)
 
 		# 3. Строка формул (для любой колонки)
 		self.default_editor = QPlainTextEdit(self)
 		self.default_editor.setMinimumWidth(300)
 		self.default_editor.setContentsMargins(5,1,5,1)
 		self.default_editor.textChanged.connect(self.on_default_editor_changed)
-		main_layout.addWidget(self.default_editor, stretch=1)
-
+		main_layout.addWidget(self.default_editor, 0, 2, 2, 1)
+		
 		# 4. Редактор для колонки 3
 		self.col3_editor = UnitEditor(project=self.project, parent=self)
 		self.col3_editor.dataChanged.connect(self.on_col3_data_changed)
-		main_layout.addWidget(self.col3_editor)
-
-		main_layout.addStretch()
+		main_layout.addWidget(self.col3_editor, 0, 3, 2, 1)
+		
+		main_layout.setColumnStretch(0, 0)   # alias_edit / func_combo
+		main_layout.setColumnStretch(1, 0)   # кнопки
+		main_layout.setColumnStretch(2, 1)   # default_editor
+		main_layout.setColumnStretch(3, 0)   # col3_editor
 
 	
 	def populate_functions(self):
@@ -248,8 +226,10 @@ class DataEditorWidget(QWidget):
 	def on_col3_data_changed(self):
 		"""Слот для сигнала от Column3Editor (данные уже сохранены в модель)."""
 		if not self._updating and self.model and self.current_index.isValid():
-			self.model.dataChanged.emit(self.current_index, self.current_index, [Qt.ItemDataRole.DisplayRole])
-			self.model.layoutChanged.emit()
+			self.model.dataChanged.emit(
+				self.current_index, self.current_index, 
+				[Qt.ItemDataRole.DisplayRole]
+			)
 
 	def clear(self):
 		self.model = None
@@ -268,8 +248,6 @@ class DataEditorWidget(QWidget):
 			# Проверяем, находится ли current_index в интервале [top_left, bottom_right]
 			if top_left <= self.current_index <= bottom_right:
 				self.update_editors()
-			# Можно также обновлять всегда, если текущий индекс валиден, но это менее эффективно
-			# self.update_editors()
 
 	def _on_model_reset(self):
 		"""Слот для сигнала modelReset модели."""
@@ -301,46 +279,30 @@ class UnitEditor(QWidget):
 	
 	def __init__(self, project, parent=None):
 		super().__init__(parent)
+		self._reset_btn_offset = (20, 8)	# поправка к кривому размещению иконки
 		self.project = project
 		self.model = None
 		self.current_index = QModelIndex()
+		self._updating = False  
 		self.setup_ui()
 		
 	def setup_ui(self):
-		main_layout = QVBoxLayout(self)
+		main_layout = QGridLayout(self)
 		main_layout.setContentsMargins(0, 0, 0, 0)
 		main_layout.setSpacing(5)
 
-		# --------- Лейблы ---------
-
-		headers_layout = QHBoxLayout()
-
+		# --------- Ед. измерения ---------
 		header1 = QLabel('<b>Еденица<br>измерения</b>')
 		header1.setContentsMargins(8, 5, 8, 0)
 		header1.setAlignment(Qt.AlignmentFlag.AlignCenter)
-		headers_layout.addWidget(header1)
+		main_layout.addWidget(header1, 0, 0, Qt.AlignmentFlag.AlignHCenter)
 
-		headers_layout.addWidget(create_separator(QFrame.Shape.VLine)) # ---
+		main_layout.addWidget(create_separator(QFrame.Shape.VLine), 0, 1, 2, 1)
 
-		header2 = QLabel('<b>Переопределение<br>округления</b>')
-
-		header2.setContentsMargins(5, 5, 5, 0)
-		header2.setAlignment(Qt.AlignmentFlag.AlignCenter)
-		headers_layout.addWidget(header2)
-		headers_layout.addStretch()
-
-		main_layout.addLayout(headers_layout)
-		#main_layout.addStretch()
-
-		# --------- Виджеты --------
-
-		widgets_layout = QHBoxLayout()
-		widgets_layout.setContentsMargins(0, 0, 0, 0)
-		widgets_layout.setSpacing(5)
-		
 		# Выпадающий список (нередактируемый)
-		self.combo = QComboBox(self)
-		self.combo.setEditable(False)
+		self.unit_selector = QComboBox(self)
+		self.unit_selector.setEditable(False)
+		self.unit_selector.setMaximumWidth(100)
 
 		# загрузка библиотеки едениц измерения
 		self.units_keys = []
@@ -351,34 +313,80 @@ class UnitEditor(QWidget):
 				self.units_keys.append(key)
 				self.units_labels.append(data['label'])
 		
-		self.combo.addItems(self.units_labels)
-		self.combo.currentIndexChanged.connect(self.on_data_changed)
-		widgets_layout.addWidget(self.combo)
-		
+		self.unit_selector.addItems(self.units_labels)
+		self.unit_selector.currentIndexChanged.connect(self.on_data_changed)
+		main_layout.addWidget(self.unit_selector, 1, 0)
+
+		# --------- Округление --------
+		header2 = QLabel('<b>Переопределение округления</b>')
+
+		header2.setContentsMargins(5, 5, 5, 0)
+		header2.setAlignment(Qt.AlignmentFlag.AlignCenter)
+		main_layout.addWidget(header2, 0, 2, 1, 2, Qt.AlignmentFlag.AlignCenter)
+
 		# Поле ввода с валидацией целых чисел
 		self.custom_round_edit = QLineEdit(self)
 		self.custom_round_edit.setPlaceholderText("Задать точность")
-		self.custom_round_edit.setValidator(QIntValidator(0, 100, self))
-		self.custom_round_edit.setMaximumWidth(150)
+		self.custom_round_edit.setValidator(QIntValidator(0, 5, self))
+		self.custom_round_edit.setMaximumWidth(125)
 		self.custom_round_edit.textChanged.connect(self.on_data_changed)
-		widgets_layout.addWidget(self.custom_round_edit)
 
-		#widgets_layout.addStretch()
-		main_layout.addLayout(widgets_layout)
-		main_layout.addStretch()
+		# Создаём действие с иконкой
+		self.reset_btn = QToolButton(self.custom_round_edit)
+		reset_icon = Icons.recolor_icon(Icons.close, QColor("#B51313"))
+		self.reset_btn.setIcon(reset_icon)
+		self.reset_btn.setIconSize(QSize(36, 36))
+		self.reset_btn.setFixedSize(48, 48)
+		self.reset_btn.setCursor(QCursor(Qt.CursorShape.ArrowCursor))
+		self.reset_btn.setAutoRaise(True)
+		self.reset_btn.setStyleSheet(
+			"QToolButton { border: none; background: transparent; padding: 0; }"
+		)
+		self.reset_btn.setToolTip('Сбросить переопределение')
+		self.reset_btn.clicked.connect(self.clear_round_edit)
+
+		# показываем только если есть что сбрасывать
+		self.reset_btn.setVisible(False)
+		self.custom_round_edit.textChanged.connect(
+			lambda text: self.reset_btn.setVisible(bool(text))
+		)
+
+		# перепозициогтоуем при изменении рахмеров поля
+		self.custom_round_edit.installEventFilter(self)
+
+		main_layout.addWidget(self.custom_round_edit, 1, 2)
+
+		self.calc_mode_selector = QComboBox(self)
+		for item in ('Стандартное', 'Округлять вверх', 'Округлять вниз'):
+			self.calc_mode_selector.addItem(item)
+		self.calc_mode_selector.setCurrentIndex(0)
+		self.calc_mode_selector.currentIndexChanged.connect(self.on_data_changed)
+		self.calc_mode_selector.setMaximumWidth(150)
+		main_layout.addWidget(self.calc_mode_selector, 1, 3)
+		
+		main_layout.setColumnStretch(0, 0)   # unit_selector
+		main_layout.setColumnStretch(1, 0)   # separator
+		main_layout.setColumnStretch(2, 0)   # custom_round_edit
+		main_layout.setColumnStretch(3, 0)   # calc_mode_selector
+
+	def clear_round_edit(self):
+		"""Сбрасывает переопредление округления для текущей позиции"""
+		self.custom_round_edit.blockSignals(False)
+		self.custom_round_edit.clear()
+		self.on_data_changed()
 
 	def load_units(self):
 		"""Загружает единицы измерения из проекта в комбобокс."""
 		if not self.project:
 			return
-		self.combo.clear()
+		self.unit_selector.clear()
 		units_dict = self.project.units
 		self.units_keys = []
 		self.units_labels = []
 		for key, data in units_dict.items():
 			self.units_keys.append(key)
 			self.units_labels.append(data['label'])
-		self.combo.addItems(self.units_labels)
+		self.unit_selector.addItems(self.units_labels)
 	
 	def set_project(self, project):
 		self.project = project
@@ -387,6 +395,19 @@ class UnitEditor(QWidget):
 		if self.model and self.current_index >= 0:
 			self.setCurrentIndex(self.current_index)
 
+	def eventFilter(self, obj, event):
+		if obj is self.custom_round_edit and event.type() == QEvent.Type.Resize:
+			self._position_reset_button()
+		return super().eventFilter(obj, event)
+
+	def _position_reset_button(self):
+		le = self.custom_round_edit
+		margin = 2
+		dx, dy = self._reset_btn_offset
+		size = self.reset_btn.size()
+		x = le.width() - size.width() - margin + dx
+		y = (le.height() - size.height()) // 2 + dy
+		self.reset_btn.move(x, y)
 
 	def setModel(self, model):
 		self.model = model
@@ -401,41 +422,61 @@ class UnitEditor(QWidget):
 		if not self.model or not self.current_index.isValid():
 			self.setEnabled(False)
 			return
-		# Запрещаем редактирование архивных данных
-		#if isinstance(self.model, ArchiveModel):
-		#	self.setEnabled(False)
-		#	return
 
 		# Проверяем, является ли элемент Section
 		item = self.current_index.internalPointer()
 		if isinstance(item, Section):
 			self.setEnabled(False)
-			self.combo.setCurrentIndex(-1)
-			self.custom_round_edit.clear()
+			self._updating = True
+			try:
+				self.unit_selector.setCurrentIndex(-1)
+				self.custom_round_edit.clear()
+				self.calc_mode_selector.setCurrentIndex(0)
+			finally:
+				self._updating = False
 			return
 
 		self.setEnabled(True)
 
 		# Получаем индекс для колонки 3 той же строки
-		col3_index = self.model.index(self.current_index.row(), 3, self.current_index.parent())
+		col3_index = self.model.index(
+			self.current_index.row(), 3, self.current_index.parent()
+		)
 		if not col3_index.isValid():
 			return
 
 		# Считываем данные
 		raw_unit = self.model.data(col3_index, Qt.ItemDataRole.EditRole)
-		custom_round = item.custom_round if hasattr(item, 'custom_round') else None
+		custom_round = getattr(item, 'custom_round', None)
+		crm = getattr(item, 'custom_round_mode', None)
 
-		# Устанавливаем комбобокс
-		if raw_unit in self.units_keys:
-			self.combo.setCurrentIndex(self.units_keys.index(raw_unit))
-		else:
-			self.combo.setCurrentIndex(0)
+		self._updating = True
 
-		# Устанавливаем поле точности
-		self.custom_round_edit.setText(str(custom_round) if custom_round is not None else "")
+		try:
+			# Устанавливаем комбобокс
+			if raw_unit in self.units_keys:
+				self.unit_selector.setCurrentIndex(self.units_keys.index(raw_unit))
+			else:
+				self.unit_selector.setCurrentIndex(0)
+
+			# Устанавливаем поле точности
+			self.custom_round_edit.setText(
+				str(custom_round) if custom_round is not None else ""
+			)
+
+			# Устанавливаем режим округления
+			self.calc_mode_selector.setCurrentIndex(
+				0 if crm is None else crm if crm in (1,2) else 0
+			)
+		finally:
+			self._updating = False
+
 
 	def on_data_changed(self):
 		"""Сохраняет изменения в модель для колонки 3."""
+		if self._updating:
+			return
+		
 		if not self.model or not self.current_index.isValid():
 			return
 
@@ -447,26 +488,48 @@ class UnitEditor(QWidget):
 		if not col3_index.isValid():
 			return
 
+		unit_idx = self.unit_selector.currentIndex()
+		if unit_idx < 0 or unit_idx >= len(self.units_keys):
+			return
+			
 		# Получаем новые значения
-		unit_key = self.units_keys[self.combo.currentIndex()]
+		unit_key = self.units_keys[unit_idx]
 		custom_round_text = self.custom_round_edit.text().strip()
-		custom_round = int(custom_round_text) if custom_round_text else None
+		try: # один раз проскочила ошибка при преобразовании, но повторить её не удалось
+			custom_round = int(custom_round_text) if custom_round_text else None
+		except Exception as e:
+			print(f'[DEBUG: on_data_changed ] {custom_round_text=}')
+			custom_round = None 
+		calc_mode = self.calc_mode_selector.currentIndex()
+		new_mode = None if calc_mode == 0 else calc_mode
 
-		# Обновляем модель
-		self.model.setData(col3_index, unit_key, Qt.ItemDataRole.EditRole)
-		if hasattr(item, 'custom_round'):
+		changed = False
+
+		old_unit = self.model.data(col3_index, Qt.ItemDataRole.EditRole)	
+
+		if old_unit != unit_key:
+			self.model.setData(col3_index, unit_key, Qt.ItemDataRole.EditRole)
+			changed = True
+
+		if hasattr(item, 'custom_round') and item.custom_round != custom_round:
 			item.custom_round = custom_round
-			self.model.dataChanged.emit(col3_index, col3_index, [Qt.ItemDataRole.DisplayRole])
+			changed = True
 
-		if self.model.manager:
-			self.model.manager.is_modified = True
-		self.dataChanged.emit()
+		if hasattr(item, 'custom_round_mode') and item.custom_round_mode != new_mode:
+			item.custom_round_mode = new_mode
+			changed = True
+
+		if changed:
+			self.model.dataChanged.emit(
+				col3_index, col3_index, [Qt.ItemDataRole.DisplayRole]
+			)
+			self.dataChanged.emit()
 	
 	def clear(self):
 		self.model = None
 		self.current_index = QModelIndex()
 		self.setEnabled(False)
-		self.combo.setCurrentIndex(-1)
+		self.unit_selector.setCurrentIndex(-1)
 		self.custom_round_edit.clear()
 
 
@@ -562,7 +625,7 @@ class BoQItemDelegate(QStyledItemDelegate):
 
 		style_dict = None
 		if col == 0:
-			if item.status:
+			if item.status_calculated:
 				style_dict = {'background_color': "#68be5d"}
 			elif item.status_correct:
 				style_dict = {'background_color': "#7b92df"}
@@ -570,6 +633,11 @@ class BoQItemDelegate(QStyledItemDelegate):
 				style_dict = {'background_color': "#f05353"}
 		elif col == 2:
 			style_dict = item.style_manager.col_2
+		elif col == 3 and not isinstance(item, Section):
+			cr  = getattr(item, 'custom_round', None)
+			crm = getattr(item, 'custom_round_mode', None)
+			if cr is not None or crm is not None:
+				style_dict = {'background_color': "#CF84EA"}
 		elif col == 5:
 			style_dict = item.style_manager.col_5
 		elif col == 6:

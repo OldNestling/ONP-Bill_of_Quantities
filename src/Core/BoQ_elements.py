@@ -27,7 +27,9 @@ from Core.Utilities import (
 	clearing_string, get_hash_text, fixing_decimals, fixing_spaces, decimal_round
 )
 from abc import ABC
-from Core.Computing_Module import eval_functions, get_all_alias_request, get_from_library
+from Core.Computing_Module import (
+	eval_functions, get_all_alias_request, get_from_library, floor_to_precision, ceil_to_precision
+)
 
 
 class Section:
@@ -47,11 +49,12 @@ class Section:
 	@property
 	def status(self) -> bool:
 		""" Отслеживает готовность позиций и подпозиций в разделе"""
+		if not self.works:
+			return {0}
+		report = set()
 		for work in self.works:
-			work: Work
-			if not work.full_status:
-				return False
-		return True
+			report.update(work.status)
+		return report
 	
 	def __str__(self):
 		status = 'готово' if self.status else 'не готово'
@@ -401,25 +404,28 @@ class PositionLine(ABC):
 		self.raw_unit: str = '-'						# Ключ-строка еденицы измерения (столбец 4)
 		self._raw_quantity_formula: str = '0'			# Формула вычисления позиции (столбец 5), видимая в редакторе
 		self.quantity_cache = None						# Статичный результат вычисления для архива
-		#self.quantity_data: None | list = None			# Для кооректировки статуса "Осметчино" после изменения данных. Вынужденная мера из-за проблем с custom_round
 		self.links: list[Link] = []						# Ссылки на обосновывающие документы. Содержит объекты класса Link
 		self.links_cache = None							# Статичные данные для архивных позиций
 		self._raw_comment: str = ''						# Примечание (столбец 8)
 		self._comment_cache = None
 		self.local_comment = ''							# Локальный комментарий в среде разработки ведомости
 		self.type = 'работа'							# Тип позиции из списка возможных ['работа','материал','перевозка','оборудование', 'машина', 'прочее']
-		self.custom_round: int | None = None			# Замещение округления с системного на пользовательское
+		self._custom_round: int | None = None			# Замещение округления с системного на пользовательское
+		self._custom_round_mode: int | None = None		# Режим округления. 1 - округление вверх с текущей точность, 2 - вниз
 		self.status_correct = False						# Подтверждено готовым разработчиком
 		self.status_calculated = False					# Подтверждено готовым сметчиком
-		self.dependents: set[PositionLine] = set()		# Зависимые от этой позиции элементы (требуют пересчёта при изменении объекта)
+		self.dependents: set[PositionLine] = None		# Зависимые от этой позиции элементы (требуют пересчёта при изменении объекта)
 	
 
 	@property
-	def status(self):
-		if self.status_correct and self.status_calculated:
-			return True
+	def status(self) -> int[0|1|2]:
+		""" Возвращает код отчёта о готовности позиции """
+		if  self.status_calculated:
+			return 2
+		elif self.status_correct:
+			return 1
 		else:
-			return False
+			return 0
 	
 	def reset_status(self):
 		self.status_correct = False
@@ -438,9 +444,7 @@ class PositionLine(ABC):
 		self.status_calculated = True
 		self.manager.is_modified = True
 
-
 	# ============================= Методы и атрибуты данных  ===========================
-
 	# ------------------------------- Наименование позиции  -----------------------------
 
 	@property
@@ -495,6 +499,7 @@ class PositionLine(ABC):
 	@unit.setter
 	def unit(self, key):
 		self.raw_unit = key
+		self.compare_qnt()
 		self.manager.is_modified = True
 	
 	@property
@@ -511,7 +516,33 @@ class PositionLine(ABC):
 				return 0
 		else:
 			return self.custom_round
-		
+
+	
+	@property
+	def custom_round(self): 
+		return self._custom_round
+
+
+	@custom_round.setter
+	def custom_round(self, precision):
+		if self._custom_round != precision:
+			self._custom_round = precision
+			self.check_qnt_and_depends()
+			self.manager.is_modified = True
+
+
+	@property
+	def custom_round_mode(self):
+		return self._custom_round_mode
+
+
+	@custom_round_mode.setter
+	def custom_round_mode(self, precision):
+		if self._custom_round_mode != precision:
+			self._custom_round_mode = precision
+			self.check_qnt_and_depends()
+			self.manager.is_modified = True
+	
 	# ------------------------------------- Формула -------------------------------------
 
 	@property
@@ -527,7 +558,7 @@ class PositionLine(ABC):
 		if not clr_text.startswith('=') and ('@' in clr_text or re.match(self.PATTERN, clr_text)):
 			clr_text = '=' + clr_text
 		self._raw_quantity_formula = clr_text
-		self.qnt_check()
+		self.check_qnt_and_depends()
 
 
 	@property
@@ -562,8 +593,15 @@ class PositionLine(ABC):
 			expr = expr.replace('^', '**') 
 			result = eval(expr, {"__builtins__": None})
 			round_property = self.unit_round
-			#self.compare_qnt(result, round_property)
-			rounded_result = decimal_round(result, round_property)
+			if self.custom_round_mode is None:		# стандартное округление
+				rounded_result = decimal_round(result, round_property)
+			elif self.custom_round_mode == 1:		# 	округление вверх
+				rounded_result = ceil_to_precision(result, round_property)
+			elif self.custom_round_mode == 2:		# 	округление вниз
+				rounded_result = floor_to_precision(result, round_property)
+			else:
+				rounded_result = result
+
 			calc = f"{rounded_result:.{round_property}f}"
 			return calc
 
@@ -573,11 +611,6 @@ class PositionLine(ABC):
 
 	def compare_qnt(self, res: str | None = None) -> bool:
 		""" Сопоставляет изменения с прошлым вычислением и сбрасывает статус status_calculated при необходимости """
-		""" 
-		TODO Не получается просто сделать сравнение прошлого и нового итогового
-		результата, так как при сравнении проскакивают результаты с применением
-		custom_round и без него, что приводит к ложномоу сбросу статуса.
-		"""
 		
 		if res is None:
 			res = self.quantity
@@ -588,18 +621,18 @@ class PositionLine(ABC):
 
 			return False
 
-		if self.status_calculated and res != self.quantity_cache:
-			self.status_calculated = False
+		if res != self.quantity_cache:
+			if self.status_calculated:
+				self.status_calculated = False
 			self.quantity_cache = res
 			return False
 		return True
 
-	def qnt_check(self, res: str | None = None):
+	def check_qnt_and_depends(self, res: str | None = None):
 		check = self.compare_qnt(res)
 		if not check:
-			for depend in self.dependents:
-				depend.qnt_check()
-
+			for depend in (self.dependents or ()):
+				depend.check_qnt_and_depends()
 
 	# ---------------------------------- Примечание -------------------------------------
 
@@ -718,10 +751,9 @@ class PositionLine(ABC):
 		old_variants = self.generate_address_variants(old_base)
 		new_variants = self.generate_address_variants(new_base)
 		instruction = dict(zip(old_variants, new_variants))
-		if self.dependents:
-			for dependent in self.dependents:
-				dependent: PositionLine
-				dependent.updating_related_addresses(instruction)
+		for dependent in (self.dependents or ()):
+			dependent: PositionLine
+			dependent.updating_related_addresses(instruction)
 		self._address = indexes
 
 	def updating_related_addresses(self, data: dict):
@@ -872,7 +904,7 @@ class PositionLine(ABC):
 		old_base = self.format_address
 		variants = self.generate_address_variants(old_base)
 		instruction = {variant: '#Ссылка!' for variant in variants}
-		for obj in self.dependents:
+		for obj in (self.dependents or ()):
 			# Удаляем из формулы и примечания
 			obj: PositionLine
 			obj.updating_related_addresses(instruction)
@@ -913,6 +945,8 @@ class PositionLine(ABC):
 		obj: PositionLine = self.manager.get_object(indexes)
 		if obj is None:
 			return
+		if obj.dependents is None:
+			obj.dependents = set() 
 		obj.dependents.add(self)
 
 	def compare_and_process_relations(self, old: str, new: str, non_editable_attribute):
@@ -1067,6 +1101,7 @@ class PositionLine(ABC):
 			'local_comment': self.local_comment,
 			'type': self.type,
 			'custom_round': self.custom_round,
+			'custom_round_mode': self.custom_round_mode,
 			'style_manager': self.style_manager.serialization(),
 			'status_correct': self.status_correct,
 			'status_calculated': self.status_calculated,
@@ -1094,6 +1129,9 @@ class PositionLine(ABC):
 		obj.local_comment = data.get('local_comment')
 		obj.type = data.get('type')
 		obj.custom_round = data.get('custom_round')
+		obj.custom_round_mode = data.get('custom_round_mode')
+		if obj.custom_round_mode not in (None, 1, 2):
+			obj.custom_round_mode = None 
 		obj.status_correct = data.get('status_correct', False)
 		obj.status_calculated = data.get('status_calculated', False)
 		
@@ -1172,16 +1210,14 @@ class Work(PositionLine):
 
 
 	# --------------------------------- Прочее ------------------------------------------
+
 	@property
-	def full_status(self):
-		""" Проверяет себя и ресурсы на общую готовность """
-		if not self.status:
-			return False
+	def status(self) -> set[0|1|2]:
+		"""Возвращает множество с кодами готовности самой позиции и дочерних"""
+		report = {super().status}
 		for resource in self.resources:
-			resource: Resource
-			if not resource.status:
-				return False
-		return True
+			report.add(resource.status)
+		return report
 
 	def prepare_to_remove(self):
 		""" Сбрасывает связи у ценообразующих ресурсов, после у себя """
@@ -1198,10 +1234,10 @@ class Work(PositionLine):
 	
 	def clear_dependets(self):
 		# Сброс зависимостей перед тем, как установить связи 
-		self.dependents = set()
+		self.dependents = None
 		for resource in self.resources:
 			resource: Resource
-			resource.dependents = set()
+			resource.dependents = None
 	
 	def make_static(self):
 		for resource in self.resources:

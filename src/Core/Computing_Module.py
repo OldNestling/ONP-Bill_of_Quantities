@@ -17,6 +17,7 @@
 import math, re
 from .Utilities import convert_value, text_after, clearing_string, decimal_round
 
+ERROR_MASSEGE = '#ОШИБКА'
 
 # ---------------------------------------------------------------------------------------
 # ================================= Вычислительный модуль ===============================
@@ -153,19 +154,19 @@ def extract_number(string: str):
 	string = string.replace('(',' ').replace(')',' ')
 	args = find_args(string, 2)
 	if args is None or len(args) != 2:
-		return '#ОШИБКА'
+		return ERROR_MASSEGE
 	text, i = args
 	try:
 		i = int(i)
 	except Exception:
-		return '#ОШИБКА'
+		return ERROR_MASSEGE
 	numbers = extract_numbers_from_string(str(text))
 	if not numbers:
 		return '#ПУСТО'
 	if 1 <= i <= len(numbers):
 		return numbers[i - 1]
 	else:
-		return '#ОШИБКА'
+		return ERROR_MASSEGE
 
 def text_before_func(string: str):
 	"""
@@ -181,16 +182,16 @@ def text_before_func(string: str):
 	"""
 	args = find_args(string, 3)
 	if args is None or len(args) != 3:
-		return '#ОШИБКА'
+		return ERROR_MASSEGE
 	text, part, m = args
 
 	try:
 		m = int(m)
 	except Exception:
-		return '#ОШИБКА'
+		return ERROR_MASSEGE
 	# Проверяем корректность match
 	if m < 1:
-		return '#ОШИБКА'
+		return ERROR_MASSEGE
 	
 	# Находим все позиции вхождений фрагмента
 	positions = []
@@ -224,7 +225,7 @@ def text_after_func(string: str) -> str:
 	"""
 	args = find_args(string, 3)
 	if args is None or len(args) != 3:
-		return '#ОШИБКА'
+		return ERROR_MASSEGE
 	
 	text, part, m = args
 	# Проверяем корректность match
@@ -232,7 +233,7 @@ def text_after_func(string: str) -> str:
 	try:
 		m = int(m)
 	except Exception:
-		return '#ОШИБКА'
+		return ERROR_MASSEGE
 
 	if m == 0:
 		return 'Ошибка!'
@@ -272,7 +273,7 @@ def round_func(string: str):
 	""" Функция округления из запроса-строки """
 	args = find_args(string, 2)
 	if args is None or len(args) != 2:
-		return '#ОШИБКА'
+		return ERROR_MASSEGE
 	
 	val, m = args
 	# Проверяем корректность match
@@ -281,9 +282,45 @@ def round_func(string: str):
 		m = int(m)
 		return decimal_round(val, m)
 	except Exception:
-		return '#ОШИБКА'
+		return ERROR_MASSEGE
 
+def ceil_to_precision(x, ndigits=0):
+	if ndigits == 0:
+		return math.ceil(x)
+	factor = 10 ** ndigits
+	return math.ceil(x * factor) / factor
 
+def round_up(string:str):
+	""" Функция округления вверх """
+	args = string
+	if args is None or len(args) != 2:
+		return ERROR_MASSEGE
+	val, m = args
+	try:
+		val = convert_value(val)
+		m = int(m)
+		return ceil_to_precision(val, m)
+	except Exception:
+		return ERROR_MASSEGE
+
+def floor_to_precision(x, ndigits=0):
+	if ndigits == 0:
+		return math.floor(x)
+	factor = 10 ** ndigits
+	return math.floor(x*factor) / factor
+
+def round_down(string:str):
+	""" Функция округления вниз """
+	args = string
+	if args is None or len(args) != 2:
+		return ERROR_MASSEGE
+	val, m = args
+	try:
+		val = convert_value(val)
+		m = int(m)
+		return floor_to_precision(val, m)
+	except Exception:
+		return ERROR_MASSEGE
 
 def get_pi(*args):
 	return math.pi
@@ -291,85 +328,85 @@ def get_pi(*args):
 def get_pow(string: str):
 	args = find_args(string, 2)
 	if args is None or len(args) != 2:
-		return '#ОШИБКА'
+		return ERROR_MASSEGE
 	val, exp = args
 	try:
 		val = convert_value(val)
 		exp = convert_value(exp)
 	except Exception:
-		return '#ОШИБКА'
+		return ERROR_MASSEGE
 	return pow(val, exp)
 
 def get_sqrt(val: str):
 	try:
 		val = convert_value(val)
 	except Exception:
-		return '#ОШИБКА'
+		return ERROR_MASSEGE
 	return	math.sqrt(val)
 
 def get_cicle_area(r: str):
 	try:
 		r = convert_value(r)
 	except Exception:
-		return '#ОШИБКА'
+		return ERROR_MASSEGE
 	return math.pi*r**2
 
 def get_cicle_lenght(r: str):
 	try:
 		r = convert_value(r)
 	except Exception:
-		return '#ОШИБКА'
+		return ERROR_MASSEGE
 	return 2*math.pi*r
 
 def get_cylinder_area(string: str):
 	args = find_args(string, 2)
 	if args is None or len(args) != 2:
-		return '#ОШИБКА'
+		return ERROR_MASSEGE
 	r, h = args
 	try:
 		r = convert_value(r)
 		h = convert_value(h)
 	except Exception:
-		return '#ОШИБКА'
+		return ERROR_MASSEGE
 	return 2*math.pi*r*h
 
 def get_cylinder_volume(string: str):
 	args = find_args(string, 2)
 	if args is None or len(args) != 2:
-		return '#ОШИБКА'
+		return ERROR_MASSEGE
 	r, h = args
 	try:
 		r = convert_value(r)
 		h = convert_value(h)
 	except Exception:
-		return '#ОШИБКА'
+		return ERROR_MASSEGE
 
 def get_sin(val):
 	try:
 		val = convert_value(val)
 	except Exception:
-		return '#ОШИБКА'
+		return ERROR_MASSEGE
 	return math.sin(val)
 
 def get_cos(val):
 	try:
 		val = convert_value(val)
 	except Exception:
-		return '#ОШИБКА'
+		return ERROR_MASSEGE
 	return math.cos(val)
 
 def get_rad(val):
 	try:
 		val = convert_value(val)
 	except Exception:
-		return '#ОШИБКА'
+		return ERROR_MASSEGE
 	return math.radians(val)
 
 def get_deg(val):
 	try:
 		val = convert_value(val)
 	except Exception:
-		return '#ОШИБКА'
+		return ERROR_MASSEGE
 	return math.degrees(val)
 
 
@@ -387,6 +424,8 @@ FUNCTIONS = {
 		"ТЕКСТПОСЛЕ": text_after_func,
 		"ВЫЧИСЛИТЬ": calculate_segment,
 		"ОКРУГЛ": round_func,
+		'ОКРУГЛ_ЦЕЛ_ВВЕРХ': round_up,
+		'ОКРУГЛ_ЦЕЛ_ВНИЗ': round_down,
 		"ПЛ_КРУГА": get_cicle_area,
 		'ДЛН_КРУГА': get_cicle_lenght,
 		'ПОВ_ЦИЛИНДРА': get_cylinder_area,
