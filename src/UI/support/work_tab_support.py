@@ -16,9 +16,9 @@
 
 import re
 from PyQt6.QtWidgets import (
-	QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout,	QLineEdit, QPlainTextEdit, 
-	QTextEdit, QComboBox, QTreeView, QFrame, QStyledItemDelegate, QStyle, QAbstractItemDelegate,
-	QCompleter, QCheckBox, QFrame, QGridLayout, QToolButton
+	QWidget, QLabel, QPushButton, QHBoxLayout,	QLineEdit, QPlainTextEdit, 
+	QTextEdit, QComboBox, QTreeView, QFrame, QStyledItemDelegate, QStyle,
+	QAbstractItemDelegate, QCompleter, QCheckBox, QFrame, QGridLayout, QToolButton
 	)
 from PyQt6.QtGui import (QColor, QTextCursor, QTextCharFormat, QIntValidator, QFont,
 						QTextDocument, QTextBlockFormat, QSyntaxHighlighter, QCursor)
@@ -27,6 +27,8 @@ from ..ui_utilities import create_separator
 from ..resources.icons import Icons
 from Core.BoQ import Section
 from Core.Computing_Module import FUNCTIONS
+from Core.Utilities import get_platform
+
 
 class DataEditorWidget(QWidget):
 	"""Виджет редактирования: строка формул + редактор колонки 3."""
@@ -279,12 +281,19 @@ class UnitEditor(QWidget):
 	
 	def __init__(self, project, parent=None):
 		super().__init__(parent)
-		self._reset_btn_offset = (20, 8)	# поправка к кривому размещению иконки
 		self.project = project
 		self.model = None
 		self.current_index = QModelIndex()
 		self._updating = False  
 		self.setup_ui()
+
+	@property
+	def _reset_btn_offset(self):
+		""" поправка к кривому размещению иконки """
+		if get_platform().startswith('linux'):
+			return (20, 8)
+		else:
+			return (15, 0)
 		
 	def setup_ui(self):
 		main_layout = QGridLayout(self)
@@ -328,6 +337,7 @@ class UnitEditor(QWidget):
 		self.custom_round_edit = QLineEdit(self)
 		self.custom_round_edit.setPlaceholderText("Задать точность")
 		self.custom_round_edit.setValidator(QIntValidator(0, 5, self))
+		self.custom_round_edit.setMinimumWidth(125)
 		self.custom_round_edit.setMaximumWidth(125)
 		self.custom_round_edit.textChanged.connect(self.on_data_changed)
 

@@ -21,6 +21,11 @@ from decimal import Decimal, ROUND_HALF_UP
 # ГЛОБАЛЬНЫЕ ФУНКЦИИ ПРОЕКТА 
 
 # ------------------------------------ Запрос данных ------------------------------------------
+def get_platform():
+	""" Даёт информацию об ОС для отладки интерфейса """
+	return sys.platform
+
+
 def requesting_value(value_type, input_object: str, min_value = None, max_value = None):
 	'''
 	Функция для запроса ввода данных пользователем с проверкой соблюдения условий
