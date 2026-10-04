@@ -18,14 +18,14 @@ from PyQt6.QtWidgets import (
 	QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QLineEdit, QPlainTextEdit,
 	QTableWidget, QTableWidgetItem, QHeaderView, QComboBox, QApplication, QTreeView,
 	QStackedWidget, QScrollArea, QFrame, QGroupBox, QDateEdit, QListWidget, QListWidgetItem, 
-	QToolBox
+	QToolBox, QMessageBox, QDialog
 	)
-from PyQt6.QtGui import QIntValidator
+from PyQt6.QtGui import QIntValidator, QAction, QColor
 from PyQt6.QtCore import Qt, pyqtSignal, QModelIndex, QDate
-from ..ui_utilities import create_separator
+from ..ui_utilities import create_separator, create_ok_cancel_buttons
 from ..resources.icons import Icons
 from ..support.Calculator import CalculatorWidget 
-from Core.BoQ import BoQ_manager, Section, Link
+from Core.BoQ import BoQ_manager, Section, Link, PositionLine
 from Core.Utilities import convert_value
 from Core.Project import Project
 
@@ -35,7 +35,7 @@ class SideBar_Right(QWidget):
 	navigate_to_address = pyqtSignal(tuple)   # для передачи адреса в основное окно
 	def __init__(self, project, parent=None):
 		super().__init__(parent)
-		self.project = project
+		self.project: Project = project
 		self.current_tree_view = None  # будет хранить QTreeView активной вкладки
 
 		layout = QVBoxLayout(self)
@@ -199,7 +199,7 @@ class Links_Editor(QWidget):
 	
 	def __init__(self, project, parent=None):
 		super().__init__(parent)
-		self.project = project
+		self.project: Project = project
 		self.model = None
 		self.current_index = QModelIndex()
 		self.items = []  # список объектов Link
@@ -273,7 +273,6 @@ class Links_Editor(QWidget):
 	
 	def set_project(self, project):
 		self.project = project
-		self.update_books_in_rows()
 		# Убедимся, что библиотека документации загружена
 		if self.project and self.project.documentation_manager:
 			if not self.project.documentation_manager.library:
@@ -319,40 +318,34 @@ class Links_Editor(QWidget):
 		for i in range(self.list_layout.count()):
 			row_widget = self.list_layout.itemAt(i).widget()
 			if row_widget:
-				combo = row_widget.property("combo")
-				if combo:
-					current_data = combo.currentData()
-					combo.blockSignals(True)
-					combo.clear()
+				book_selector: QComboBox = row_widget.property('book_selector')
+				if book_selector:
+					current_data = book_selector.currentData()
+					book_selector.blockSignals(True)
+					book_selector.clear()
 					if not books:
-						combo.addItem("Пусто", None)
-						combo.setEnabled(False)
+						book_selector.addItem("Пусто", None)
+						book_selector.setEnabled(False)
 					else:
-						combo.setEnabled(True)
+						book_selector.setEnabled(True)
 						for book_num in books:
-							combo.addItem(str(book_num), book_num)
+							book_selector.addItem(book_num, book_num)
 					# Восстанавливаем выбранное значение
 					if current_data is not None:
-						idx = combo.findData(current_data)
+						idx = book_selector.findData(current_data)
 						if idx >= 0:
-							combo.setCurrentIndex(idx)
-					combo.blockSignals(False)
+							book_selector.setCurrentIndex(idx)
+					book_selector.blockSignals(False)
 
 	def _get_sorted_books(self):
-		books = []
+		book_nums = []
 		if self.project and self.project.documentation_manager:
+			manager = self.project.documentation_manager
 			if not self.project.documentation_manager.library:
 				self.project.documentation_manager.load_lib()
-			for book_num in self.project.documentation_manager.library.keys():
-				books.append(book_num)
-			# Безопасная сортировка: числа по возрастанию, затем строки
-			def sort_key(val):
-				try:
-					return (0, float(val))
-				except (ValueError, TypeError):
-					return (1, str(val))
-			books.sort(key=sort_key)
-		return books
+			books = manager.get_sorted_books()
+			book_nums = [book.num for book in books] if books else []
+		return book_nums
 
 	def load_data(self, links):
 		"""Загружает список элементов и создает строки редактора."""
@@ -361,21 +354,13 @@ class Links_Editor(QWidget):
 		for link in self.items:
 			self.add_row_widgets(link)
 	
+
 	def clear_rows(self):
 		while self.list_layout.count():
 			child = self.list_layout.takeAt(0)
 			if child.widget():
 				child.widget().deleteLater()
 
-	def _sort_items(self):
-		"""Сортирует self.items по book_num (числа перед строками) и tag."""
-		def sort_key(link):
-			try:
-				book_num_key = (0, float(link.book_num))
-			except (ValueError, TypeError):
-				book_num_key = (1, str(link.book_num))
-			return (book_num_key, link.tag)
-		self.items.sort(key=sort_key)
 	
 	def add_row_widgets(self, link=None):
 		"""Создает виджеты для одной строки списка."""
@@ -383,33 +368,42 @@ class Links_Editor(QWidget):
 		row_layout = QHBoxLayout(row_widget)
 		row_layout.setContentsMargins(0, 0, 0, 0)
 		
-		combo = QComboBox()
-		combo.setEditable(False)
+		book_selector = QComboBox()
+		book_selector.setEditable(False)
 		books = self._get_sorted_books()
 		# Если список книг пуст, показываем заглушку
 		if not books:
-			combo.addItem("Пусто", None)
-			combo.setEnabled(False)
+			book_selector.addItem("Пусто", None)
+			book_selector.setEnabled(False)
 		else:
-			combo.setEnabled(True)
+			book_selector.setEnabled(True)
 			for book_num in books:
-				combo.addItem(str(book_num), book_num)
+				book_selector.addItem(book_num, book_num)
 		if link:
-			idx = combo.findData(link.book_num)
+			idx = book_selector.findData(link.book_num)
 			if idx >= 0:
-				combo.setCurrentIndex(idx)
-			elif combo.count() > 0:
-				combo.setCurrentIndex(0)
-		combo.currentIndexChanged.connect(self.on_item_changed)
+				book_selector.setCurrentIndex(idx)
+			elif book_selector.count() > 0:
+				book_selector.setCurrentIndex(0)
+		book_selector.currentIndexChanged.connect(self.on_item_changed)
 		
 		# Поле ввода целого числа (тег)
-		tag_edit = QLineEdit()
-		tag_edit.setPlaceholderText("тег")
-		tag_edit.setValidator(QIntValidator(0, 9999))
+		tag_editor = QLineEdit()
+		tag_editor.setPlaceholderText("тег")
+		tag_editor.setValidator(QIntValidator(0, 9999))
 		if link:
-			tag_edit.setText(str(link.tag))
-		tag_edit.textChanged.connect(self.on_item_changed)
-		tag_edit.setMaximumWidth(50)
+			tag_editor.setText(str(link.tag))
+		tag_editor.textChanged.connect(self.on_item_changed)
+		tag_editor.setMaximumWidth(50)
+
+		# кнопка в поле ввода для открытия списка документов
+		icon_select_from_docs_list = Icons.recolor_icon(Icons.data_table, QColor('#000000'))
+		select_doc_action = QAction(icon_select_from_docs_list, 'Выбрать из списка', self)
+		select_doc_action.triggered.connect(
+			lambda  checked: 
+			self.open_docs_list(book_selector, tag_editor)
+		)
+		tag_editor.addAction(select_doc_action, QLineEdit.ActionPosition.TrailingPosition)
 		
 		# Строка ввода "Переопределить страницы"
 		pages_edit = QLineEdit()
@@ -425,14 +419,14 @@ class Links_Editor(QWidget):
 		delete_btn.setFixedSize(24, 24)
 		delete_btn.clicked.connect(lambda checked, w=row_widget: self.delete_row_widget(w))
 		
-		row_layout.addWidget(combo)
-		row_layout.addWidget(tag_edit)
+		row_layout.addWidget(book_selector)
+		row_layout.addWidget(tag_editor)
 		row_layout.addWidget(pages_edit, stretch=1)
 		row_layout.addWidget(delete_btn)
 		
 		# Сохраняем ссылки на виджеты в свойствах
-		row_widget.setProperty("combo", combo)
-		row_widget.setProperty("tag_edit", tag_edit)
+		row_widget.setProperty("combo", book_selector)
+		row_widget.setProperty("tag_edit", tag_editor)
 		row_widget.setProperty("pages_edit", pages_edit)
 		self.list_layout.addWidget(row_widget)
 		
@@ -443,29 +437,29 @@ class Links_Editor(QWidget):
 			return
 		new_link = Link(self.project)
 		if self.project.documentation_manager.library:
-			first_book_num = next(iter(self.project.documentation_manager.library.keys()))
+			books = self._get_sorted_books()
+			first_book_num = books[0] if books else '0'
 			new_link.book_num = first_book_num
 		else:
-			new_link.book_num = 0
+			new_link.book_num = '0'
 		new_link.tag = 0
-		# Вставляем в отсортированном порядке
 		self.items.append(new_link)
-		self._sort_items()
 		# Перестраиваем весь список, чтобы сохранить порядок
 		self.load_data(self.items)
 		self.dataChanged.emit()
 		self.save_to_model()
 	
+
 	def remove_row(self):
 		"""Удаляет последнюю строку."""
 		if self.items:
-			removed_link = self.items.pop()
-			self._remove_link_from_manager(removed_link)
+			del self.items[-1]
 			# Перестраиваем список
 			self.load_data(self.items)
 			self.dataChanged.emit()
 			self.save_to_model()
 	
+
 	def delete_row_widget(self, row_widget):
 		"""Удаляет переданный виджет строки и соответствующие данные."""
 		# Находим индекс виджета в list_layout
@@ -474,19 +468,11 @@ class Links_Editor(QWidget):
 			return
 		# Удаляем соответствующий элемент из self.items
 		if index < len(self.items):
-			removed_link = self.items.pop(index)
-			self._remove_link_from_manager(removed_link)
+			del self.items[index]
 		self.load_data(self.items)
 		self.dataChanged.emit()
 		self.save_to_model()
 
-	def _remove_link_from_manager(self, link):
-			item = self.current_index.internalPointer()
-			if hasattr(item, 'manager') and item.manager:
-				try:
-					item.manager.links.remove(link)
-				except KeyError:
-					pass	
 
 	def on_item_changed(self):
 		"""Собирает данные из всех строк и обновляет self.items."""
@@ -504,14 +490,13 @@ class Links_Editor(QWidget):
 					self.items.append(link)
 
 				book_num_data = combo.currentData()
-				if book_num_data is not None:
-					# convert_value уже импортирован из Core.Utilities
-					link.book_num = convert_value(book_num_data)
-				else:
-					link.book_num = 0
+				link.book_num = book_num_data if book_num_data is not None else ''
 
 				tag_text = tag_edit.text()
-				link.tag = int(tag_text) if tag_text else 0
+				try:
+					link.tag = int(tag_text)
+				except ValueError:
+					link.tag = 0
 				link.user_pages = pages_edit.text().strip() or None
 				new_items.append(link)
 
@@ -521,24 +506,12 @@ class Links_Editor(QWidget):
 
 	def save_to_model(self):
 		if self.model and self.current_index.isValid():
-			item = self.current_index.internalPointer()
+			item: PositionLine = self.current_index.internalPointer()
 			if hasattr(item, 'links'):
-				# Удаляем старые ссылки из менеджера (если есть)
-				if hasattr(item, 'manager') and item.manager:
-					for link in item.links:
-						try:
-							item.manager.links.remove(link)
-						except KeyError:
-							pass
-				# Сортируем self.items безопасно
-				self._sort_items()
-				# Присваиваем отсортированный список
-				item.links = self.items
-				if hasattr(item, 'manager') and item.manager:
-					item.manager.links.update(self.items)
+				item.set_links(self.items)
 				# Обновляем представление
 				self.model.dataChanged.emit(self.current_index, self.current_index, [Qt.ItemDataRole.DisplayRole])
-				item.manager.is_modified = True
+
 
 	def clear(self):
 		self.model = None
@@ -546,6 +519,80 @@ class Links_Editor(QWidget):
 		self.clear_rows()
 		self.items = []
 		self.setEnabled(False)
+		
+
+	def open_docs_list(self, book_widget: QComboBox, tag_editor: QLineEdit):
+		""" Открывает список доступных документов для текущего тома """
+		if not self.project:
+			return
+
+		manager = self.project.documentation_manager
+
+		def __message(text):
+			QMessageBox.warning(self, 'Список документов в томе', text)
+
+		if not manager or not manager.library:
+			__message('Отсутствует библиотека документов')
+			return
+
+		book_key = book_widget.currentData()
+		if not book_key:
+			__message('Невалидный номер тома')
+			return
+		
+		book = manager.get_book(book_key)
+		docs = book.get_docs_list() if book else None
+
+		if docs is None:
+			return
+		
+		dialog = Doc_Selector_Dialog(self, docs)
+
+		if dialog.exec() == QDialog.DialogCode.Accepted:
+			tag = dialog.get_data()
+			if tag_editor is not None:
+				tag_editor.setText(str(tag))
+			else:
+				__message(self, 'Не удалось получить тег')
+
+
+
+class Doc_Selector_Dialog(QDialog):
+	""" Окно выбора документа для ссылки """
+	def __init__(self, parent, docs: list[tuple[str, int]]):
+		super().__init__(parent)
+		self.setWindowTitle('Выбор документа')
+		self.setModal(True)
+
+		self.docs = docs
+		self.tags = []
+
+		self.setup_ui()
+
+
+	def setup_ui(self):
+		layout = QVBoxLayout(self)
+		self.docs_list = QListWidget()
+
+		for name, tag in self.docs:
+			self.docs_list.addItem(f'{tag}: {name}')
+			self.tags.append(tag)
+
+		layout.addWidget(self.docs_list)
+
+		btns = create_ok_cancel_buttons(self, False, 'Выбрать')
+		layout.addWidget(btns)
+
+	def get_data(self) -> int | None:
+		if not self.tags:
+			return None
+
+		indexes = self.docs_list.selectedIndexes()
+		index = indexes[0] if indexes else None
+		if index is not None and index.isValid():
+			return self.tags[index.row()]
+
+
 
 class Logs_Table(QWidget):
 	"""

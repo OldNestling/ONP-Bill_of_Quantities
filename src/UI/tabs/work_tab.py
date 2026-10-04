@@ -16,13 +16,11 @@
 
 from PyQt6.QtWidgets import (
 	QWidget, QLabel, QPushButton, QDialog, QVBoxLayout, QToolBar, QMessageBox, QHeaderView,
-	QComboBox, QDialogButtonBox, QMenu, QApplication, QTreeView, QSplitter, QTabWidget,
-	QAbstractItemView, QWidgetAction, QGridLayout, QColorDialog, QToolButton, QLineEdit,
-	QTextEdit, QSpinBox, QHBoxLayout
+	QMenu, QApplication, QTreeView, QSplitter, QTabWidget, QAbstractItemView, QWidgetAction, 
+	QGridLayout, QColorDialog, QToolButton, QLineEdit, QTextEdit
 	)
 from PyQt6.QtGui import QAction, QColor, QCursor, QTextCursor
 from PyQt6.QtCore import Qt, QSize, QModelIndex, QEvent, QTimer
-from ..ui_utilities import create_ok_cancel_buttons
 from ..resources.icons import Icons
 
 from Core.BoQ import BoQ_manager, Section, Work, Resource, PositionLine
@@ -34,6 +32,7 @@ from ..support.work_tab_sidebar import SideBar_Right
 from ..support.work_tab_models import Model, ArchiveModel
 from ..support.work_tab_lib_actions import Earth_Work_Dialog, User_Libs_Dialog
 from ..ui_utilities import create_ok_cancel_buttons, Requestion
+from ..support.project_window_support import Export_Dialog
 
 class BoQ_Tab(QWidget):
 	""" Представление вкладки работы с открытыми файлами ВОР """
@@ -2180,55 +2179,4 @@ class BoQ_View(QWidget):
 		finally:
 			model.endResetModel()
 		view.expandAll()
-
-
-class Export_Dialog(QDialog):
-	""" Окно экспорта ведомости объемов работ """
-	def __init__(self, parent):
-		super().__init__(parent)
-		self.setWindowTitle('параметры экспорта')
-		self.setModal(True)
-
-		edit_layout = QVBoxLayout(self)
-
-		edit_layout.addWidget(QLabel("Выберите формат экспорта:"))
-		self.format_combobox = QComboBox()
-		self.format_combobox.addItems(('GGE','XML', 'PDF по форме 1', 'PDF по форме 2'))
-		self.format_combobox.setEditable(False)
-		self.format_combobox.setCurrentIndex(0)
-		edit_layout.addWidget(self.format_combobox)
-
-		self.subsection_num = QSpinBox()
-		self.subsection_num.setMinimum(0)
-		self.subsection_num.setMaximumWidth(40)
-		self.subsection_num.setValue(4)
-
-		subsec_line = QHBoxLayout()
-		subsec_line.addWidget(QLabel('Номер подраздела СД: '))
-		subsec_line.addWidget(self.subsection_num)
-
-		edit_layout.addLayout(subsec_line)
-
-
-		buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
-		ok_button = buttons.button(QDialogButtonBox.StandardButton.Ok)
-		ok_button.setText('Применить')
-		cancel_button = buttons.button(QDialogButtonBox.StandardButton.Cancel)
-		cancel_button.setText('Отменить')
-		buttons.accepted.connect(self.accept)
-		buttons.rejected.connect(self.reject)
-
-		edit_layout.addWidget(buttons)
-
-	def get_data(self):
-		subsec = self.subsection_num.value()
-		match self.format_combobox.currentText():
-			case  'GGE':
-				return ('.gge', None, subsec)
-			case 'XML':
-				return ('.xml', None, subsec)
-			case 'PDF по форме 1':
-				return ('.pdf', 0, subsec)
-			case 'PDF по форме 2':
-				return ('.pdf', 1, subsec)
 

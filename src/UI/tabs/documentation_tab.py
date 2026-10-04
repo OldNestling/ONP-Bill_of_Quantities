@@ -541,7 +541,7 @@ class DocumentationModel(QAbstractItemModel):
 		if role == Qt.ItemDataRole.DisplayRole or role == Qt.ItemDataRole.EditRole:
 			if isinstance(item, Book):
 				if col == self.COL_TAG:
-					return str(item.num)
+					return item.num
 				elif col == self.COL_CODE:
 					return item.code
 				elif col == self.COL_NAME:
@@ -590,7 +590,7 @@ class DocumentationModel(QAbstractItemModel):
 		try:
 			if isinstance(item, Book):
 				if col == self.COL_TAG:
-					item.num = convert_value(value)
+					item.num = value
 				elif col == self.COL_CODE:
 					item.code = value
 				elif col == self.COL_NAME:
@@ -605,7 +605,7 @@ class DocumentationModel(QAbstractItemModel):
 				elif col == self.COL_NAME:
 					item.name = value
 				elif col == self.COL_PAGE:
-					item.page = str(value) if value else 0
+					item.page = value if value else 0
 				elif col == self.COL_LINK:
 					item.link = value
 				else:

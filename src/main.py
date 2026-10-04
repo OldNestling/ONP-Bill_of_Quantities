@@ -116,7 +116,7 @@ def main():
 	
 	app.setStyleSheet(get_css(system_platform.startswith('linux')))
 
-	icon = QIcon(resource_path(r'UI\icons\icon_main.ico'))
+	icon = QIcon(resource_path(r'UI\resources\icons\icon_main.ico'))
 	app.setWindowIcon(icon)
 	window = Project_Window()
 	window.setWindowIcon(icon)

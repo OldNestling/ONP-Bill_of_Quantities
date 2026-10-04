@@ -267,7 +267,7 @@ class BoQ_manager:
 
 	# --------------------------------- Работа с файлами -----------------------------------
 
-	def get_links_files(self) -> dict:
+	def get_links_files(self) -> dict[str, dict]:
 		""" Возвращает информацию о упомянутой документации в виде данных для xml  """
 		if not self.sections or self.project is None:
 			return {}

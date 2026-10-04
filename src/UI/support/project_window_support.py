@@ -501,12 +501,12 @@ class Export_Dialog(QDialog):
 		layout.addWidget(QLabel("Выберите формат экспорта:"))
 
 		self.format_combobox = QComboBox()
-		self.format_combobox.addItems(["XML", "GGE", "PDF по форме 1", "PDF по форме 2"])
+		self.format_combobox.addItems(("XML", "GGE", "PDF по форме 1", "PDF по форме 2"))
 		layout.addWidget(self.format_combobox)
 
 		self.subsection_num = QSpinBox()
 		self.subsection_num.setMinimum(0)
-		self.subsection_num.setMaximumWidth(40)
+		self.subsection_num.setMaximumWidth(60)
 		self.subsection_num.setValue(4)
 
 		subsec_line = QHBoxLayout()

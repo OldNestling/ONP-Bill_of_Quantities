@@ -32,17 +32,18 @@ class DOCs_Manager(DataLibraryManager):
 		:project: объект управления проектом
 	"""
 
-	FILE = 'Documentation' 			# Файл с данными
+	FILE = 'Documentation' 					# Файл с данными
 	
 	def __init__(self, project):
 		super().__init__()
 		self.project = project
-		self.library = {}  			# Словарь всех созданных объектов
+		self.library: dict[str, Book] = {}	# Словарь всех созданных объектов
 		self.load_lib()
 
 	# ---------------------------- Загрузка / Сохранение --------------------------------
 	def deserialization_function(data):
 		return Book.deserialization(data)
+
 
 	def load_lib(self):
 		if self.project:
@@ -51,7 +52,7 @@ class DOCs_Manager(DataLibraryManager):
 					data = json.load(f)
 					for book in data.values():
 						obj = Book.deserialization(book)
-						self.library[convert_value(obj.num)]=(obj)
+						self.library[obj.num]=obj
 			except FileNotFoundError:
 				self.library = {}
 			except json.JSONDecodeError:
@@ -59,37 +60,40 @@ class DOCs_Manager(DataLibraryManager):
 			except Exception as e:
 				raise RuntimeError(f'{"-"*40}\nОшибка загрузки файла {self._file_path}: {e}')
 
+
 	def save_lib(self):
 		if not self.project or not self.lock_owned:
 			return False
+		tmp_path = None
 		try:
 			self.restore_library()
 			tmp_path = self._file_path.with_suffix(".tmp")
 			with open(tmp_path, 'w', encoding='utf-8') as f:
 				data = {}
 				for num, book in self.library.items():
-					data[str(num)] = book.serialization()
+					data[num] = book.serialization()
 				json.dump(data, f, indent=4, ensure_ascii=False)
 			tmp_path.replace(self._file_path)
 			self.unlock()
 			return True
 		except Exception as e:
 			print(f'{"-"*40}\nПроизошла ошибка: {e}')
-			if tmp_path.exists():
+			if tmp_path and tmp_path.exists():
 				tmp_path.unlink(missing_ok=True)
 			return False
+
 		
 	def reload_lib(self):
 		self.library = {}
 		self.load_lib()
 		self.unlock()
-				
+
 	# -------------------------------- Взаимодействии с БД ------------------------------
 	def restore_library(self):
 		new_lib = {}
 		books = list(self.library.values())
 
-		books.sort(key = Book.sort_key)
+		books.sort(key= lambda book: book.num)
 		for book in books:
 			new_lib[book.num] = book
 		self.library = new_lib
@@ -110,7 +114,7 @@ class DOCs_Manager(DataLibraryManager):
 			8: 'Раздел 8. Требования к обеспечению безопасной эксплуатации линейного объекта'
 		}
 		if not self.library:
-			self.library[1] = Book(1,f'{code}-ПЗ', 'Раздел 1. Пояснительная записка')
+			self.library['1'] = Book('1',f'{code}-ПЗ', 'Раздел 1. Пояснительная записка')
 		else:
 			# Собираем все ключи, которые можно преобразовать в число
 			numeric_keys = []
@@ -128,24 +132,40 @@ class DOCs_Manager(DataLibraryManager):
 				next_num = 1
 			typ = BOOK_TYPE.get(next_num,'')
 			name = BOOK_NAME.get(next_num,'Новый раздел')
-			self.library[next_num] = Book(next_num, f'{code}-{typ}', name)
+			self.library[str(next_num)] = Book(str(next_num), f'{code}-{typ}', name)
+
 
 	def remove_book(self, num):
 		if self.project:
 			del self.library[num]
 
+
+	def get_sorted_books(self) -> list[Book]:
+		""" возвращает отсортированный список с разделами ПД """
+		if not self.library:
+			return []
+		return sorted(self.library.values(), key=lambda book: book.num)
+
+
 	def sort_books(self):
 		""" Сбрасывает существующие ключи, заново их присваивает, сортирует по порядку """
-		if not self.library:
-			return
+		books = self.get_sorted_books()
 		new_lib = {}
-		books = list(self.library.values())
 
-		books.sort(key=Book.sort_key)
 		for book in books:
 			book.sort_content()
 			new_lib[book.num] = book
 		self.library = new_lib
+
+
+	def get_book(self, key: str) -> Book | None:
+		""" Передаёт объект `Book` по ключу """
+		if not self.library:
+			return
+		if key in self.library:
+			return self.library.get(key)
+
+
 
 class Book:
 	""" Представляет собой один том, с документами внутри """
@@ -153,13 +173,10 @@ class Book:
 	IN_BOOK_CODES= ['С', 'СП', 'ПЗ', 'В', 'Ч', 'СО','ТРИ', 'ВИ']
 
 	def __init__(self, num, code = '', name = '', content = None):
-		self.num: int | float | str = num # str на случай добавления изыскательских томов. Был опыт
-		# TODO добавление строкового типа данных привело ко множеству ошибок в (BoQ.py, work_tab_sidebar,
-		#  documentation_tab связанных с сортировкой), которые я уставший залатал на скорую руку. 
-		# 	Нужно унифицировать и связать с этим модулем
+		self.num: str = num # str на случай добавления изыскательских томов. Был опыт
 		self.code: str = code
 		self.name: str = name
-		self.content: dict = content if content is not None else {}
+		self.content: dict[int, Document] = content if content is not None else {}
 		self.link: str | None = None
 
 	@property
@@ -171,9 +188,8 @@ class Book:
 		"""
 		if self.content:
 			nums = list(self.content.keys())
-			map(lambda x: convert_value(x), nums)
-			highest_value = max(nums)
-			return highest_value+1
+			nums = [convert_value(x) for x in nums]
+			return max(nums)+1
 		else:
 			return 1
 
@@ -197,7 +213,6 @@ class Book:
 			'name': '',
 			'page': 0
 		}
-		documents = {}
 		new_items = [(new_tag, Document.deserialization(data))]
 		
 		items = list(self.content.items())
@@ -241,7 +256,7 @@ class Book:
 			for i in range(count):
 				num = f'0{i+1}' if len(str(i+1)) == 1 else i+1
 				data = {
-					'tag': new_tag,
+					'tag': new_tag(),
 					'code': f'{self.code}-{code}{num}',
 					'name': '',
 					'page': 0
@@ -298,6 +313,17 @@ class Book:
 			merged = prefix + new_items + suffix
 			self.content = dict(merged)
 
+
+	def get_docs_list(self) -> list[tuple[str, int]]:
+		""" Возвращает список с кортежами с наименованиями документов и их тегами """
+		if not self.content:
+			return []
+		output = []
+		for tag, doc in self.content.items():
+			output.append((doc.name, tag))
+		return output
+
+
 	def include(self, page: int):
 		"""
 		Находит соответствующий документ в томе по странице
@@ -323,20 +349,12 @@ class Book:
 			i += 1
 		return dct.get(docs[i])
 
-	@staticmethod
-	def sort_key(book):
-		try:
-			return (0, float(book.num))
-		except (ValueError, TypeError):
-			return (1, str(book.num))
-	
 	# ------------------------------------- Работа с БД ------------------------------------
-	
 	@classmethod
 	def deserialization(cls, data: dict | None = None):
 		if data:
 			obj = cls(
-				num = data.get('num'),
+				num = str(data.get('num', '-')),
 				code = data.get('code'),
 				name = data.get('name'),
 				content = {}
@@ -349,6 +367,7 @@ class Book:
 					obj.content[doc.tag] = doc
 			return obj
 	
+
 	def serialization(self):
 		content = {}
 		if self.content:
@@ -370,8 +389,21 @@ class Document:
 		self.tag: int = tag			# Уникальный тег. Соответствует ключу в томе
 		self.code: str = code		# Шифр
 		self.name: str = name		# Наименование
-		self.page: int = page		# Страница в томе
+		self._page: int = page		# Страница в томе
 		self.link = None			# Ссылка на файл. Опционально, реализация не в приоритете
+
+
+	@property
+	def page(self):
+		return self._page
+
+	@page.setter
+	def page(self, value):
+		try: 
+			self._page = int(value)
+		except Exception:
+			self._page = 0
+
 
 	@property
 	def full_name(self):
@@ -399,7 +431,7 @@ class Document:
 				tag = data.get('tag'),
 				code = data.get('code', ''),
 				name = data.get('name', ''),
-				page = data.get('page', '0')
+				page = convert_value(data.get('page', 0))
 			)
 			obj.link = data.get('link')
 
@@ -410,7 +442,7 @@ class Document:
 			'tag': self.tag,
 			'code': self.code,
 			'name': self.name,
-			'page': str(self.page),
+			'page': self.page,
 			'link': self.link
 		}
 

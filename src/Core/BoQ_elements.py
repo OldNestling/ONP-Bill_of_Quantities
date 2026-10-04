@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 
 from Core.Documentation import Book, Document
 from Core.Utilities import (
-	clearing_string, get_hash_text, fixing_decimals, fixing_spaces, decimal_round
+	clearing_string, get_hash_text, fixing_decimals, fixing_spaces, decimal_round, convert_value
 )
 from abc import ABC
 from Core.Computing_Module import (
@@ -220,10 +220,11 @@ class Link:
 	"""
 	def __init__(self, project):
 		self.project = project						# Объект проекта с настройками
-		self.book_num: float | int = 0				# Номер раздела ПД
+		self.book_num: str = '0'					# Номер раздела ПД
 		self.tag: int = 0							# Тег для поиска страницы и документа
 		self.user_pages: str | None = None			# Замещение пользователем страницы по тегу
 		self.file_id = None 						# Проставляется во время экспорта
+
 
 	@property
 	def book(self):
@@ -231,10 +232,8 @@ class Link:
 		if self.project is None:
 			return None
 		documentation: dict = self.project.documentation_manager.library
-		key = self.book_num
-		if isinstance(key, float) and key.is_integer():
-			key = int(key)
-		return documentation.get(key, None)
+		return documentation.get(self.book_num, None)
+
 
 	@property
 	def document(self):
@@ -300,7 +299,7 @@ class Link:
 		if data is None:
 			return None
 		link = cls(project_obj)
-		link.book_num = data.get('book_num')
+		link.book_num = str(data.get('book_num', 0))
 		link.tag = data.get('tag')
 		link.user_pages = data.get('user_pages')
 		return link
@@ -476,9 +475,11 @@ class PositionLine(ABC):
 		""" Проверяет изменение в наименовании позиции и сбрасывает статус "осметчено" """
 		hash_name = get_hash_text(self.name)
 		if self._name_cache != hash_name:
-			self.status_calculated = False
 			self._name_cache = hash_name
-			return False
+			if self.status_calculated:
+				self.status_calculated = False
+				return False	# чтобы избежать сообщение о изменении,
+			else: return True	# если позиции всё равно не осмечены
 		else: return True
 
 	# -------------------------------- Единицы измерения --------------------------------
@@ -611,14 +612,12 @@ class PositionLine(ABC):
 
 	def compare_qnt(self, res: str | None = None) -> bool:
 		""" Сопоставляет изменения с прошлым вычислением и сбрасывает статус status_calculated при необходимости """
-		
 		if res is None:
 			res = self.quantity
 
-		if not self.quantity_cache:
+		if self.quantity_cache is None:
 			self.quantity_cache = res
 			self.status_calculated = False
-
 			return False
 
 		if res != self.quantity_cache:
@@ -693,23 +692,58 @@ class PositionLine(ABC):
 			return self.links_cache
 		elif not self.links:
 			return ''
-		self._safe_sort_links()
 		references = []
 		for link in self.links:
 			references.append(str(link))
-		references.sort()
 		return f'\n{"—"*12}\n'.join(references)
 	
-	def _safe_sort_links(self):
-		"""Сортирует self.links по book_num (числа перед строками) и tag."""
-		def sort_key(link):
-			try:
-				book_num_key = (0, float(link.book_num))
-			except (ValueError, TypeError):
-				book_num_key = (1, str(link.book_num))
-			return (book_num_key, link.tag)
-		self.links.sort(key=sort_key)
 	
+	def _sort_links(self):
+		"""Сортирует self.links по book_num (числа перед строками) и doc.page"""
+		def sort_key(link):
+			book_num = link.book_num
+			doc_page = link.document.page if link.document else 0
+			return (book_num, doc_page)
+
+		books_with_string_num = []
+		books_whith_number_num = []
+		for link in self.links:
+			if isinstance(convert_value(link.book_num), str):
+				books_with_string_num.append(link)
+			else:
+				books_whith_number_num.append(link)
+		books_with_string_num.sort(key=sort_key)
+		books_whith_number_num.sort(key=sort_key)
+		self.links = books_whith_number_num + books_with_string_num
+
+	def set_links(self, new_links: list[Link]):
+		""" Назначает новый набор ссылок из редактора ссылок """
+		# Очищаем ссылки из менеджера
+		self.remove_links_from_manager()
+
+		# получаем и добавляем в менеджер новые ссылки
+		self.links = list(new_links)
+		self._sort_links()
+		self.add_links_to_manager()
+		self.manager.is_modified = True
+
+
+	def add_links_to_manager(self):
+		""" Добавляет все  ссылки позиции и ресурсов во множество менеджера """
+		if self.links:
+			for link in self.links:
+				self.manager.links.add(link)
+	
+	def remove_links_from_manager(self):
+		""" Удаляет все ссылки позиции и ресурсов из множества менеджера """
+		if self.links:
+			for link in self.links:
+				try:
+					self.manager.links.remove(link)
+				except (KeyError, AttributeError):
+					continue
+
+
 	# ========================== Методы и атрибуты системы ==============================
 	# ------------------------------ Работа с адресами ----------------------------------
 
@@ -977,23 +1011,6 @@ class PositionLine(ABC):
 			for coord in to_append:
 				self.append_to_dependency(coord)
 	
-	# ----------------------------- Работа со ссылками ------------------------------------
-
-	def add_links_to_manager(self):
-		""" Добавляет все  ссылки позиции и ресурсов во множество менеджера """
-		if self.links:
-			for link in self.links:
-				self.manager.links.add(link)
-	
-	def remove_links_from_manager(self):
-		""" Удаляет все ссылки позиции и ресурсов из множества менеджера """
-		if self.links:
-			for link in self.links:
-				try:
-					self.manager.links.remove(link)
-				except (KeyError, AttributeError):
-					continue
-
 
 	# ----------------------------------- Прочее ------------------------------------------
 	
@@ -1128,8 +1145,8 @@ class PositionLine(ABC):
 
 		obj.local_comment = data.get('local_comment')
 		obj.type = data.get('type')
-		obj.custom_round = data.get('custom_round')
-		obj.custom_round_mode = data.get('custom_round_mode')
+		obj._custom_round = data.get('custom_round')
+		obj._custom_round_mode = data.get('custom_round_mode')
 		if obj.custom_round_mode not in (None, 1, 2):
 			obj.custom_round_mode = None 
 		obj.status_correct = data.get('status_correct', False)
@@ -1144,6 +1161,8 @@ class PositionLine(ABC):
 				manager.links.add(link)
 
 		obj.links = links
+		obj._sort_links()
+
 		obj.links_cache = data.get('links_cache')
 
 		obj.style_manager.deserialization(data.get('style_manager'))

@@ -108,7 +108,7 @@ def fixing_spaces(string: str):
 		output = output.replace(m, ' ')
 	return output.replace(MARKER, '\n')
 
-def convert_value(text):
+def convert_value(text: str) -> int | float | str:
 	"""
 	Пытается преобразовать строку в число.
 	Если возможно - возвращает int или float, иначе - строку.
