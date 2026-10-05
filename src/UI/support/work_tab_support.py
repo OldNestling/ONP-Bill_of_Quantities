@@ -25,7 +25,7 @@ from PyQt6.QtGui import (QColor, QTextCursor, QTextCharFormat, QIntValidator, QF
 from PyQt6.QtCore import Qt, pyqtSignal, QModelIndex, QEvent, QTimer, QSize
 from ..ui_utilities import create_separator
 from ..resources.icons import Icons
-from Core.BoQ import Section
+from Core.BoQ import Section, PositionLine	
 from Core.Computing_Module import FUNCTIONS
 from Core.Utilities import get_platform
 
@@ -622,6 +622,15 @@ class BoQItemDelegate(QStyledItemDelegate):
 		item = index.internalPointer()
 		return isinstance(item, Section)
 
+	def is_flag_dependent_formula(self, index: QModelIndex) -> bool:
+		item: PositionLine = index.internalPointer()
+		if isinstance(item, Section):
+			return False
+		if item.flag_dependent_formula:
+			return True
+		else:
+			return False
+
 	def get_cell_style(self, index: QModelIndex):
 		"""
 		Извлекает цвета фона и текста из style_manager элемента (если заданы).
@@ -648,6 +657,8 @@ class BoQItemDelegate(QStyledItemDelegate):
 			crm = getattr(item, 'custom_round_mode', None)
 			if cr is not None or crm is not None:
 				style_dict = {'background_color': "#CF84EA"}
+		elif col == 4 and not isinstance(item, Section) and item.flag_dependent_formula:
+			style_dict = {'text_color': "#1f4de7"}
 		elif col == 5:
 			style_dict = item.style_manager.col_5
 		elif col == 6:
@@ -706,9 +717,16 @@ class BoQItemDelegate(QStyledItemDelegate):
 			font = QFont(option.font)
 			font.setBold(True)
 			doc.setDefaultFont(font)
-	
 		else:
-			doc.setDefaultFont(option.font)
+			# Курсив для ячейки вычисленного значения, 
+			# имеющего в формуле связь с другими позициями
+			if index.column() == 4 and self.is_flag_dependent_formula(index):
+				font = QFont(option.font)
+				font.setItalic(True)
+				font.setBold(True)
+				doc.setDefaultFont(font)
+			else:
+				doc.setDefaultFont(option.font)
 		
 		doc.setPlainText(text)
 		text_width = option.rect.width() - 2 * self.margin
