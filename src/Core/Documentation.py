@@ -389,7 +389,9 @@ class Document:
 		self.tag: int = tag			# Уникальный тег. Соответствует ключу в томе
 		self.code: str = code		# Шифр
 		self.name: str = name		# Наименование
-		self._page: int = page		# Страница в томе
+		self._page: int = 0			# Страница в томе
+		if page:
+			self.page = page
 		self.link = None			# Ссылка на файл. Опционально, реализация не в приоритете
 
 
@@ -431,7 +433,7 @@ class Document:
 				tag = data.get('tag'),
 				code = data.get('code', ''),
 				name = data.get('name', ''),
-				page = convert_value(data.get('page', 0))
+				page = data.get('page', 0)
 			)
 			obj.link = data.get('link')
 
