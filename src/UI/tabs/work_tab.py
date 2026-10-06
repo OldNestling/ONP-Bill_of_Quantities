@@ -360,7 +360,6 @@ class BoQ_Tab(QWidget):
 			self.boq_views_container.setCurrentIndex(index)
 			return
 		tab_name = file_manager.file.stem
-		file_manager.check_changes()
 		view = BoQ_View(self, self.project, file_manager)
 		# Подключаем сигнал выбора ячейки
 		view.view.selectionModel().currentChanged.connect(self.on_boq_selection_changed)

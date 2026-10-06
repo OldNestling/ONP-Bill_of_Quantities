@@ -35,6 +35,7 @@ class Soils_Manager(DataLibraryManager):
 		self.project = project # Единый глобальный объект, хранящий настройки и артубты для всех модулей
 		self.library: dict[str, Soil] = {}  #  словарь всех созданных объектов Soil
 		self.load_lib()
+		self._update_gesn_data()
 		# Устанавливка режима сопоставления
 		Soil._compare_mode = self.project.work_modes.get('ground_complementation_mode',False) if self.project else False 
 	
@@ -78,10 +79,9 @@ class Soils_Manager(DataLibraryManager):
 				tmp_path.unlink(missing_ok=True)
 			return False
 
-	def reload_lib(self):
-		""" Обновляет список грунтов, а также данные по ГЭСН для каждого """
-		self.library = {}
-		self.load_lib()
+
+	def _update_gesn_data(self):
+		""" Обновляет данные по гэсн """
 		# загрузка данных для применения в цикле без повторного вызова
 		gesn_1_data=self.gesn_1_data
 		gesn_4_data=self.gesn_4_data
@@ -102,6 +102,13 @@ class Soils_Manager(DataLibraryManager):
 			if obj.gesn_5_obj:
 				num = obj.gesn_5_obj.num
 				obj.gesn_5_obj = self.get_gesn_5_obj(num, gesn_5_data)
+	
+
+	def reload_lib(self):
+		""" Обновляет список грунтов, а также данные по ГЭСН для каждого """
+		self.library = {}
+		self.load_lib()
+		self._update_gesn_data()
 		self.unlock()
 
 	# ------------------------------ Загрузка и сохранение JSON ----------------------------
@@ -617,13 +624,16 @@ class Soil:
 	_compare_mode = None 
 	
 
-	def __init__(self, local_num, local_name, local_density, gesn_1_obj = None, gesn_4_obj = None, gesn_5_obj = None,  note1=None, note2=None, comment = None):
+	def __init__(
+		self, local_num, local_name, local_density, 
+		gesn_1_obj = None, gesn_4_obj = None, gesn_5_obj = None,  note1=None, note2=None, comment = None
+	):
 		self.local_num: str = local_num # номер ИГЭ
 		self.local_name: str = local_name.strip() # наименование по результатом ИГИ
 		self.local_density: float = convert_value(local_density) # плотность по результатом ИГИ т/м³
-		self.gesn_1_obj: object | None = gesn_1_obj # данные по ГЭСН 1
-		self.gesn_4_obj: object | None = gesn_4_obj # данные по ГЭСН 4
-		self.gesn_5_obj: object | None = gesn_5_obj # данные по ГЭСН 5
+		self.gesn_1_obj: Gesn1 | None = gesn_1_obj # данные по ГЭСН 1
+		self.gesn_4_obj: Gesn4 | None = gesn_4_obj # данные по ГЭСН 4
+		self.gesn_5_obj: Gesn5 | None = gesn_5_obj # данные по ГЭСН 5
 		self.note1: str | None =  note1 # Примечание №1 (замещает автовычисление)
 		self.note2: str | None =  note2 # Примечание №2 (замещает автовычисление)
 		self.comment: str | None = comment # пользовательское примечание

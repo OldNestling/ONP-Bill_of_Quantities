@@ -552,12 +552,12 @@ class PositionLine(ABC):
 		return self._raw_quantity_formula
 	
 
-	def _set_flag_of_formula_dependent(self, addresses = None):
+	def _set_flag_of_formula_dependent(self):
 		""" Устанавливает флаг завивисимой формулы для цветовой индикации позиции """
-		all_addresses = addresses
-		if all_addresses is None:
-			all_addresses = self.__find_all_addresses(self._raw_quantity_formula)
-		self.flag_dependent_formula = bool(all_addresses)
+		# паттерн поиска чисел вне псевдонимов и адрессов
+		pattern = r'(?:^|[+\-*/])\s*(\d+(?:\.\d+)?)\s*(?=\s*(?:$|[+\-*/]))'
+		nums = re.findall(pattern, self.raw_quantity_formula)
+		self.flag_dependent_formula = not bool(nums)
 
 
 	@raw_quantity_formula.setter
@@ -570,7 +570,7 @@ class PositionLine(ABC):
 			clr_text = '=' + clr_text
 		self._raw_quantity_formula = clr_text
 		self.check_qnt_and_depends()
-		self._set_flag_of_formula_dependent(self.__find_all_addresses(clr_text))
+		self._set_flag_of_formula_dependent()
 
 
 	@property
