@@ -269,6 +269,8 @@ class BoQ_Dialog(QDialog):
 		self.edit_mode = edit_mode
 		self.project = project
 		self.current_data = current_data
+		self.isObjectName = edit_mode
+		self.isObjectNum = edit_mode
 
 		edit_layout = QHBoxLayout(self)
 		left_layout = QVBoxLayout()
@@ -311,6 +313,7 @@ class BoQ_Dialog(QDialog):
 		self._object_name_plain.setPlaceholderText('Наименование раздела работы')
 		self._object_name_plain.setLineWrapMode(QPlainTextEdit.LineWrapMode.WidgetWidth)
 		self._object_name_plain.setMaximumHeight(45)
+		self._object_name_plain.textChanged.connect(self._set_flag_isObjectName)
 
 		left_layout.addWidget(QLabel('Наименование раздела:'))
 		left_layout.addWidget(self._object_name_plain)
@@ -318,8 +321,10 @@ class BoQ_Dialog(QDialog):
 		__current_num = current_data.num if self.edit_mode else ''
 		self._num_edit_line = QLineEdit(__current_num)
 		self._num_edit_line.setPlaceholderText('ВО-0')
+		self._num_edit_line.textChanged.connect(self._set_flag_isObjectNum)
 		left_layout.addWidget(QLabel('Номер ведомости:'))
 		left_layout.addWidget(self._num_edit_line)
+
 
 		# Комбобоксы с автодополнением
 		performers_list = performers
@@ -422,16 +427,26 @@ class BoQ_Dialog(QDialog):
 	def update_object_name(self):
 		""" Обновляет имя раздела при выборе имени файла, если оно пустое """
 		non_list = {'',' ','-', None, 'None','...', '.'}
-		if self._object_name_plain.toPlainText().strip() in non_list and not self.edit_mode:
+		if not self.isObjectName or self._object_name_plain.toPlainText().strip() in non_list:
 			filename = text_after(self._file_name_combobox.currentText(),'_').replace('_',' ')
+			self._object_name_plain.blockSignals(True)
 			self._object_name_plain.setPlainText(filename)
+			self._object_name_plain.blockSignals(False)
 		
-		if self._num_edit_line.text() in non_list and not self.edit_mode:
+		if not self.isObjectNum or self._num_edit_line.text().strip() in non_list:
 			num = text_before(self._file_name_combobox.currentText(),'_')
 			num = num[1:] if num.startswith('0') else num
+			self._num_edit_line.blockSignals(True)
 			self._num_edit_line.setText(f'ВО-{num}')
+			self._num_edit_line.blockSignals(False)
 		
+		
+	def _set_flag_isObjectName(self):
+		self.isObjectName = True
 	
+	
+	def _set_flag_isObjectNum(self):
+		self.isObjectNum = True
 
 	# ------------------------ Методы для управления журналом -------------------------
 	def add_log_row(self):

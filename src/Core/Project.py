@@ -309,7 +309,16 @@ class Project:
 		:filename: наименование нового файла
 		:metadata: словарь с информацией о новом разделе ВОР
 		'''
-		file_path: Path = self.project_BoQs_path / f'{filename}.json'
+		def __сleaning_filename_of_special_characters(text:str):
+			""" Очищает от символов `__` имя файла """
+			filename = text
+			while '__' in filename:
+				filename = filename.replace('__', '_')
+			return filename
+
+		name = __сleaning_filename_of_special_characters(filename)
+
+		file_path: Path = self.project_BoQs_path / f'{name}.json'
 		if file_path.exists():
 			return False		# Файл с таким именем уже существует
 
@@ -835,7 +844,20 @@ class File_BoQ:
 		locked_files = self._get_locked_files()
 		filename = self.path.stem
 		for data in locked_files:
-			f_name, user = data.stem.split('__')
+			f_name = None
+			user = None
+			try:
+				f_name, user = data.stem.split('__')
+			# в старом файле пристутсвуют лишние символы __, 
+			# которые не были устранены исправлением символов в имени файла,
+			# появившегося позже   
+			except ValueError:		
+				lock_file_name = data.stem
+				parts = lock_file_name.split('__')
+				parts = [p for p in parts if p]		# очищаем от пустых элементов
+				user = parts.pop()
+				end_part = '__' if lock_file_name.endswith('__') else ''
+				f_name = '__'.join(parts) + end_part
 			if filename == f_name:
 				return (True, user)
 		return (False, None)
