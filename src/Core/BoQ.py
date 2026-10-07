@@ -1157,9 +1157,11 @@ class BoQ_manager:
 
 		if isinstance(obj, Section):						# Раздел в архив
 			obj.make_static(f'Р{index_section+1}')
+			obj.remove_connections()
 			self.archive.append(obj)
 		elif isinstance(obj, Work):
 			obj.make_static()			# работа
+			obj.remove_connections()
 			# необходимо воссоздать фиктивный раздел, в котором была ранее позиция работы
 			#  или найти уже существующий в архиве
 			real_section: Section = self.sections[index_section]
@@ -1177,6 +1179,7 @@ class BoQ_manager:
 				self.archive.append(copy.deepcopy(fictional_section))
 		else:
 			obj.make_static()			# Ресурс
+			obj.remove_connections()
 			real_section: Section = self.sections[index_section]
 			real_work: Work = real_section.works[index_work]
 			
@@ -1204,6 +1207,7 @@ class BoQ_manager:
 			elif check_section and section_obj is not None:
 				fictional_work = copy.deepcopy(real_work)
 				fictional_work.make_static()
+				fictional_work.remove_connections()
 				fictional_work.resources.clear()
 				fictional_work.resources.append(obj)
 
@@ -1211,6 +1215,7 @@ class BoQ_manager:
 			else:
 				fictional_work = copy.deepcopy(real_work)
 				fictional_work.make_static()
+				fictional_work.remove_connections()
 				fictional_work.resources.clear()
 				fictional_work.resources.append(obj)
 

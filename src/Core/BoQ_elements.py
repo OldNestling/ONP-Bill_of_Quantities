@@ -155,8 +155,12 @@ class Section:
 		""" Преобразует все позиции в статичные элементы для переноса их в архив """
 		self.format_address_cache = format_address
 		for work in self.works:
-			work: Work
 			work.make_static()
+	
+
+	def remove_connections(self):
+		for work in self.works:
+			work.remove_connections()
 	
 	
 	def init_works_in_system(self, manager):
@@ -1052,13 +1056,14 @@ class PositionLine(ABC):
 		где он становится полностью не зависимым от базы и других позиций """
 		self.raw_name = self.name
 		self.raw_unit = self.unit				# Преобразуем в статичный лейбл
-		self.quantity_cache = self.quantity
 		self.raw_quantity_formula = str(self.quantity_formula)
 		self.links_cache = self.planned_links
 		self.raw_comment = self.comment
 		self.format_address_cache = self.format_address
 		self.num_cache = self.num
 
+
+	def remove_connections(self):
 		self.style_manager.col_2 = None
 		self.style_manager.col_5 = None
 		self.style_manager.col_6 = None
@@ -1275,9 +1280,14 @@ class Work(PositionLine):
 	
 	def make_static(self):
 		for resource in self.resources:
-			resource: Resource
 			resource.make_static()
-		return super().make_static()
+		super().make_static()
+	
+
+	def remove_connections(self):
+		for resource in self.resources:
+			resource.remove_connections()
+		super().remove_connections()
 	
 	# --------------------------- Загрузка и сохранение ---------------------------------
 
