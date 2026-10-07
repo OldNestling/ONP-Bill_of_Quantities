@@ -555,7 +555,7 @@ class PositionLine(ABC):
 	def _set_flag_of_formula_dependent(self):
 		""" Устанавливает флаг завивисимой формулы для цветовой индикации позиции """
 		# паттерн поиска чисел вне псевдонимов и адрессов
-		pattern = r'(?:^|[+\-*/])\s*(\d+(?:\.\d+)?)\s*(?=\s*(?:$|[+\-*/]))'
+		pattern = r'(?:^|[+\-*/=])\s*(\d+(?:\.\d+)?)\s*(?=\s*(?:$|[+\-*/=]))'
 		nums = re.findall(pattern, self.raw_quantity_formula)
 		self.flag_dependent_formula = not bool(nums)
 
@@ -622,7 +622,8 @@ class PositionLine(ABC):
 			return "#ОШИБКА"
 
 	def compare_qnt(self, res: str | None = None) -> bool:
-		""" Сопоставляет изменения с прошлым вычислением и сбрасывает статус status_calculated при необходимости """
+		""" Сопоставляет изменения с прошлым вычислением и 
+		сбрасывает статус status_calculated при необходимости """
 		if res is None:
 			res = self.quantity
 		
@@ -681,8 +682,10 @@ class PositionLine(ABC):
 		if not raw_comment.startswith('='):		# Без внешних данных и обработки
 			return raw_comment
 		else:
-			with_alias_data = self.process_library_requests(raw_comment)	# получаем данные из библиотеки проекта
-			whith_links_data = self.get_objects_values(with_alias_data)		# получаем данные из ссылок на позиции
+			# получаем данные из библиотеки проекта
+			with_alias_data = self.process_library_requests(raw_comment)	
+			# получаем данные из ссылок на позиции
+			whith_links_data = self.get_objects_values(with_alias_data)		
 			calculated = eval_functions(whith_links_data[1:])
 			return calculated
 		
