@@ -444,26 +444,33 @@ class MainProjectTab(QWidget):
 
 		# ----------------------- Группа информации о проекте  --------------------------
 
-		self.construction_site_label = QLabel('<b>Наименование объекта:</b>' + self.get_constaction_site())
-		self.construction_site_label.setWordWrap(True)
-		self.construction_site_label.setMinimumHeight(50)
+		self.construction_site_label = QLabel('<b>Наименование объекта:</b>')
+
+		self.construction_site_text = QTextBrowser()
+		self.construction_site_text.setText(self.get_constaction_site())
+		self.construction_site_text.setMaximumHeight(100)
+		self.construction_site_text.setAlignment(Qt.AlignmentFlag.AlignLeft)
+		
 		self.code_label = QLabel('<b>Шифр:</b> ' + self.get_code())
 		self.verifier_label = QLabel('<b>ГИП:</b> ' + self.get_verifier())
 		self.description = QTextBrowser()
 		self.description.setText(self.get_description())
-		self.description.setMaximumHeight(100)
+		self.description.setMaximumHeight(110)
 		self.description.setMaximumWidth(600)
 		self.description.setAlignment(Qt.AlignmentFlag.AlignTop)
 
 		project_info_subbox_left = QVBoxLayout()
 		project_info_subbox_left.addWidget(self.construction_site_label)
+		project_info_subbox_left.addWidget(self.construction_site_text)
 		project_info_subbox_left.addWidget(create_separator(QFrame.Shape.HLine))
 		project_info_subbox_left.addWidget(self.code_label)
 		project_info_subbox_left.addWidget(self.verifier_label)
+		project_info_subbox_left.addStretch()
 		
 		project_info_subbox_median = QVBoxLayout()
 		project_info_subbox_median.addWidget(QLabel('<b>Описание объекта:</b>'))
 		project_info_subbox_median.addWidget(self.description)
+		project_info_subbox_median.addStretch()
 
 		self.button_project_info_edit = QPushButton('Редактировать данные')
 		self.button_project_info_edit.setIcon(Icons.edit)
@@ -480,6 +487,7 @@ class MainProjectTab(QWidget):
 		project_info_subbox_right = QVBoxLayout()
 		project_info_subbox_right.addWidget(self.button_project_info_edit)
 		project_info_subbox_right.addWidget(self.button_project_info_save)
+		project_info_subbox_right.addStretch()
 
 		project_info_box = QHBoxLayout()
 
@@ -492,6 +500,7 @@ class MainProjectTab(QWidget):
 		project_info_group = QGroupBox(' Информация о проекте ')
 		project_info_group.setLayout(project_info_box)
 		project_info_group.setMaximumHeight(130)
+		project_info_group.setMaximumHeight(170)
 
 		# ------------------------- Группа информации о разделах  -----------------------
 
@@ -593,7 +602,7 @@ class MainProjectTab(QWidget):
 
 	def load_project_data(self):
 		"""Обновляет лейблы информации о проекте."""
-		self.construction_site_label.setText(f'<b>Наименование объекта:<br></b> {self.get_constaction_site()}')
+		self.construction_site_text.setText(self.get_constaction_site())
 		self.code_label.setText(f'<b>Шифр:</b> {self.get_code()}')
 		self.verifier_label.setText(f'<b>ГИП:</b> {self.get_verifier()}')
 		self.description.setText(f'{self.get_description().replace('\n','<br>')}')
