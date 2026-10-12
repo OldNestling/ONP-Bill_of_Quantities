@@ -1034,7 +1034,8 @@ class MainProjectTab(QWidget):
 		exp_dialog = Export_Dialog(self)
 		if exp_dialog.exec() != QDialog.DialogCode.Accepted:
 			return
-		form = exp_dialog.get_data()
+		form: tuple[str, None|int, int] = exp_dialog.get_data()
+		extension, form_type, subsec = form  
 
 		# 4. Прогресс-диалог (теперь без прерываний)
 		progress = QProgressDialog("Экспорт разделов...", "Отмена", 0, len(export_list), self)
@@ -1054,11 +1055,11 @@ class MainProjectTab(QWidget):
 			QApplication.processEvents()  # обновляем UI
 
 			try:
-				if form[0] in ('.gge', '.xml'):
-					convertor.create_xml_3p01(manager, form[0])
+				if extension in ('.gge', '.xml'):
+					convertor.create_xml_3p01(manager, extension, subsec)
 					success_count += 1
 				else:
-					convertor.export_to_pdf(manager, form[1])
+					convertor.export_to_pdf(manager, form_type, subsec)
 					success_count += 1
 			except Exception as e:
 				errors.append(f"{file_BoQ.path.name}: ошибка экспорта - {e}")

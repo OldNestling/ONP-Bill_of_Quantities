@@ -31,7 +31,7 @@ from reportlab.lib.enums import TA_CENTER, TA_LEFT
 
 from Core.BoQ import BoQ_manager, Section, Work, Resource, Link
 from Core.Project import Project
-from Core.Utilities import text_after, clearing_string
+from Core.Utilities import text_after, clearing_string, convert_value
 
 from Templates.About import PROGRAM_NAME, PROGRAM_VERSION
 
@@ -208,7 +208,23 @@ class Convertor:
 			pass
 		folder = manager.file.parent.parent / 'XML'
 		folder.mkdir(parents=True, exist_ok=True)
-		filename = f'Раздел ПД №9 СМ подраздел ПД №{subsection} {manager.num if manager.num else manager.file.stem}'
+
+		# получаем имя ориганльного файла без номеров в префиксе
+		shortname = manager.file.stem
+		if shortname:
+			filename_parts = shortname.split('_')
+			if filename_parts and not isinstance(convert_value(filename_parts[0]), str):
+				shortname = ' '.join(filename_parts[1:] if len(filename_parts) > 1 else filename_parts)
+			elif filename_parts: # пытаемся удалить индекс файла в наименовании
+				pattern = r'\w\d+'
+				for i, m in enumerate(re.findall(pattern, filename_parts[0])):
+					if i > 0: break
+					shortname = shortname.replace(m, '', 1)
+				shortname = shortname.removeprefix('_').replace('_',' ')
+		else:
+			shortname = ''
+		number = manager.num if manager.num else '00'
+		filename = f'Раздел ПД №9 СМ подраздел ПД №{subsection} {number} {shortname}'
 		output = folder / filename
 		tree.write(output.with_suffix(file_extension), encoding='utf-8', xml_declaration=True)
 		return True

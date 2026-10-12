@@ -26,7 +26,7 @@ from PyQt6.QtGui import QColor
 
 from Core.Project import File_BoQ
 from Core.Utilities import text_after, text_before
-from ..ui_utilities import MultilineTextDelegate
+from ..ui_utilities import MultilineTextDelegate, create_ok_cancel_buttons
 
 from Templates.About import (
 	ABOUT, COPYRIGHT, GITHUB, PROGRAM_NAME, PROGRAM_VERSION, PARTICIPANTS
@@ -395,14 +395,7 @@ class BoQ_Dialog(QDialog):
 			right_layout.addLayout(logs_buttons_layout)
 
 		# Кнопки
-		new_BoQ_buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
-		ok_button = new_BoQ_buttons.button(QDialogButtonBox.StandardButton.Ok)
-		ok_button_name = 'Применить' if self.edit_mode else 'Создать'
-		ok_button.setText(ok_button_name)
-		cancel_button = new_BoQ_buttons.button(QDialogButtonBox.StandardButton.Cancel)
-		cancel_button.setText('Отменить')
-		new_BoQ_buttons.accepted.connect(self.accept)
-		new_BoQ_buttons.rejected.connect(self.reject)
+		new_BoQ_buttons = create_ok_cancel_buttons(self, False, 'Создать')
 
 		left_layout.addWidget(new_BoQ_buttons)
 
@@ -423,10 +416,25 @@ class BoQ_Dialog(QDialog):
 			edit_layout.setStretchFactor(right_container, 2)
 
 	# ------------------------- Методы обновления наименовния -------------------------
+	def _clear_prohibited_symbols_from_filename(self) -> str | None:
+		""" Стирает символы, недопустимые в имени файла """
+		PROHIBITED_SYMBOLS = {'/','\\', '*', '?', '"', '<', '>', '|'}
+		text = self._file_name_combobox.currentText()
+		if not text:
+			return
+		self._file_name_combobox.blockSignals(True)
+		for symb in PROHIBITED_SYMBOLS:
+			text = text.replace(symb, '')
+		text = text.strip().removesuffix('.')
+		self._file_name_combobox.setCurrentText(text)
+		self._file_name_combobox.blockSignals(False)
+		return text
+
 
 	def update_object_name(self):
 		""" Обновляет имя раздела при выборе имени файла, если оно пустое """
 		non_list = {'',' ','-', None, 'None','...', '.'}
+
 		if not self.isObjectName or self._object_name_plain.toPlainText().strip() in non_list:
 			filename = text_after(self._file_name_combobox.currentText(),'_').replace('_',' ')
 			self._object_name_plain.blockSignals(True)
@@ -462,7 +470,7 @@ class BoQ_Dialog(QDialog):
 
 	# ---------------------------- Методы основных действий ---------------------------
 	def accept(self):
-		filename = self._file_name_combobox.currentText().strip()
+		filename = self._clear_prohibited_symbols_from_filename()
 		filenames = [f.path.stem for f in self.list_BoQs]
 		if not filename:
 			QMessageBox.warning(self, "Ошибка", "Имя файла не может быть пустым.")
