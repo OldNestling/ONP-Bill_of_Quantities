@@ -130,14 +130,32 @@ class DataEditorWidget(QWidget):
 		"""Устанавливает модель данных и подключается к её сигналам."""
 		if self.model == model:
 			return
-		# Отключаем сигналы от старой модели
-		if self.model:
+		# Отключаем сигналы от старой модели 
+		# (если она ещё существует на C++ стороне)
+		old_model, self.model = self.model, None
+
+		# Индекс принадлежал старой модели — сбрасываем СРАЗУ,
+  		# иначе update_editors передаст его в новую модель (UB → segfault).
+		self.current_index = QModelIndex()
+
+		if old_model is not None:
+			# Проверяем, жив ли C++ объект
 			try:
-				self.model.dataChanged.disconnect(self._on_model_data_changed)
-				self.model.modelReset.disconnect(self._on_model_reset)
-				self.model.layoutChanged.disconnect(self._on_model_layout_changed)
-			except TypeError:
-				pass			# если сигнал не был подключён
+				_ = old_model.objectName()
+				alive = True
+			except RuntimeError:
+				alive = False
+
+			if alive:
+				for sig, slot in (
+					(old_model.dataChanged, self._on_model_data_changed),
+					(old_model.modelReset, self._on_model_reset),
+					(old_model.layoutChanged, self._on_model_layout_changed)
+				):
+					try:
+						sig.disconnect(slot)
+					except (TypeError, RuntimeError):
+						pass
 
 		self.model = model
 
@@ -145,7 +163,8 @@ class DataEditorWidget(QWidget):
 		if self.model:
 			self.model.dataChanged.connect(self._on_model_data_changed)
 			self.model.modelReset.connect(self._on_model_reset)
-			self.model.layoutChanged.connect(self._on_model_layout_changed)	
+			self.model.layoutChanged.connect(self._on_model_layout_changed)
+		
 		self.col3_editor.setModel(model)
 		self.update_editors()
 
@@ -162,6 +181,14 @@ class DataEditorWidget(QWidget):
 			return
 		self._updating = True
 		try:
+			# Защита: индекс мог остаться от старой модели
+			if self.current_index.isValid() and self.model is not None:
+				try:
+					if self.current_index.model() is not self.model:
+						self.current_index = QModelIndex()
+				except RuntimeError:
+					self.current_index = QModelIndex()
+
 			if not self.model or not self.current_index.isValid():
 				self.default_editor.setEnabled(False)
 				self.default_editor.clear()
@@ -426,13 +453,22 @@ class UnitEditor(QWidget):
 		"""Принимает QModelIndex любой колонки, но работает с колонкой 3 той же строки."""
 		self.current_index = index
 		self.update_display()
+
 	
 	def update_display(self):
 		"""Загружает данные из модели для колонки 3."""
 		if not self.model or not self.current_index.isValid():
 			self.setEnabled(False)
 			return
-
+		# Проверяем, что индекс принадлежит текущей модели
+		try:
+			if self.current_index.model() is not self.model:
+				self.setEnabled(False)
+				return
+		except RuntimeError:
+			self.setEnabled(False)
+			return
+		
 		# Проверяем, является ли элемент Section
 		item = self.current_index.internalPointer()
 		if isinstance(item, Section):

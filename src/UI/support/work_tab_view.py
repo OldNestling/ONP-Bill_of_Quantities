@@ -203,6 +203,7 @@ class BoQ_View(QWidget):
 		if self._shutdown_called:
 			return
 		self._shutdown_called = True
+
 		# Отключаем модель от view
 		if self.view.model() is self.model:
 			self.view.setModel(None)
@@ -213,18 +214,13 @@ class BoQ_View(QWidget):
 		self.view.setItemDelegate(None)
 		self.archive_view.setItemDelegate(None)
 
-		# Удаляем модель (она удалит ссылки на manager и данные)
+		# Разрываем ссылки на manager, но не вызываем beginResetModel/deleteLater вручную:
+		# вручную: модели — дети BoQ_View и будут удалены вместе с ним.
 		if self.model:
-			self.model.beginResetModel()
-			self.model.manager = None   # разрываем ссылку
-			self.model.deleteLater()
-			self.model = None
+			self.model.manager = None
 		
 		if self.archive_model:
-			self.archive_model.beginResetModel()
 			self.archive_model.manager = None
-			self.archive_model.deleteLater()
-			self.archive_model = None
 
 		# Удаляем менеджер (если на него нет других ссылок)
 		if self.manager:

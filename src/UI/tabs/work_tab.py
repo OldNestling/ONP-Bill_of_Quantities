@@ -378,56 +378,60 @@ class BoQ_Tab(QWidget):
 
 	def close_boq_tab(self, index):
 		widget = self.boq_views_container.widget(index)
-		if isinstance(widget, BoQ_View):
-			# Проверяем, была ли эта вкладка активной
-			was_current = (self.boq_views_container.currentIndex() == index)
-			if widget.manager.is_modified:
-				reply = Requestion.ask(
-					self,
-					'Несохранённые изменения',
-					f'Раздел "{widget.manager.file.stem}" был изменён. Сохранить перед закрытием?',
-				)
-				if reply == QMessageBox.StandardButton.Cancel:
-					return
-				elif reply == QMessageBox.StandardButton.Yes:
-					if widget.manager.read_mode:
-						if not self._save_as_dialog(widget.manager, self):
-							return
-					else:
-						widget.manager.save_file()
+		if not isinstance(widget, BoQ_View):
+			return
+		
+		# Проверяем, была ли эта вкладка активной
+		was_current = (self.boq_views_container.currentIndex() == index)
+		if widget.manager.is_modified:
+			reply = Requestion.ask(
+				self,
+				'Несохранённые изменения',
+				f'Раздел "{widget.manager.file.stem}" был изменён. Сохранить перед закрытием?',
+			)
+			if reply == QMessageBox.StandardButton.Cancel:
+				return
+			elif reply == QMessageBox.StandardButton.Yes:
+				if widget.manager.read_mode:
+					if not self._save_as_dialog(widget.manager, self):
+						return
+				else:
+					widget.manager.save_file()
 
-			# Снимаем блокировку (если не режим чтения)
-			if not widget.manager.read_mode:
-				widget.manager.unlock()
+		# отвязываем редактор, если он держит эту модель
+		if getattr(self.data_editor, 'model', None) is widget.model:
+			self.data_editor.clear()
 
-			# Удаляем из словаря
-			file_path = str(widget.manager.file.resolve())
-			if file_path in self.opened_files:
-				del self.opened_files[file_path]
+		# Снимаем блокировку (если не режим чтения)
+		if not widget.manager.read_mode:
+			widget.manager.unlock()
 
-			# Отключаем сигналы выбора, чтобы избежать лишних вызовов после удаления
-			if hasattr(widget, 'view') and widget.view.selectionModel():
-				widget.view.selectionModel().blockSignals(True)
+		# Удаляем из словаря
+		file_path = str(widget.manager.file.resolve())
+		if file_path in self.opened_files:
+			del self.opened_files[file_path]
 
-			# Очистка и завершение работы виджета
-			widget._clear_search()
-			widget.shutdown()
+		# Отключаем сигналы выбора, чтобы избежать лишних вызовов после удаления
+		if hasattr(widget, 'view') and widget.view.selectionModel():
+			widget.view.selectionModel().blockSignals(True)
 
-			# Удаляем вкладку и виджет (только один раз!)
-			self.boq_views_container.removeTab(index)
-			widget.deleteLater()
+		# Очистка и завершение работы виджета
+		widget._clear_search()
+		widget.shutdown()
 
-			# Если закрываемая вкладка была активной – сбрасываем редактор и правую панель
-			if was_current:
-				if hasattr(self.data_editor, 'clear'):
-					self.data_editor.clear()
-				if hasattr(self.right_sidebar, 'clear'):
-					self.right_sidebar.clear()
+		# Удаляем вкладку и виджет (только один раз!)
+		self.boq_views_container.removeTab(index)
+		widget.deleteLater()
 
-			# Обновляем индексы в словаре opened_files
-			for path, idx in list(self.opened_files.items()):
-				if idx > index:
-					self.opened_files[path] = idx - 1
+		# Если закрываемая вкладка была активной – сбрасываем редактор и правую панель
+		if was_current:
+			if hasattr(self.right_sidebar, 'clear'):
+				self.right_sidebar.clear()
+
+		# Обновляем индексы в словаре opened_files
+		for path, idx in list(self.opened_files.items()):
+			if idx > index:
+				self.opened_files[path] = idx - 1
 
 
 	def has_unsaved_changes(self) -> bool:
@@ -517,18 +521,30 @@ class BoQ_Tab(QWidget):
 		self._close_all_tabs_without_dialogs()
 		self.right_sidebar.clear()
 
+
 	def on_boq_selection_changed(self, current, previous):
 		if not current.isValid():
 			return
-		model = current.model()
-		if model is None or model.manager is None:   # модель уже в процессе удаления
+		try:
+			model = current.model()
+		except RuntimeError:
 			return
+		if model is None:   # модель уже в процессе удаления
+			return
+		# Проверяем, что C++ объект ещё жив, и что manager доступен
+		try:
+			if model.manager is None:
+				return
+		except RuntimeError:
+			return
+		
 		self.data_editor.setModel(model)
 		self.data_editor.setCurrentIndex(current)
 		# Передаём tree_view активной вкладки
 		view = self.current_boq_view().view if self.current_boq_view() else None
 		# Обновляем правую панель
 		self.right_sidebar.set_active_model(model, current, view)
+
 
 	def on_tab_changed(self, index):
 		if self.search_bar.isVisible():
@@ -538,12 +554,18 @@ class BoQ_Tab(QWidget):
 			current = widget.view.currentIndex()
 			if current.isValid():
 				model = current.model()
+				self.data_editor.setModel(model)
+				self.data_editor.setCurrentIndex(current)
 				self.right_sidebar.set_active_model(model, current, widget.view)
 			else:
 				# Нет выделения – очищаем правую панель и редактор
 				self.right_sidebar.clear()
 				self.data_editor.clear()
 			widget._clear_search()
+		else:
+			self.right_sidebar.clear()
+			self.data_editor.clear()
+
 
 	# =========================== Работа с данными ===========================
 	def current_boq_view(self):
