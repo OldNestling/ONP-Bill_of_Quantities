@@ -23,13 +23,13 @@ from PyQt6.QtWidgets import (
 	QMessageBox, QListWidget, QAbstractItemView, QTabWidget, QFrame, 
 	QProgressDialog, QInputDialog, QTextBrowser
 	)
-from PyQt6.QtCore import Qt, QSize, QTimer, QEvent
-from PyQt6.QtGui import QColor
+from PyQt6.QtCore import Qt, QSize, QTimer, QEvent, QUrl
+from PyQt6.QtGui import QColor, QDesktopServices
 
 from Core.Project import Project, File_BoQ, FileIsBusy
 from Core.Convertor_BoQ import Convertor, ShemaError
 
-from .ui_utilities import create_separator, Requestion
+from .ui_utilities import create_separator, Requestion, UpdateChecker
 from .tabs.settings_tab import SettingsTab 
 from .tabs.soils_tab import Soils_Tab 
 from .tabs.source_tab import Sources_Tab
@@ -56,6 +56,8 @@ class Project_Window(QWidget):
 		self.tabs_icons = []
 		self.catalog_is_selected = False
 		self.initializeUI()
+		# Запускаем фоновую проверку обновлений
+		self._start_update_check()
 
 	def initializeUI(self):
 		self.setWindowTitle('Система работы с ВОР')
@@ -148,6 +150,13 @@ class Project_Window(QWidget):
 				if hasattr(tab, 'settings_changed'):
 					tab.settings_changed()
 	def closeEvent(self, event):
+		#Останавливаем фоновую проверку обновлений
+		checker = getattr(self, '_update_checker', None)
+		if checker is not None and checker.isRunning():
+			checker.cancel()
+			checker.quit()
+			checker.wait(2000)
+
 		# Если есть вкладка "Разделы" и в ней открыты файлы
 		if hasattr(self, 'BoQs_tab') and self.BoQs_tab is not None:
 			if self.BoQs_tab.boq_views_container.count() > 0:
@@ -376,6 +385,35 @@ class Project_Window(QWidget):
 			if i != index:
 				self.tab_widget.setTabIcon(i, icon)
 				self.tab_widget.setTabEnabled(i, enabled)
+
+	# ============================= Проверка обновлений =============================
+	def _start_update_check(self):
+		"""Запускает фоновый поток проверки релизов на GitHub."""
+		self._update_checker = UpdateChecker(timeout=6, parent=self)
+		self._update_checker.check_finished.connect(self._on_update_checked)
+		self._update_checker.start()
+
+
+	def _on_update_checked(self, has_update: bool, tag: str, url: str, error: str):
+		"""Слот, вызываемый в главном потоке после завершения проверки."""
+		if error:
+			# логируем без оповещения пользователя
+			print(f'[DEBUG: UpdateChecker] {error}')
+			return
+		if not has_update:
+			print('... нет обновлений')
+			return
+
+		reply = Requestion.ask(
+			self,
+			'Доступно обновление',
+			f'Доступна новая версия программы: <b>{tag}</b><br><br>'\
+			f'Открыть страницу релиза для загрузки?',
+			with_cancel= False
+		)
+
+		if reply == QMessageBox.StandardButton.Yes and url:
+			QDesktopServices.openUrl(QUrl(url))
 
 # --------------------------------------------------------------------------------------
 # =================================== ВКЛАДКА: ПРОЕКТ ==================================

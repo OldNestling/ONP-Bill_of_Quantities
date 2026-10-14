@@ -17,8 +17,12 @@
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QLabel, QMenu, QTreeView, QDialog, 
 							 QTextEdit, QLineEdit, QDialogButtonBox, QStyledItemDelegate, 
 							 QPlainTextEdit, QTableWidget, QFrame, QStyle, QMessageBox)
-from PyQt6.QtCore import Qt, pyqtSignal, QSize, QPoint, QModelIndex
+from PyQt6.QtCore import Qt, pyqtSignal, QSize, QPoint, QModelIndex, QThread
 from PyQt6.QtGui import QPainter, QColor, QBrush, QTextDocument, QFont, QPen, QIntValidator
+
+import json, re
+from urllib import request as  url_request, error as url_error
+from Templates.About import PROGRAM_VERSION, GITHUB
 
 class Switch(QWidget):
 	"""Кастомный переключатель (слайдер)"""
@@ -521,8 +525,94 @@ class Requestion(QMessageBox):
 		return box.exec()  # exec() возвращает нажатую стандартную кнопку
 	
 
-# ===================================== Вспомогательные функции =============================================
 
+class UpdateChecker(QThread):
+	""" 
+    Фоновый поток, опрашивающий GitHub Releases API.
+    Сигнал check_finished: (есть_обновление: bool, latest_tag: str,
+                            html_url: str, error: str)
+    При ошибке сети или парсинга latest_tag/error заполняются строками,
+    но приложение всё равно не падает.	
+	"""
+	check_finished = pyqtSignal(bool, str, str, str)
+
+	def __init__(self, timeout: int = 6, parent = None):
+		super().__init__(parent)
+		self.timeout = timeout
+		self._cancelled = False
+ 
+
+	def cancel(self):
+		self._cancelled = True
+
+
+	@staticmethod
+	def parse_version(version_str: str) -> tuple:
+		""" Извлекает числовые части версии для сравнения """
+		_match = re.search(r'(\d+(?:\.\d+)*)', version_str or '')
+		if not _match:
+			return tuple()
+		return tuple(int(x) for x in _match.group(0).split('.'))
+
+	# --------------- основной код потока ---------------
+	def run(self):
+		try:
+			print('Поиск обновлений...')
+			# вытаскиваем owner/repo из github-ссылки
+			m = re.search(
+				r'github\.com/([^/]+)/([^/]+?)(?:\.git)?/?$',
+				GITHUB
+			)
+			if not m:
+				self.check_finished.emit(False, '', '', 'Не удалось разобрать URL репозитория')
+				return
+
+			owner, repo = m.group(1), m.group(2)
+			api_url = f'https://api.github.com/repos/{owner}/{repo}/releases/latest'
+
+			request = url_request.Request(
+				api_url,
+				headers={
+					'Accept': 'application/vnd.github+json',
+					'User-Agent': 'ONP-UpdateChecker'
+				}
+			)
+
+			with url_request.urlopen(request, timeout= self.timeout) as respons:
+				data = json.loads(respons.read().decode('utf-8'))
+
+			if self._cancelled:
+				return
+
+			latest_tag = (data.get('tag_name') or '').strip()
+			html_url = (data.get('html_url') or '').strip()
+
+			if not latest_tag:
+				self.check_finished.emit(False, '', '', 'Тег релиза не найден')
+				return
+
+			# сравниваем версии
+			current = self.parse_version(PROGRAM_VERSION)
+			latest = self.parse_version(latest_tag)
+
+			if latest and current and latest > current:
+				self.check_finished.emit(True, latest_tag, html_url, '')
+			else:
+				self.check_finished.emit(False, '', '', '')
+		
+		except url_error.HTTPError as e:
+			if e.code == 404:
+				self.check_finished.emit(False, '', '', 'Релизы ещё не опубликованы')
+			else:
+				self.check_finished.emit(False, '', '', f'HTTP ошибка: {e.code}')
+		except url_error.URLError as e:
+			self.check_finished.emit(False, '', '', f'Нет соединения {e.reason}')
+		except Exception as e:
+			self.check_finished.emit(False, '', '', f'Ошибка проверки {e}')
+
+	
+
+# ================================= Вспомогательные функции ========================================
 def create_separator(shape=QFrame.Shape.HLine, shadow=QFrame.Shadow.Sunken):
 	separator = QFrame()
 	separator.setFrameShape(shape)
