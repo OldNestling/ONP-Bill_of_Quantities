@@ -430,8 +430,6 @@ class MainProjectTab(QWidget):
 
 	def setup_ui(self):
 		# ----------------------------- Справка -----------------------------------------
-		#help_layout = QHBoxLayout()
-
 		btn_help = QPushButton()
 		btn_help.setToolTip('Справка')
 		btn_help.setIcon(Icons.help)

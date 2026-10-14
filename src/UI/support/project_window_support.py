@@ -662,7 +662,7 @@ class HelpDialog(QDialog):
         thanks_label = QLabel(
             "<i>Программа создана за спасибо.<br>"
             "Более весомая благодарность стимулирет разработчика "
-            "поддержать продукт :)</i>"
+            "поддерживать продукт :)</i>"
         )
         thanks_label.setWordWrap(True)
         thanks_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
