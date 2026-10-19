@@ -257,17 +257,17 @@ class BoQ_Tab(QWidget):
 		status_correct_action = QAction(Icons.done, 'Корректно', self)
 		status_correct_action.setShortcut('Ctrl+=')
 		status_correct_action.setToolTip(f"Корректно ({status_correct_action.shortcut().toString()})")
-		status_correct_action.triggered.connect(lambda: self.change_status(1))
+		status_correct_action.triggered.connect(lambda: self.set_status(1))
 		toolbar.addAction(status_correct_action)
 		status_calculated_action = QAction(Icons.done_all,'Осмечено', self)
 		status_calculated_action.setShortcut('Ctrl+Shift+=')
 		status_calculated_action.setToolTip(f"Осмечено ({status_calculated_action.shortcut().toString()})")
-		status_calculated_action.triggered.connect(lambda: self.change_status(2))
+		status_calculated_action.triggered.connect(lambda: self.set_status(2))
 		toolbar.addAction(status_calculated_action)
 		reset_status_action = QAction(Icons.reset_status, 'Сбросить статусы', self)
 		reset_status_action.setShortcut('Ctrl+-')
 		reset_status_action.setToolTip(f"Сбросить статусы ({reset_status_action.shortcut().toString()})")
-		reset_status_action.triggered.connect(lambda: self.change_status(0))
+		reset_status_action.triggered.connect(lambda: self.set_status(0))
 		toolbar.addAction(reset_status_action)
 
 		toolbar.addSeparator()		  # ---
@@ -607,22 +607,6 @@ class BoQ_Tab(QWidget):
 			return item.address[0], item.address[1], item.address[2]
 		return None, None, None
 	
-	def select_item_by_address(self, view, address):
-		"""Выделяет элемент в tree view по адресу (section_idx, work_idx, res_idx)."""
-		model = view.model
-		sec_idx, work_idx, res_idx = address
-		parent = QModelIndex()
-		if sec_idx is not None:
-			sec_index = model.index(sec_idx, 0, parent)
-			if work_idx is None:
-				view.view.setCurrentIndex(sec_index)
-				return
-			work_index = model.index(work_idx, 0, sec_index)
-			if res_idx is None:
-				view.view.setCurrentIndex(work_index)
-				return
-			res_index = model.index(res_idx, 0, work_index)
-			view.view.setCurrentIndex(res_index)
 	
 	def toggle_search_bar(self):
 		if self.search_bar.isVisible():
@@ -922,88 +906,49 @@ class BoQ_Tab(QWidget):
 		view = self.current_boq_view()
 		if not view:
 			return
-		manager = view.manager
-		model = view.model
+		
+		current_index = view.view.currentIndex()
+		item = current_index.internalPointer() if current_index.isValid() else None
+		view.add_section(item, False)
 
-		row = len(manager.sections)
-		model.beginInsertRows(QModelIndex(), row, row)
-		manager.add_section()
-		model.endInsertRows()
-		#view.view.expandAll()
 
 	def add_work(self):
 		view = self.current_boq_view()
 		if not view:
 			return
-		manager = view.manager
-		model = view.model
 
 		current_index = view.view.currentIndex()
 		if not current_index.isValid():
 			return # Некуда вставлять
 		
 		item = current_index.internalPointer()
+		view.add_work(item, False)
 
-		if isinstance(item, Section):
-			section_index = item.address
-		else:
-			section_index, _, _ = item.address
-		
-		if section_index is not None:
-			manager.add_work(section_index)
-			model.layoutChanged.emit()
-			#view.view.expandAll()
 
 	def add_resource(self):
 		view = self.current_boq_view()
 		if not view:
 			return
-		manager = view.manager
-		model = view.model
 
 		current_index = view.view.currentIndex()
 		if not current_index.isValid():
 			return
 		if not current_index.parent():
 			return
+		
 		item = current_index.internalPointer()
-
-		if isinstance(item, (Work, Resource)):
-			section_index, work_index, _  = item.address
-		#if section_index is not None and work_index is not None:
-			manager.add_resource(section_index, work_index)
-			model.layoutChanged.emit()
-			#view.view.expandAll()
-
+		if isinstance(item, Section):
+			return
+		else:
+			view.add_resource(item, False)
+			
 	# ------------- Удаление -------------	
 	def remove_selected(self):
-
 		view = self.current_boq_view()
 		if not view:
 			return
-
-		current_index = view.view.currentIndex()
-		if not current_index.isValid():
-			return
-
-		manager = view.manager
-		model = view.model
-		item = current_index.internalPointer()
-
-		# Сбросить выделение и текущий индекс до удаления
-		view.view.clearSelection()
-		view.view.setCurrentIndex(QModelIndex())
-
-		model.beginResetModel()
-		try:
-			if isinstance(item, Section):
-				manager.remove_obj((item.address, None, None))
-			elif isinstance(item, (Work, Resource)):
-				manager.remove_obj(item.address)
-		finally:
-			model.endResetModel()
-		view.view.expandAll()
-
+		view.remove_pos()
+	
 	
 	def drop_to_archive(self):
 		"""Переносит выбранную позицию (раздел, работу или ресурс) в архив."""
@@ -1139,81 +1084,7 @@ class BoQ_Tab(QWidget):
 			model.endResetModel()
 			view.view.expandAll()
 
-
-	#def create_road_constr(self):
-	#	""" Вызывает диалоговое окно для создания позиций дорожной конструкции
-	#	 или её элементов """
-	#	if not self.project.road_constr_manager.library:
-	#		QMessageBox.warning(
-	#			self,
-	#			'Отсутствуют данные',
-	#			'В бибиотеке проекта отсутсвуют данные о дорожных конструкциях'
-	#		)
-	#		return
-
-	#	view = self.current_boq_view()
-	#	if not view:
-	#		return
-	#	current_index = view.view.currentIndex()
-	#	if not current_index.isValid():
-	#		return
-
-	#	manager = view.manager
-	#	model = view.model
-	#	item = current_index.internalPointer()
-
-	#	if isinstance(item, Section):
-	#		section_index = item.address
-	#		indexes = (section_index, None, None)
-	#	else:
-	#		indexes = item.address
-
-	#	dialog = Road_Constr_Dialog(self, manager)
-	#	if dialog.exec() == dialog.DialogCode.Accepted:
-	#		data: dict = dialog.get_data()
-	#		model.beginResetModel()
-	#		manager.add_road_constr(data, indexes)
-	#		model.endResetModel()
-	#		view.view.expandAll()
-
-	#def create_material(self):
-	#	""" Вызывает диалоговое окно для создания позиций материала """
-	#	if not self.project.materials_manager.library:
-	#		QMessageBox.warning(
-	#			self,
-	#			'Отсутствуют данные',
-	#			'В бибиотеке проекта отсутсвуют данные о материалах'
-	#		)
-	#		return
-
-	#	view = self.current_boq_view()
-	#	if not view:
-	#		return
-	#	current_index = view.view.currentIndex()
-	#	if not current_index.isValid():
-	#		return
-
-	#	manager = view.manager
-	#	model = view.model
-	#	item = current_index.internalPointer()
-
-	#	if isinstance(item, Section):
-	#		section_index = item.address
-	#		indexes = (section_index, None, None)
-	#	else:
-	#		indexes = item.address
-
-	#	dialog = Material_Dialog(self, manager)
-	#	if dialog.exec() == dialog.DialogCode.Accepted:
-	#		data: dict = dialog.get_data()
-	#		model.beginResetModel()
-	#		manager.add_material(data, indexes)
-	#		model.endResetModel()
-	#		view.view.expandAll()
-
-
 	# ------------- Перемещение -------------
-
 	def move_selected(self, direction):
 		"""direction: -1 (вверх), 1 (вниз)"""
 		view = self.current_boq_view()
@@ -1233,13 +1104,10 @@ class BoQ_Tab(QWidget):
 			indexes = item.address
 		new_addr = manager.move_obj(direction, indexes)
 
-
 		model.layoutChanged.emit()
-		#view.view.expandAll()
-		self.select_item_by_address(view, new_addr)
+		view.select_item_by_address(new_addr)
 	
 	# ---------- Свёртывание / Развёртывание -----------
-
 	def switch_collapse_expand(self, mode):
 		view = self.current_boq_view()
 		if not view:
@@ -1248,29 +1116,20 @@ class BoQ_Tab(QWidget):
 		else: view.view.collapseAll()
 	
 	# -------------------- Статусы ---------------------
-
-	def change_status(self, mode):
+	def set_status(self, mode):
 		""" Переключает статус позиции 0 -> сброс, 1 -> корректно, 2 -> осмечено """
 		view = self.current_boq_view()
 		if not view:
 			return
-		model = view.model
+		
 		selection = view.view.selectionModel()
 		if not selection:
 			return
 		
-		for index in selection.selectedIndexes():
-			item = index.internalPointer()
-			if not isinstance(item, (Work, Resource)):
-				continue
-			if mode == 0: item.reset_status()
-			elif mode == 1: item.make_is_correct()
-			else: item.make_is_calculated()
-			model.dataChanged.emit(index, index, [Qt.ItemDataRole.DisplayRole])
-		view.view.viewport().update()
+		indexes = selection.selectedIndexes()
+		view.set_status(indexes, mode)
 	
 	# -------------------- Стили ---------------------
-
 	def show_background_color_menu(self):
 		self._show_color_menu(is_background=True)
 

@@ -123,6 +123,7 @@ class Model(QAbstractItemModel):
 			return QModelIndex()
 		return QModelIndex()
 		
+
 	def data(self, index: QModelIndex, role: int = Qt.ItemDataRole.DisplayRole):
 		"""Возвращает данные для указанной роли"""
 		if not index.isValid():
@@ -133,28 +134,26 @@ class Model(QAbstractItemModel):
 		col = index.column()
 		if role == Qt.ItemDataRole.DisplayRole:
 			if isinstance(item, Section):
-				if col == self.COL_ADDRESS:
-					return item.format_address
-				elif col == self.COL_NUM:
-					return ''
-				elif col == self.COL_NAME:
-					return item.name
-				else: # Столбцы с 3 по 9 пусты для раздела
-					return ''
+				if col == self.COL_ADDRESS: return item.format_address
+				elif col == self.COL_NUM: return ''
+				elif col == self.COL_NAME: return item.name
+				elif col == self.COL_LOCAL_COMMENT: return item.local_comment or ''
+				else: return ''				# Столбцы с 3 по 8 пусты для раздела
 			elif isinstance(item, (Work, Resource)):
 				if col == self.COL_ADDRESS: return item.format_address
 				elif col == self.COL_NUM: return item.num
-				elif col == self.COL_NAME: return item.name
+				elif col == self.COL_NAME: return item.name_cache
 				elif col == self.COL_UNIT: return item.unit
-				elif col == self.COL_QUANITY: return item.quantity
-				elif col == self.COL_FORMULA: return item.quantity_formula
-				elif col == self.COL_LINKS: return item.planned_links
-				elif col == self.COL_COMMENT: return item.comment
+				elif col == self.COL_QUANITY: return item.quantity_cache
+				elif col == self.COL_FORMULA: return item.quantity_formula_cache
+				elif col == self.COL_LINKS: return item.links_cache
+				elif col == self.COL_COMMENT: return item.comment_cache
 				elif col == self.COL_TYPE: return item.type
 				elif col == self.COL_LOCAL_COMMENT: return item.local_comment
 		elif role == Qt.ItemDataRole.EditRole:
 			if isinstance(item, Section):
 				if col == self.COL_NAME: return item.raw_name
+				elif col == self.COL_LOCAL_COMMENT: return item.local_comment
 				else: return ''
 			elif isinstance(item, (Work, Resource)):
 				if col == self.COL_NAME: return item.raw_name 
@@ -169,7 +168,8 @@ class Model(QAbstractItemModel):
 				return Qt.AlignmentFlag.AlignCenter
 			return None
 		return None
-	
+
+
 	def setData(self, index: QModelIndex, value, role: int = Qt.ItemDataRole.EditRole) -> bool:
 		"""Обновляет данные в менеджере и возвращает True, если успешно"""
 		if not index.isValid() or role != Qt.ItemDataRole.EditRole:
@@ -183,10 +183,11 @@ class Model(QAbstractItemModel):
 		try:
 			if isinstance(item, Section):
 				if col == self.COL_NAME: item.name = value
+				elif col == self.COL_LOCAL_COMMENT: item.local_comment = value
 				else: return False
 			elif isinstance(item, (Work, Resource)):
 				if col == self.COL_NAME: item.name = value
-				elif col == self.COL_UNIT: item.raw_unit = value
+				elif col == self.COL_UNIT: item.unit = value
 				elif col == self.COL_FORMULA: item.raw_quantity_formula = value
 				elif col == self.COL_COMMENT: item.raw_comment = value 
 				elif col == self.COL_TYPE: item.type = value
@@ -196,10 +197,12 @@ class Model(QAbstractItemModel):
 				return False
 			# Уведомляем представление об изменении данных
 			self.manager.is_modified = True
-			self.dataChanged.emit(index, index, [role])
+			self.dataChanged.emit(
+				index, index, [Qt.ItemDataRole.DisplayRole, Qt.ItemDataRole.EditRole]
+			)
 
-			#if col in (self.COL_FORMULA, self.COL_UNIT):
-			#	self.layoutChanged.emit()
+			if col in (self.COL_FORMULA, self.COL_UNIT, self.COL_COMMENT):
+				self.layoutChanged.emit()
 
 			return True
 		except Exception as e:
@@ -217,7 +220,7 @@ class Model(QAbstractItemModel):
 		col = index.column()
 		if isinstance(item, Section):
 			# Разделы: редактируется только наименование
-			if col == self.COL_NAME:
+			if col == self.COL_NAME or col == self.COL_LOCAL_COMMENT:
 				base_flags |= Qt.ItemFlag.ItemIsEditable
 		elif isinstance(item, (Work, Resource)):
 			# Позиции: редактируем всё, кроме адреса, номера, quanity (генерируется автоматически)
@@ -343,49 +346,17 @@ class ArchiveModel(Model):
 					return item.name
 				else:
 					return ''
-			elif isinstance(item, Work):
-				if col == self.COL_ADDRESS:
-					return item.format_address_cache or item.format_address
-				elif col == self.COL_NUM:
-					return item.num_cache or ''
-				elif col == self.COL_NAME:
-					return item.name
-				elif col == self.COL_UNIT:
-					return item.unit  # unit уже возвращает метку
-				elif col == self.COL_QUANITY:
-					return item.quantity_cache or ''
-				elif col == self.COL_FORMULA:
-					return item.quantity_formula  # формула может быть вычислена, но для архива она статична
-				elif col == self.COL_LINKS:
-					return item.links_cache or ''
-				elif col == self.COL_COMMENT:
-					return item.comment
-				elif col == self.COL_TYPE:
-					return item.type
-				elif col == self.COL_LOCAL_COMMENT:
-					return item.local_comment
-			elif isinstance(item, Resource):
-				# аналогично
-				if col == self.COL_ADDRESS:
-					return item.format_address_cache or ''
-				elif col == self.COL_NUM:
-					return item.num_cache or ''
-				elif col == self.COL_NAME:
-					return item.name
-				elif col == self.COL_UNIT:
-					return item.unit
-				elif col == self.COL_QUANITY:
-					return item.quantity_cache or ''
-				elif col == self.COL_FORMULA:
-					return item.quantity_formula
-				elif col == self.COL_LINKS:
-					return item.links_cache or ''
-				elif col == self.COL_COMMENT:
-					return item.comment
-				elif col == self.COL_TYPE:
-					return item.type
-				elif col == self.COL_LOCAL_COMMENT:
-					return item.local_comment
+			elif isinstance(item, (Work, Resource)):
+				if col == self.COL_ADDRESS: return item.format_address_cache or item.format_address
+				elif col == self.COL_NUM: return item.num_cache or ''
+				elif col == self.COL_NAME: return item.name_cache or ''
+				elif col == self.COL_UNIT: return item.unit  # unit уже возвращает метку
+				elif col == self.COL_QUANITY: return item.quantity_cache or ''
+				elif col == self.COL_FORMULA: return item.quantity_formula_cache or ''
+				elif col == self.COL_LINKS: return item.links_cache or ''
+				elif col == self.COL_COMMENT: return item.comment_cache or ''
+				elif col == self.COL_TYPE: return item.type
+				elif col == self.COL_LOCAL_COMMENT: return item.local_comment
 		elif role == Qt.ItemDataRole.TextAlignmentRole:
 			if col in (self.COL_ADDRESS, self.COL_NUM, self.COL_UNIT, self.COL_QUANITY, self.COL_FORMULA):
 				return Qt.AlignmentFlag.AlignCenter

@@ -54,13 +54,19 @@ class BoQ_manager:
 			'Composer': '',
 			'Composer_Position': 'Инженер 3 категории'
 		}
-		self.verifier: dict | None = None	# Заверитель. Если None, то по глобальному параметру проекта
-		self.note = ''						# Пользовательские заметки к разделу ВОР. Взаимодействие через модель фронтэнда
-		self.log_list: list = None			# список со словарями с ключами Date, Event, содержащими информацию о изменениях
+		# Заверитель. Если None, то по глобальному параметру проекта
+		self.verifier: dict | None = None
+		# Пользовательские заметки к разделу ВОР. Взаимодействие через модель фронтэнда
+		self.note = ''
+		# список со словарями с ключами Date, Event, содержащими информацию о изменениях
+		self.log_list: list = None
 
-		self.sections: list[Section] = None	# Накопитель подразделов ВОР. Подразделы содержат позиции, те могут содержать ценообразующие ресурсы 
-		self.archive: list = None			# Накопитель исключённых позиций ВОР для удобства сметчика
-		self.links: set = None				# Хранит все существующие ссылки на документы для ускоренной работы с ними
+		# Накопитель подразделов ВОР. Подразделы содержат позиции, те могут содержать ценообразующие ресурсы 
+		self.sections: list[Section] = None
+		# Накопитель исключённых позиций ВОР для удобства сметчика
+		self.archive: list[Section] = None
+		# Хранит все существующие ссылки на документы для ускоренной работы с ними
+		self.links: set = None
 		self.load_file(file)
 		self._is_loaded = True
 	
@@ -149,6 +155,7 @@ class BoQ_manager:
 			save_path =  self.file.parent / f'{save_as}.json'	# новый путь
 			self.file = save_path
 		data = self.serialization()
+		data['data_scheme']=2
 		if not data:
 			if save_as: self.file = old_path # откатываем путь к файлу
 			return False
@@ -172,23 +179,23 @@ class BoQ_manager:
 		self.links = set() if self.links is None else self.links
 
 		with open(file, "r", encoding="utf-8") as f:
-			data = json.load(f)
-			self.deserialization(data)
+			data: dict = json.load(f)
+			self.deserialization(data, data.get('data_scheme', 1))
 		# После воссоздания структуры нужно восстановить множества зависимостей
 		self.__clean_init_dependencies()
-		#self.restore_addresses_in_collection(self.sections)
 		self.calculate_pos_nums()
 		self.check_changes()
+
 	
 	def reload_file(self):
 		""" Для переоткрытия файла без сохранения данных """
-		mode = self.read_mode	#TODO
 		file = self.file
 		self.cleanup(False)
 
 		self.sections = None
 		self.archive = None
 		self.links = None
+		self.is_modified = False
 		self.load_file(file)
 
 
@@ -213,7 +220,6 @@ class BoQ_manager:
 			sections = []
 		
 		if self.archive:
-			obj: Work | Resource
 			archive = [obj.serialization() for obj in self.archive]
 		else:
 			archive = []
@@ -230,10 +236,9 @@ class BoQ_manager:
 		}
 		return result
 
-	def deserialization(self, data: dict | None = None):
+	def deserialization(self, data: dict | None = None, data_scheme = 1):
 		if data is None or self.project is None:
 			return
-		data_scheme = data.get('data_scheme')	# TODO Валидация данных в будующем при изменении структуры
 		metadata = data.get('metadata')
 		if metadata:
 			self.object_name = metadata.get('ObjectName')
@@ -247,16 +252,20 @@ class BoQ_manager:
 			self.note = metadata.get('note', '')
 			self.log_list = metadata.get('log_list',[])
 		data_content = data.get('data', {})
-		raw_sections =  data_content.get('sections')
-		raw_archive = data_content.get('archive')
-		if raw_sections:
-			for i, rs in enumerate(raw_sections):
-				self.sections.append(Section.deserialization(data=rs, manager=self, index= i))
+		raw_sections =  data_content.get('sections', [])
+		raw_archive = data_content.get('archive', [])
+		for i, rs in enumerate(raw_sections if isinstance(raw_sections, list) else []):
+			self.sections.append(Section.deserialization(
+				data=rs, manager=self, index= i, data_scheme= data_scheme
+			))
 
-		if raw_archive:
-			for i, ra in enumerate(raw_archive):
-				self.archive.append(Section.deserialization(data=ra, manager=None, index= i))
-			self._sort_archive()
+		for i, ra in enumerate(raw_archive if isinstance(raw_archive, list) else []):
+			self.archive.append(
+				Section.deserialization(
+					data=ra, manager=None, index= i, data_scheme = data_scheme
+				)
+			)
+		self._sort_archive()
 
 	def unlock(self):
 		"""	Удаляет файл блокировки	"""
@@ -264,9 +273,7 @@ class BoQ_manager:
 		filename: Path = self.file.parent / f'{self.file.stem}__{username}.lock'
 		if filename.exists(): filename.unlink()
 	
-
 	# --------------------------------- Работа с файлами -----------------------------------
-
 	def get_links_files(self) -> dict[str, dict]:
 		""" Возвращает информацию о упомянутой документации в виде данных для xml  """
 		if not self.sections or self.project is None:
@@ -492,15 +499,16 @@ class BoQ_manager:
 		for section in self.sections:
 			section: Section
 			for work in section.works:
-				
+				work.update_cache_fields()
 				if not work.compare_name(): is_changed = True
 				work.check_qnt_and_depends()
-				if not work.compare_comment(): is_changed = True
+				if not work.compare_comment_and_dependents(): is_changed = True
 
 				for resource in work.resources:
+					resource.update_cache_fields()
 					if not resource.compare_name(): is_changed = True
 					resource.check_qnt_and_depends()
-					if not resource.compare_comment(): is_changed = True
+					if not resource.compare_comment_and_dependents(): is_changed = True
 		if is_changed:
 			self.is_modified = True
 
@@ -568,20 +576,22 @@ class BoQ_manager:
 
 	# ------------------------------------- Создание -------------------------------------
 
-	def add_section(self, index = None) -> bool:
+	def add_section(self, index: int | None = None) -> list[int, int, None]:
 		"""
 		Добавляет новый объект типа Section в конец списка или перед определённой разделом
 		:index: Выбранная позиция вставки
 		"""
+		section = Section(manager=self)
 		if index is not None and self._check_access_to_obj((index, None, None)):
-			self.sections.insert(index, Section(manager=self))
+			self.sections.insert(index, section)
 			self.restore_addresses_in_collection(self.sections, index+1)
 		else:
-			self.sections.append(Section(manager=self))
+			self.sections.append(section)
 		self.is_modified = True
-		return True
+		return [section.address or None, None, None]
+
 	
-	def add_work(self, index_section, index = None) -> bool:
+	def add_work(self, index_section, index = None) -> list[int, int, None]:
 		"""
 		Добавляет новый объект типа Work в конец списка объекта Section 
 		или перед определённым объектом в коллекции
@@ -593,30 +603,31 @@ class BoQ_manager:
 		solution = self._check_access_to_obj(indexes)
 		section_solution = self._check_access_to_obj((index_section, None, None))
 		if not section_solution:
-			return False
+			return []
 		section: Section = self.sections[index_section]
 		if not solution and index != len(section.works):
-			return False
+			return []
 		if index is None or index == len(section.works):
-			new_work = Work(manager=self, address= [index_section, len(section.works), None])
+			address = [index_section, len(section.works), None]
+			new_work = Work(manager=self, address= address)
 			section.works.append(new_work)
 			self.calculate_pos_nums()
 			self.is_modified = True
-			return True
 		else:
-			work = Work(manager=self, address= [index_section, index, None])
+			address = [index_section, index, None]
+			work = Work(manager=self, address= address)
 			section.works.insert(index, work)
 			self.restore_addresses_in_collection(section, index+1)
 			self.calculate_pos_nums()
 			self.is_modified = True
-			return True
+		return address
 
 	def add_resource(
 			self, 
 			index_section, 
 			index_work, 
 			index = None
-	) -> bool:
+	) -> list[int, int, int]:
 		""" Добавляет новый объект типа Resource в конец списка объекта Work 
 		или перед определённым объектом в коллекции
 		### Args:
@@ -624,29 +635,32 @@ class BoQ_manager:
 			- :index_work:	выбранная позиция работы
 			- :index: выбранная позиция вставки
 		"""
-		indexes = (index_section, index_work, index)
-		solution = self._check_access_to_obj(indexes)
+		#indexes = (index_section, index_work, index)
+		#solution = self._check_access_to_obj(indexes)
 		#work_solution = self._check_access_to_obj((index_section, index_work, None))
 		#if not solution and not work_solution:
 		#	return False
 		if index is None:
 			section: Section = self.sections[index_section]
 			work: Work = section.works[index_work]
-			work.resources.append(Resource(self, [index_section, index_work, len(work.resources)]))
+			resource = Resource(self, [index_section, index_work, len(work.resources)])
+			work.resources.append(resource)
 			self.recalculate_resources_nums(work)
 			self.is_modified = True
-			return True
 		else:
 			section: Section = self.sections[index_section]
 			work: Work = section.works[index_work]
 			if index == len(work.resources):
-				work.resources.append(Resource(self, [index_section, index_work, len(work.resources)]))
+				resource = Resource(self, [index_section, index_work, len(work.resources)])
+				work.resources.append(resource)
 			else:
-				work.resources.insert(index, Resource(self, [index_section, index_work, index]))
+				resource = Resource(self, [index_section, index_work, index])
+				work.resources.insert(index, resource)
 			self.restore_addresses_in_collection(work, index)
 			self.recalculate_resources_nums(work)
 			self.is_modified = True
-			return True
+		return resource.address
+
 
 	def add_link(self, indexes: tuple, index = None) -> bool:
 		"""
@@ -1144,7 +1158,6 @@ class BoQ_manager:
 		и переводит его в архив
 		### Args:
 			- :indexes: кортеж с данными вырезки: индексы раздела, работы и ресурса, 
-			- :is_get_links: дополнительный параметр для вырезания атрибута ссылок
 		"""
 		solution = self._check_access_to_obj(indexes)
 

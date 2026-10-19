@@ -45,7 +45,8 @@ class Section:
 		self.raw_name: str = name							# Наименование раздела
 		self.works: list[Work] = works if works is not None else list()	# Позиции раздела
 		self.manager: BoQ_manager = manager
-
+		self._local_comment: str | None = None
+ 
 	@property
 	def status(self) -> bool:
 		""" Отслеживает готовность позиций и подпозиций в разделе"""
@@ -70,6 +71,20 @@ class Section:
 	def name(self, value):
 		self.raw_name = value
 
+
+	@property
+	def local_comment(self):
+		return self._local_comment
+
+
+	@local_comment.setter
+	def local_comment(self, value):
+		if value:
+			self._local_comment = value
+			self.manager.is_modified = True
+		else:
+			self._local_comment = None
+		
 	# ---------------------------------- Работа с адресами ----------------------------------
 	@property
 	def address(self):
@@ -180,19 +195,19 @@ class Section:
 		data = {
 			'format_address_cache': self.format_address_cache,
 			'name': self.raw_name,
+			'local_comment': self.local_comment,
 			'works': []
 		}
 		if not self.works:
 			return data
 		ser_works = []
 		for work in self.works:
-			work: Work
 			ser_works.append(work.serialization())
 		data['works'] = ser_works
 		return data
 
 	@classmethod
-	def deserialization(cls, data: dict, manager, index):
+	def deserialization(cls, data: dict, manager: BoQ_manager, index: int, data_scheme: int):
 		""" Преобразует JSON-объект в объекты проекта (Section, Work, Resource, Link, Style_Manager) """
 		if data is None:
 			return cls(manager)
@@ -200,17 +215,20 @@ class Section:
 		name = data.get('name', 'Раздел')
 		works_data = data.get('works',[])
 	
+		section: Section = cls(manager, name, works_data)
+		section._local_comment = data.get('local_comment')
+		section.format_address_cache = format_address_cache
+
 		if not works_data:
-			obj: Section = cls(manager, name, works_data)
-			obj.format_address_cache = format_address_cache
-			return obj
+			return section
 		
 		works_objs = []
 		for i, work in enumerate(works_data):
-			obj = Work.deserialization(manager, work, [index, i, None])
-			obj.format_address_cache = format_address_cache
-			works_objs.append(obj)
-		return cls(manager, name, works_objs)
+			work = Work.deserialization(manager, work, [index, i, None], data_scheme)
+			works_objs.append(work)
+		section.works = works_objs
+			
+		return section
 
 
 class Link:
@@ -396,29 +414,56 @@ class PositionLine(ABC):
 	# ===================================================================================
 
 	def __init__(self, manager, address = None):
-		self.manager: BoQ_manager = manager				# менеджер раздела для получения глобальных данных
-		self.style_manager = Style_Manager()			# Управляет данными о пользовательском переопределении представления
-		self._address = address	if address is not None else []	# Текущий адрес в иерархии ведомости (section_index, work_inedx, resource index | None)
-		self.format_address_cache = None				# Статичный форматированный аддрес для архива 
-		self.num: int | str| None = None				# Номер позиции. Определяется менеджером
-		self.num_cache = None							# Статичный номер для архивной позиции 
-		self.raw_name: str = ''							# Описание позиции (столбец ведомости 3), видимое в редакторе
-		self._name_cache = None 						# хеш для определения изменения статуса
-		self.raw_unit: str = '-'						# Ключ-строка еденицы измерения (столбец 4)
-		self._raw_quantity_formula: str = '0'			# Формула вычисления позиции (столбец 5), видимая в редакторе
-		self.quantity_cache = None						# Статичный результат вычисления для архива
-		self.links: list[Link] = []						# Ссылки на обосновывающие документы. Содержит объекты класса Link
-		self.links_cache = None							# Статичные данные для архивных позиций
-		self._raw_comment: str = ''						# Примечание (столбец 8)
-		self._comment_cache = None
-		self.local_comment = ''							# Локальный комментарий в среде разработки ведомости
-		self.type = 'работа'							# Тип позиции из списка возможных ['работа','материал','перевозка','оборудование', 'машина', 'прочее']
-		self._custom_round: int | None = None			# Замещение округления с системного на пользовательское
-		self._custom_round_mode: int | None = None		# Режим округления. 1 - округление вверх с текущей точность, 2 - вниз
+		# менеджер раздела для получения глобальных данных
+		self.manager: BoQ_manager = manager
+		# Управляет данными о пользовательском переопределении представления
+		self.style_manager = Style_Manager()
+
+		# Текущий адрес в иерархии ведомости (section_index, work_inedx, resource index | None)
+		self._address = address	if address is not None else []	
+		self.format_address_cache = None		# Статичный форматированный аддрес для архива 
+		
+		self.num: int|str|None = None		# Номер позиции. Определяется менеджером
+		self.num_cache = None					# Статичный номер для архивной позиции 
+		
+		# Описание позиции (столбец ведомости 3), видимое в редакторе
+		self.raw_name: str = ''					# текст для EditRole
+		self.name_cache = None					# Статичный текст для DisplayRole 
+		self._name_hash = None 					# хеш для определения изменения статуса
+
+		self.raw_unit: str = '-'				# Ключ-строка еденицы измерения (столбец 4)
+	
+		# Формула вычисления позиции (столбец 5), видимая в редакторе
+		self._raw_quantity_formula: str = '0'			
+		self.quantity_formula_cache = None		#  статичный результат вычисления DisplayRole формулы
+		
+		self.quantity_cache = None				# Статичный результат вычисления
+
+		# Ссылки на обосновывающие документы. Содержит объекты класса Link
+		self.links: list[Link] = []
+		self.links_cache = None					# Статичные данные
+		
+		self._raw_comment: str = ''				# Примечание (столбец 8)
+		self._comment_hash = None
+		self.comment_cache	= None				# статичный результат вычисления для DisplayRole
+		# Локальный комментарий в среде разработки ведомости
+		self.local_comment = ''
+		
+		# Тип позиции из списка возможных ['работа','материал','перевозка','оборудование', 'машина', 'прочее']
+		self.type = 'работа'							
+
+		# Замещение округления с системного на пользовательское
+		self._custom_round: int | None = None
+		# Режим округления. 1 - округление вверх с текущей точность, 2 - вниз
+		self._custom_round_mode: int | None = None		
+		
 		self.status_correct = False						# Подтверждено готовым разработчиком
 		self.status_calculated = False					# Подтверждено готовым сметчиком
-		self.dependents: set[PositionLine] = None		# Зависимые от этой позиции элементы (требуют пересчёта при изменении объекта)
-		self.flag_dependent_formula = False				# флаг наличия в формуле ссылок на позиции для цветовой индикации
+		
+		# Зависимые от этой позиции элементы (требуют пересчёта при изменении объекта)
+		self.dependents: set[PositionLine] = None
+		# флаг наличия в формуле ссылок на позиции для цветовой индикации
+		self.flag_dependent_formula = False
 	
 
 	@property
@@ -450,7 +495,6 @@ class PositionLine(ABC):
 
 	# ============================= Методы и атрибуты данных  ===========================
 	# ------------------------------- Наименование позиции  -----------------------------
-
 	@property
 	def name(self):
 		if self.raw_name.startswith('='):
@@ -460,6 +504,7 @@ class PositionLine(ABC):
 		else:
 			return self.raw_name
 		
+	
 	@name.setter
 	def name(self, string: str):
 		text = fixing_spaces(string.strip())
@@ -470,25 +515,29 @@ class PositionLine(ABC):
 			text = '=' + text
 
 		self.raw_name = text
+		name = self.process_library_requests(text).removeprefix('=').strip()
+		self.compare_name(name)
+		self._set_name_cache(name)
 
-		hash = get_hash_text(self.process_library_requests(text))
-		if self.status_calculated and self._name_cache != hash:
-			self.status_calculated = False
-		self._name_cache = hash
 	
-	def compare_name(self):
+	def compare_name(self, text = None):
 		""" Проверяет изменение в наименовании позиции и сбрасывает статус "осметчено" """
-		hash_name = get_hash_text(self.name)
-		if self._name_cache != hash_name:
-			self._name_cache = hash_name
+		name = self.name if text is None else text 
+		hash_name = get_hash_text(name)
+		if self._name_hash != hash_name:
+			self._name_hash = hash_name
 			if self.status_calculated:
 				self.status_calculated = False
 				return False	# чтобы избежать сообщение о изменении,
 			else: return True	# если позиции всё равно не осмечены
 		else: return True
 
-	# -------------------------------- Единицы измерения --------------------------------
 
+	def _set_name_cache(self, name=None):
+		""" Устанавливает статичный текст для DisplayRole """
+		self.name_cache = self.name if name is None else name
+
+	# -------------------------------- Единицы измерения --------------------------------
 	@property
 	def unit(self) -> str:
 		""" Возвращает лейбл единицы измерения """
@@ -505,7 +554,8 @@ class PositionLine(ABC):
 	@unit.setter
 	def unit(self, key):
 		self.raw_unit = key
-		self.compare_qnt()
+		self._set_quantity_formula_cache()
+		self.check_qnt_and_depends()
 		self.manager.is_modified = True
 	
 	@property
@@ -559,9 +609,14 @@ class PositionLine(ABC):
 	def _set_flag_of_formula_dependent(self):
 		""" Устанавливает флаг завивисимой формулы для цветовой индикации позиции """
 		# паттерн поиска чисел вне псевдонимов и адрессов
-		pattern = r'(?:^|[+\-*/=])\s*(\d+(?:\.\d+)?)\s*(?=\s*(?:$|[+\-*/=]))'
+		pattern = r'(?:^|[+\-*/=\()])\s*(\d+(?:\.\d+)?)\s*(?=\s*(?:$|[+\-*/=\)]))'
 		nums = re.findall(pattern, self.raw_quantity_formula)
 		self.flag_dependent_formula = not bool(nums)
+
+
+	def _set_quantity_formula_cache(self):
+		""" Устанавливает статичный текст для DisplayRole """
+		self.quantity_formula_cache = self.quantity_formula
 
 
 	@raw_quantity_formula.setter
@@ -573,8 +628,9 @@ class PositionLine(ABC):
 		if not clr_text.startswith('=') and ('@' in clr_text or re.match(self.PATTERN, clr_text)):
 			clr_text = '=' + clr_text
 		self._raw_quantity_formula = clr_text
-		self.check_qnt_and_depends()
+
 		self._set_flag_of_formula_dependent()
+		self.check_qnt_and_depends()
 
 
 	@property
@@ -595,12 +651,10 @@ class PositionLine(ABC):
 			return calculated
 	
 	# ---------------------------------- Количество -------------------------------------
-
 	@property
 	def quantity(self) -> str:
 		""" Вычисляет результат чистой текстовой формулы из quantity_formula, 
 		уже не содержащей вспомогательного синтаксиса"""
-		
 		raw_quantity_formula = self.raw_quantity_formula
 		if not raw_quantity_formula:
 			return "#ПУСТО"
@@ -625,37 +679,56 @@ class PositionLine(ABC):
 			# print(f"Ошибка вычисления формулы: {e}")
 			return "#ОШИБКА"
 
-	def compare_qnt(self, res: str | None = None) -> bool:
-		""" Сопоставляет изменения с прошлым вычислением и 
-		сбрасывает статус status_calculated при необходимости """
+
+	def _set_qnt_cache(self, res: str | None = None):
+		""" Записывает результат вычисления формулы для позиции """
+		self.quantity_cache = self.quantity if res is None else res
+
+	
+	def compare_qnt(self, res: str | None = None, isSetFlag = True) -> bool:
+		""" 
+		Сопоставляет изменения с прошлым вычислением, сбрасывает статус status_calculated
+		и устанавливает флаг типа формулы при необходимости
+		### Args:
+			- :res: уже вычисленный результат, чтобы не делать лишние действия
+			- :isSetFlag: сигнал о том, что необходимо установить флаг формулы
+		### Returns:
+			Результат прохождения проверки. Если проверка не пройдена, то будут проверены зависимости
+		"""
 		if res is None:
 			res = self.quantity
 		
-		self._set_flag_of_formula_dependent()
-		if self.quantity_cache is None:
-			self.quantity_cache = res
-			self.status_calculated = False
-			return False
+		if isSetFlag:
+			self._set_flag_of_formula_dependent()
+
+		self._set_quantity_formula_cache()
+		self._set_comment_cache()			# может иметь ссылку на результат позиции
 
 		if res != self.quantity_cache:
-			if self.status_calculated:
-				self.status_calculated = False
-			self.quantity_cache = res
+			self.status_calculated = False
+			self._set_qnt_cache(res)
 			return False
 		return True
 
-	def check_qnt_and_depends(self, res: str | None = None):
-		check = self.compare_qnt(res)
+
+	def check_qnt_and_depends(self, res: str | None = None, isSetFlag = True):
+		"""
+		Выполняет сопоставления compare_qnt для себя и завивсимых позиций
+		### Args:
+			- :res: уже вычисленный результат, чтобы не делать лишние действия
+			- :isSetFlag: сигнал о том, что необходимо установить флаг формулы
+		"""
+		check = self.compare_qnt(res, isSetFlag)
 		if not check:
 			for depend in (self.dependents or ()):
 				depend.check_qnt_and_depends()
 
 	# ---------------------------------- Примечание -------------------------------------
-
 	@property
 	def raw_comment(self) -> str:
 		return self._raw_comment
 	
+
 	@raw_comment.setter
 	def raw_comment(self, text:str):
 		old_text = self._raw_comment
@@ -664,19 +737,18 @@ class PositionLine(ABC):
 		if text.endswith('\n'):
 			text = text[:-1]
 		self.compare_and_process_relations(old_text, text, self._raw_quantity_formula)
-		if not text.startswith('=') and '@' in text:
+		if not text.startswith('=') and ('@' in text or re.match(self.PATTERN, text)):
 			text = '=' + text
 		self._raw_comment = text
+		self._set_comment_cache()
 
 		# Проверка на изменения
 		text = self.process_library_requests(text)
 		text = self.get_objects_values(text)
 		text = eval_functions(text)
-		hash = get_hash_text(text)
-		if self.status_calculated and self._comment_cache != hash:
-			self.status_calculated = False
-		self._comment_cache = hash
-	
+		self.compare_comment_and_dependents(text)
+
+
 	@property
 	def comment(self):
 		""" Выводит вычисленный результат формулы примечания """
@@ -693,23 +765,32 @@ class PositionLine(ABC):
 			calculated = eval_functions(whith_links_data[1:])
 			return calculated
 		
-	def compare_comment(self):
-		""" Проверяет изменение в комментарии позиции и сбрасывает статус "осметчено" """
-		hash_comment = get_hash_text(self.comment)
-		if self._comment_cache != hash_comment:
+	
+	def compare_comment_and_dependents(self, text: str | None = None) -> bool:
+		"""
+		Проверяет изменение в комментарии позиции, сбрасывает статус "осметчено",
+		проверяет зависимости
+		"""
+		hash_comment = get_hash_text(self.comment if text is None else text)
+		if self._comment_hash != hash_comment:
 			self.status_calculated = False
-			self._comment_cache = hash_comment
+			self._comment_hash = hash_comment
+			for depend in (self.dependents or ()):
+				depend.check_qnt_and_depends()
+				depend._set_comment_cache()
+				depend.compare_comment_and_dependents()
 			return False
 		else: return True
 
-	# ------------------------------- Ссылки на ПД --------------------------------------
 
+	def _set_comment_cache(self):
+		self.comment_cache = self.comment
+
+	# ------------------------------- Ссылки на ПД --------------------------------------
 	@property
 	def planned_links(self):
 		""" Выводит строку с абзацами из имеющихся ссылок на документы """
-		if not self.links and self.links_cache:
-			return self.links_cache
-		elif not self.links:
+		if not self.links:
 			return ''
 		references = []
 		for link in self.links:
@@ -735,6 +816,11 @@ class PositionLine(ABC):
 		books_whith_number_num.sort(key=sort_key)
 		self.links = books_whith_number_num + books_with_string_num
 
+
+	def _set_links_cache(self):
+		self.links_cache = self.planned_links
+
+
 	def set_links(self, new_links: list[Link]):
 		""" Назначает новый набор ссылок из редактора ссылок """
 		# Очищаем ссылки из менеджера
@@ -744,6 +830,7 @@ class PositionLine(ABC):
 		self.links = list(new_links)
 		self._sort_links()
 		self.add_links_to_manager()
+		self._set_links_cache()
 		self.manager.is_modified = True
 
 
@@ -752,6 +839,7 @@ class PositionLine(ABC):
 		if self.links:
 			for link in self.links:
 				self.manager.links.add(link)
+
 	
 	def remove_links_from_manager(self):
 		""" Удаляет все ссылки позиции и ресурсов из множества менеджера """
@@ -763,9 +851,14 @@ class PositionLine(ABC):
 					continue
 
 
+	def remove_links(self):
+		""" Удаляет все ссылки из коллекции """
+		self.remove_links_from_manager()
+		self.links.clear()
+		self.links_cache = ''
+
 	# ========================== Методы и атрибуты системы ==============================
 	# ------------------------------ Работа с адресами ----------------------------------
-
 	@property
 	def format_address(self):
 		""" Возвращет человекочитаемый адрес объекта для пользовательских ссылок """
@@ -778,11 +871,13 @@ class PositionLine(ABC):
 		else:
 			resource_index = self._address[2] + 1
 			return f'Р{section_index}.П{work_index}.{resource_index}'
+
 		
 	@property
 	def address(self):
 		""" Возвращает машиночитаемые индексы адеса """
 		return self._address
+
 	
 	@address.setter
 	def address(self, indexes: list):
@@ -809,6 +904,7 @@ class PositionLine(ABC):
 			dependent.updating_related_addresses(instruction)
 		self._address = indexes
 
+
 	def updating_related_addresses(self, data: dict):
 		"""
 		Заменяет в _raw_quantity_formula и _raw_comment устаревшие форматированные адреса
@@ -818,6 +914,7 @@ class PositionLine(ABC):
 			self._raw_quantity_formula = self._replace_addresses(self._raw_quantity_formula, data)
 		if self._raw_comment:
 			self._raw_comment = self._replace_addresses(self._raw_comment, data)
+
 
 	def _replace_addresses(self, text: str, data: dict) -> str:
 		""" Заменяет все устаревшие адреса в строке """
@@ -832,7 +929,8 @@ class PositionLine(ABC):
 			if new_addr:
 				text = text.replace(old_addr, new_addr)
 		return text
-	
+
+
 	def __find_all_addresses(self, string = None)-> list:
 		"""Возвращает список найденных адресов (с $)"""
 		pattern = self.__class__.PATTERN
@@ -844,7 +942,8 @@ class PositionLine(ABC):
 				if s:
 					matches.extend(m.group(0) for m in re.finditer(pattern, s))
 			return matches
-	
+
+
 	def __get_indexes_from_addresses(self, input_data=None) -> list:
 		"""
 		Возвращает список с кортежами координат из пользовательских ссылок
@@ -866,6 +965,7 @@ class PositionLine(ABC):
 			res_num = int(m.group(6)) - 1 if m.group(6) is not None else None
 			indexes.append((sec_num, work_num, res_num))
 		return indexes
+
 
 	def shift_references(self, delta_section: int, delta_work: int, delta_resource: int):
 		""" 
@@ -917,6 +1017,7 @@ class PositionLine(ABC):
 			data = {addr: __shift_one_address(addr) for addr in addresses}
 			self._raw_comment = self._replace_addresses(self._raw_comment, data)
 
+
 	@staticmethod
 	def generate_address_variants(base_address: str):
 		"""
@@ -939,7 +1040,6 @@ class PositionLine(ABC):
 		return variants + prim_variants
 
 	# ---------------------------- Работа с зависимостями ---------------------------------
-
 	def remove_self_from_dependents(self):
 		""" Удаляет ссылки из множеств на текущий объект. Нужно при удалении текущего объекта """
 		if self.manager is None:
@@ -948,6 +1048,7 @@ class PositionLine(ABC):
 		indexes_list = self.__get_indexes_from_addresses(addresses_list)
 		for indexes in indexes_list:
 			self._remove_dependency(indexes)
+
 	
 	def break_addresses(self):
 		""" Ломает пользовательские ссылки на текущий объект у всех зависимых объектов. 
@@ -962,6 +1063,7 @@ class PositionLine(ABC):
 			obj: PositionLine
 			obj.updating_related_addresses(instruction)
 
+
 	def _remove_dependency(self, indexes: tuple):
 		""" Удаляет текущий объект из множества "зависимых" у указанно по координатам (индексам) объекта """
 		if self.manager is None:
@@ -973,6 +1075,7 @@ class PositionLine(ABC):
 			obj.dependents.remove(self)
 		except Exception as e:
 			print(f'Не удалось удалить удалить объект {e}')
+
 	
 	def add_self_to_dependents(self):
 		""" Добавляет объект во множество "зависимых" у объектов из пользовательских ссылок """
@@ -992,6 +1095,7 @@ class PositionLine(ABC):
 				if obj.dependents is None:
 					obj.dependents = set()
 				obj.dependents.add(self)
+
 	
 	def append_to_dependency(self, indexes: tuple):
 		""" Добавляет текущий объект ко множеству "зависимых" у указанно по координатам (индексам) объекта """
@@ -1001,6 +1105,7 @@ class PositionLine(ABC):
 		if obj.dependents is None:
 			obj.dependents = set() 
 		obj.dependents.add(self)
+
 
 	def compare_and_process_relations(self, old: str, new: str, non_editable_attribute):
 		""" Проверяет, какие зависимости нужно создать, а какие удалить для сеттеров формулы и примечания. 
@@ -1029,12 +1134,11 @@ class PositionLine(ABC):
 			to_append = self.__get_indexes_from_addresses(list(to_append))
 			for coord in to_append:
 				self.append_to_dependency(coord)
-	
 
 	# ----------------------------------- Прочее ------------------------------------------
-	
 	def __str__(self):
 		return f'{self.format_address} №{self.num}: {self.name} ({self.quantity}[{self.unit}])'
+	
 	
 	def prepare_to_remove(self):
 		""" Зачищает связи объекта перед его удалением """
@@ -1043,6 +1147,7 @@ class PositionLine(ABC):
 		self.remove_links_from_manager()
 		self.manager = None
 		self.dependents = None
+
 
 	def init_self_in_system(self, manager):
 		""" Инициирует необходимые связи в системе ВОР """
@@ -1054,13 +1159,10 @@ class PositionLine(ABC):
 	def make_static(self):
 		""" Используется до перемещения объекта в архив, 
 		где он становится полностью не зависимым от базы и других позиций """
-		self.raw_name = self.name
 		self.raw_unit = self.unit				# Преобразуем в статичный лейбл
-		self.raw_quantity_formula = str(self.quantity_formula)
-		self.links_cache = self.planned_links
-		self.raw_comment = self.comment
 		self.format_address_cache = self.format_address
 		self.num_cache = self.num
+		self.update_cache_fields()
 
 
 	def remove_connections(self):
@@ -1073,9 +1175,22 @@ class PositionLine(ABC):
 		self.dependents = None
 		self.links = []
 
+
+	def update_cache_fields(self):
+		""" Обновляет кэш вычисления динамических полей. 
+		Нужно при чистом запуске и обновлении позиций. 
+		Для архивных позиций используются данные из сохранённого файла """
+		self._set_name_cache()
+		self._set_qnt_cache()
+		self._set_quantity_formula_cache()
+		self._set_links_cache()
+		self._set_comment_cache()
+
 	# ------------------------------- Вычисление данных -----------------------------------
 	def process_library_requests(self, text):
 		""" Возвращает текст с обработанными запросами к библиотеке """
+		if self.manager is None or self.manager.project is None or not self.manager.project.library:
+			return '#ОШИБКА ЗАПРОСА'
 		library = self.manager.project.library
 		if not library:
 			return text
@@ -1083,7 +1198,7 @@ class PositionLine(ABC):
 		view_text: str = text
 		for alias in aliases:
 			alias: str
-			value = get_from_library(alias.lower(), library)
+			value = get_from_library(alias.lower(), library).strip()
 			view_text = view_text.replace(alias, str(value))
 		return view_text
 
@@ -1121,6 +1236,9 @@ class PositionLine(ABC):
 
 	def serialization(self) -> dict:
 		""" Преобразует объект в словарь для JSON """
+		if self.manager:
+			self.update_cache_fields()	# получаем самые актуальные данные, если позиция не в архиве
+
 		ser_links = []
 		for link in (self.links or []):
 			ser_links.append(link.serialization())
@@ -1129,12 +1247,15 @@ class PositionLine(ABC):
 			'format_address_cache': self.format_address_cache,
 			'num_cache': self.num_cache,
 			'raw_name': self.raw_name,
-			'name_cache': self._name_cache,
+			'name_hash': self._name_hash,
+			'name_cache': self.name_cache,
 			'raw_unit': self.raw_unit,
 			'raw_quantity_formula': self._raw_quantity_formula,
+			'quantity_formula_cache':self.quantity_formula_cache,
 			'quantity_cache': self.quantity_cache,
 			'raw_comment': self._raw_comment,
-			'comment_cache': self._comment_cache,
+			'comment_hash': self._comment_hash,
+			'comment_cache': self.comment_cache,
 			'local_comment': self.local_comment,
 			'type': self.type,
 			'custom_round': self.custom_round,
@@ -1148,7 +1269,11 @@ class PositionLine(ABC):
 		return data
 
 	@classmethod
-	def deserialization(cls, manager: BoQ_manager, data: dict, address = [None, None, None]) -> Work | Resource:
+	def deserialization(
+		cls, manager: BoQ_manager,
+		data: dict, address = [None, None, None],
+		data_scheme = 1
+	) -> Work | Resource:
 		obj = cls(manager, address)
 		if not data:
 			return obj
@@ -1156,22 +1281,28 @@ class PositionLine(ABC):
 		obj.format_address_cache = data.get('format_address_cache')
 		obj.num_cache = data.get('num_cache')
 		obj.raw_name = data.get('raw_name', '')
-		obj._name_cache = data.get('name_cache')
 		obj.raw_unit = data.get('raw_unit', '-')
 		obj._raw_quantity_formula = data.get('raw_quantity_formula', '0') 
 		obj.quantity_cache = data.get('quantity_cache')
 		obj._raw_comment = data.get('raw_comment', '')
-		obj._comment_cache = data.get('comment_cache')
 
-		obj.local_comment = data.get('local_comment')
-		obj.type = data.get('type')
-		obj._custom_round = data.get('custom_round')
-		obj._custom_round_mode = data.get('custom_round_mode')
-		if obj.custom_round_mode not in (None, 1, 2):
-			obj.custom_round_mode = None 
-		obj.status_correct = data.get('status_correct', False)
-		obj.status_calculated = data.get('status_calculated', False)
-		
+		# получаем данные с учетом версии читаемого файла сохранения,
+		# ранее имена и архитектура были выбраны неудачно 
+		if data_scheme > 1:
+			obj.name_cache = data.get('name_cache')
+			obj._name_hash = data.get('name_hash')
+			obj.quantity_formula_cache = data.get('quantity_formula_cache')
+			obj.comment_cache = data.get('comment_cache')
+			obj._comment_hash = data.get('comment_hash')
+		else:
+			# загружаем артбуты с учётом старой схемы
+			obj._name_hash = data.get('name_cache')
+			obj._comment_hash = data.get('comment_cache')
+			obj.name_cache = str(obj.raw_name)
+			obj.quantity_formula_cache = str(obj.raw_quantity_formula)
+			obj.comment_cache = str(obj.raw_comment)
+
+		obj.links_cache = data.get('links_cache')
 		raw_links = data.get('links')
 		links = raw_links if isinstance(raw_links, list) else []
 		if links:
@@ -1179,16 +1310,24 @@ class PositionLine(ABC):
 			links = [link for link in links if link is not None]
 			for link in links:
 				manager.links.add(link)
-
 		obj.links = links
 		obj._sort_links()
 
-		obj.links_cache = data.get('links_cache')
-
+		obj.local_comment = data.get('local_comment')
+		
+		obj.type = data.get('type')
+		
+		obj._custom_round = data.get('custom_round')
+		obj._custom_round_mode = data.get('custom_round_mode')
+		if obj.custom_round_mode not in (None, 1, 2):
+			obj.custom_round_mode = None 
+		
+		obj.status_correct = data.get('status_correct', False)
+		obj.status_calculated = data.get('status_calculated', False)
+		
 		obj.style_manager.deserialization(data.get('style_manager'))
 
 		return obj
-
 
 
 
@@ -1261,23 +1400,23 @@ class Work(PositionLine):
 	def prepare_to_remove(self):
 		""" Сбрасывает связи у ценообразующих ресурсов, после у себя """
 		for resource in self.resources:
-			resource: Resource
 			resource.prepare_to_remove()
-		return super().prepare_to_remove()
+		super().prepare_to_remove()
+
 
 	def init_self_in_system(self, manager: BoQ_manager):
 		for resource in self.resources:
-			resource: Resource
 			resource.init_self_in_system(manager)
-		return super().init_self_in_system(manager)
+		super().init_self_in_system(manager)
 	
+
 	def clear_dependets(self):
 		# Сброс зависимостей перед тем, как установить связи 
 		self.dependents = None
 		for resource in self.resources:
-			resource: Resource
 			resource.dependents = None
 	
+
 	def make_static(self):
 		for resource in self.resources:
 			resource.make_static()
@@ -1288,9 +1427,8 @@ class Work(PositionLine):
 		for resource in self.resources:
 			resource.remove_connections()
 		super().remove_connections()
-	
-	# --------------------------- Загрузка и сохранение ---------------------------------
 
+	# --------------------------- Загрузка и сохранение ---------------------------------
 	def serialization(self) -> dict:
 		""" Преобразует объект в словарь для JSON """
 		ser_resources = []
@@ -1303,8 +1441,11 @@ class Work(PositionLine):
 		return data
 		
 	@classmethod
-	def deserialization(cls, manager: BoQ_manager, data: dict, address = [None, None, None]) -> Work:
-		work = super().deserialization(manager, data, address)
+	def deserialization(
+		cls, manager: BoQ_manager, data: dict, 
+		address = [None, None, None], data_scheme = 1
+	) -> Work:
+		work = super().deserialization(manager, data, address, data_scheme)
 	
 		resources = data.get('resources', [])
 		if not resources:
@@ -1314,7 +1455,7 @@ class Work(PositionLine):
 		section_index, work_index, _ = address
 		for i, resource in enumerate(resources):
 			indexes = [section_index, work_index, i]
-			resource = Resource.deserialization(manager, resource, indexes)
+			resource = Resource.deserialization(manager, resource, indexes, data_scheme)
 			resources_objs.append(resource)
 		work.resources = resources_objs
 		return work

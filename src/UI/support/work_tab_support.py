@@ -842,7 +842,7 @@ class BoQItemDelegate(QStyledItemDelegate):
 
 		col = index.column()
 		# Столбец «Ед. изм.» (3) или «Тип позиции» (8) — выпадающий список
-		if not self.is_section_item(index) and  (col == 3 or col ==8):
+		if not self.is_section_item(index) and (col == 3 or col ==8):
 			editor = QComboBox(parent)
 			if col == 3:
 				for key, data in self.units_dict.items():

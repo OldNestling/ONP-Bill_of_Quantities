@@ -179,12 +179,8 @@ class Project_Window(QWidget):
 				else:
 					# Нет изменений – просто закрываем вкладки
 					self.BoQs_tab.force_close_all()
-
-		# Сохраняем настройки проекта
-		if self.project:
-			self.project.saving_settings()
-
 		event.accept()
+
 
 	def flash_tab(self, index, color=Qt.GlobalColor.green, duration=500):
 		"""Мигает вкладкой с заданным цветом на короткое время."""
@@ -835,8 +831,8 @@ class MainProjectTab(QWidget):
 					return False
 			except FileNotFoundError:
 				QMessageBox.warning(self, 'Открытие файла', f"Файл ведомости не найден ({all_files[row].path.name}).")
-			except Exception as e:
-				QMessageBox.warning(self, 'Открытие файла', f"Не удалось открыть ведомость ({all_files[row].path.name}): {e}")
+			#except Exception as e:
+			#	QMessageBox.warning(self, 'Открытие файла', f"Не удалось открыть ведомость ({all_files[row].path.name}): {e}")
 
 		if busy_files:
 			busy_files = [f'<li>{file}</li>' for file in busy_files]

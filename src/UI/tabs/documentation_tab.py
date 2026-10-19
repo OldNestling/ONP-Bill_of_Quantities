@@ -15,9 +15,9 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 from PyQt6.QtWidgets import (
-	QWidget, QVBoxLayout, QHBoxLayout, QComboBox, QLabel, QPushButton, QTextEdit, QTableWidget,
-	QMenu, QMessageBox, QDialog, QLineEdit, QStyle, QItemDelegate, QAbstractItemView, QFrame,
-	QTreeView, QHeaderView, QFileDialog
+	QWidget, QVBoxLayout, QHBoxLayout, QComboBox, QLabel, QPushButton, QTextEdit,
+	QTableWidget, QMenu, QMessageBox, QDialog, QLineEdit, QStyle, QItemDelegate, 
+	QAbstractItemView, QFrame, QHeaderView, QFileDialog
 )
 from PyQt6.QtCore import Qt, QSize, QAbstractItemModel, QModelIndex, QUrl
 from PyQt6.QtGui import (
@@ -29,7 +29,7 @@ from ..ui_utilities import (
 	WordWrapDelegate, IntDelegate, create_ok_cancel_buttons, Requestion, create_separator
 )
 from ..resources.icons import Icons
-from Core.Utilities import convert_value
+from ..support.treeview import SmoothTreeView
 from pathlib import Path
 
 class Documentation_Tab(QWidget):
@@ -48,7 +48,7 @@ class Documentation_Tab(QWidget):
 		self.main_layout = QHBoxLayout(self)
 
 		# ---------------------------------- Дерево ---------------------------------------
-		self.tree_view = QTreeView()
+		self.tree_view = SmoothTreeView()
 		self.model = DocumentationModel(manager=self.manager, parent= self)
 		self.tree_view.setModel(self.model)
 		
@@ -227,7 +227,7 @@ class Documentation_Tab(QWidget):
 			return
 		
 		link = index.data(Qt.ItemDataRole.DisplayRole)
-		has_link = bool(link and isinstance(link, str) and link.strip())
+		has_link = bool(link.strip())
 		is_editable = bool(index.flags() & Qt.ItemFlag.ItemIsEditable)
 
 		# Нечего показывать, если ни открывать, ни выбирать нельзя
@@ -549,7 +549,7 @@ class DocumentationModel(QAbstractItemModel):
 				elif col == self.COL_PAGE:
 					return ''
 				elif col == self.COL_LINK:
-					return item.link or ''
+					return str(item.link) or ''
 			elif isinstance(item, Document):
 				if col == self.COL_TAG:
 					return str(item.tag)
@@ -560,7 +560,7 @@ class DocumentationModel(QAbstractItemModel):
 				elif col == self.COL_PAGE:
 					return str(item.page)
 				elif col == self.COL_LINK:
-					return item.link or ''
+					return str(item.link) or ''
 		elif role == Qt.ItemDataRole.ToolTipRole:
 			if isinstance(item, Book):
 				if col == self.COL_CODE:
@@ -1007,7 +1007,7 @@ class DocumentationDelegate(WordWrapDelegate):
 			model.setData(index, text, Qt.ItemDataRole.EditRole)
 
 		tree_view = self.parent()
-		if tree_view and isinstance(tree_view, QTreeView):
+		if tree_view and isinstance(tree_view, SmoothTreeView):
 			tree_view.scheduleDelayedItemsLayout()
 			tree_view.viewport().update()
 

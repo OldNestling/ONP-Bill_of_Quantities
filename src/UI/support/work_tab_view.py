@@ -16,16 +16,18 @@
 
 from PyQt6.QtWidgets import (
 	QWidget,QVBoxLayout, QMessageBox, QHeaderView, QMenu, QApplication, 
-	QTreeView, QSplitter, QAbstractItemView, QLineEdit, QTextEdit
+	QSplitter, QAbstractItemView, QLineEdit, QTextEdit
 	)
 from PyQt6.QtGui import QAction, QColor, QTextCursor
 from PyQt6.QtCore import Qt, QModelIndex, QEvent, QTimer
-from ..resources.icons import Icons
 
+from ..resources.icons import Icons
 from Core.BoQ import BoQ_manager, Section, Work, Resource, PositionLine
 from Core.Utilities import convert_value
 from ..support.work_tab_support import BoQItemDelegate
 from ..support.work_tab_models import Model, ArchiveModel
+from .treeview import SmoothTreeView
+
 
 class BoQ_View(QWidget):
 	def __init__(self, parent, project, file_manager: BoQ_manager):
@@ -49,7 +51,7 @@ class BoQ_View(QWidget):
 	
 		# ---------------------------- Основная таблица данных --------------------------
 
-		self.view = QTreeView()
+		self.view = SmoothTreeView()
 		self.view.installEventFilter(self)
 		self.model = Model(manager=self.manager, parent= self)
 		self.view.setModel(self.model)
@@ -99,28 +101,13 @@ class BoQ_View(QWidget):
 		self.view.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
 		self.view.customContextMenuRequested.connect(self.show_context_menu)
 
-		self.view.setStyleSheet("""
-			QTreeView {
-				outline: none;					  /* убираем пунктирную рамку фокуса */
-			}
-			QTreeView::item {
-				border-bottom: 1px solid #d0d0d0;   /* горизонтальные линии */
-				border-right: 1px solid #d0d0d0;	/* вертикальные линии */
-			}
-			QTreeView::item:first {
-				border-top: 1px solid #d0d0d0;	  /* верхняя граница для первого элемента */
-			}
-			QTreeView::item:last {
-				border-bottom: 1px solid #d0d0d0;   /* нижняя граница для последнего */
-			}
-		""")
 		self.view.expandAll()
 
 		splitter.addWidget(self.view)
 
 		# -------------------------- Таблица архивных данных ----------------------------
 
-		self.archive_view = QTreeView()
+		self.archive_view = SmoothTreeView()
 		self.archive_model = ArchiveModel(self.manager, self)
 		self.archive_view.setModel(self.archive_model)
 
@@ -175,6 +162,7 @@ class BoQ_View(QWidget):
 			# --- Delete ---
 			if event.key() == Qt.Key.Key_Delete:
 				self.clear_selected_cells()
+				self.view.viewport().update()
 				return True
 			# --- Ctrl+V (вставка текста) ---
 			elif (event.key() == Qt.Key.Key_V and 
@@ -336,14 +324,14 @@ class BoQ_View(QWidget):
 			section_submenu.setIcon(section_icon)
 			add_section_up = section_submenu.addAction('Сверху')
 			add_section_up.setIcon(up_arrow_icon)
-			add_section_up.triggered.connect(lambda: self.add_section(index, item, True))
+			add_section_up.triggered.connect(lambda: self.add_section(item, True))
 			add_section_down = section_submenu.addAction('Снизу')
 			add_section_down.setIcon(down_arrow_icon)
-			add_section_down.triggered.connect(lambda: self.add_section(index, item, False))
+			add_section_down.triggered.connect(lambda: self.add_section(item, False))
 
 			add_work_action = menu.addAction('Добавить работу')
 			add_work_action.setIcon(work_icon)
-			add_work_action.triggered.connect(lambda: self.add_work(index, item))
+			add_work_action.triggered.connect(lambda: self.add_work(item))
 		else:
 			item: Work
 			copy_submenu = menu.addMenu('Копировать...')
@@ -394,11 +382,11 @@ class BoQ_View(QWidget):
 
 				add_work_up = work_submenu.addAction('Сверху')
 				add_work_up.setIcon(up_arrow_icon)
-				add_work_up.triggered.connect(lambda: self.add_work(index, item, True))
+				add_work_up.triggered.connect(lambda: self.add_work(item, True))
 
 				add_work_down = work_submenu.addAction('Снизу')
 				add_work_down.setIcon(down_arrow_icon)
-				add_work_down.triggered.connect(lambda: self.add_work(index, item, False))
+				add_work_down.triggered.connect(lambda: self.add_work(item, False))
 
 				add_resource_action = menu.addAction('Добавить ресурс')
 				add_resource_action.setIcon(resource_icon)
@@ -432,22 +420,22 @@ class BoQ_View(QWidget):
 			action_status_correct = status_submenu.addAction('Отметить корректным')
 			correct_icon = Icons.recolor_icon(Icons.done, QColor("#7b92df"))
 			action_status_correct.setIcon(correct_icon)
-			action_status_correct.triggered.connect(lambda: self._set_status(selected_indexes, 1))
+			action_status_correct.triggered.connect(lambda: self.set_status(selected_indexes, 1))
 			action_status_calculated = status_submenu.addAction('Отметить осмеченным')
 			calculated_icon = Icons.recolor_icon(Icons.done_all, QColor("#0fcc38"))
 			action_status_calculated.setIcon(calculated_icon)
-			action_status_calculated.triggered.connect(lambda: self._set_status(selected_indexes, 2))
+			action_status_calculated.triggered.connect(lambda: self.set_status(selected_indexes, 2))
 			action_status_nonvalid = status_submenu.addAction('Отметить недействительным')
 			nonvalid_icon = Icons.recolor_icon(Icons.reset_status, QColor("#ff0000"))
 			action_status_nonvalid.setIcon(nonvalid_icon)
-			action_status_nonvalid.triggered.connect(lambda: self._set_status(selected_indexes, 0))
+			action_status_nonvalid.triggered.connect(lambda: self.set_status(selected_indexes, 0))
 		
 		menu.addSeparator()
 
 		remove_action = menu.addAction('Удалить элемент')
 		remove_icon = Icons.recolor_icon(Icons.delete, QColor('#000000'))
 		remove_action.setIcon(remove_icon)
-		remove_action.triggered.connect(self._remove_pos)
+		remove_action.triggered.connect(self.remove_pos)
 			
 		# Очистка содержимого (доступна всегда)
 		if selected_count > 0:
@@ -459,41 +447,80 @@ class BoQ_View(QWidget):
 
 	# ------------------------------ Добавление элементов -------------------------------
 
-	def add_section(self, index, item, insert):
+	def add_section(self, item: Section | Work | Resource | None, insert: bool):
 		""" Добавляет раздел выше или ниже выбранного раздела 
+		:item: None — добавляет раздел в конец (в т.ч. в пустую ведомость).
 		:insert: Вставка на место текущего раздела"""
 		manager = self.model.manager
-		if isinstance(item, Section):
-			if insert:
-				manager.add_section(item.address)
-			else:
-				manager.add_section(item.address+1)
-		self.model.layoutChanged.emit()
-		#self.view.expandAll()
-	
-	def add_work(self, index, item, insert = None):
-		""" Добавляет работу в раздел через контекстное меню """
-		manager = self.model.manager
-		if insert is None and isinstance(item, Section):
-			manager.add_work(item.address)
-		elif insert is False and isinstance(item, Work):
-			manager.add_work(item.address[0], item.address[1]+1)
-		elif insert is True and isinstance(item, Work):
-			manager.add_work(item.address[0], item.address[1])
-		self.model.layoutChanged.emit()
-		self.view.expandAll()
+		address = None
 
-	def add_resource(self, item, insert = None):
-		""" Добавляет ресурс к работе через контекстное меню """
-		manager = self.model.manager
-		if insert is None and isinstance(item, Work):
-			manager.add_resource(item.address[0], item.address[1])
-		elif insert is False and isinstance(item, Resource):
-			manager.add_resource(item.address[0], item.address[1], item.address[2]+1)
-		elif insert is True and isinstance(item, Resource):
-			manager.add_resource(item.address[0], item.address[1], item.address[2])
+		if item is None:
+			address = manager.add_section()
+		elif isinstance(item, Section):
+			if insert:
+				address = manager.add_section(item.address)
+			else:
+				address = manager.add_section(item.address+1)
+		elif isinstance(item, (Work, Resource)):
+			address = manager.add_section(item.address[0]+1)
+
+		if not address:
+			return
+
 		self.model.layoutChanged.emit()
-		self.view.expandAll()
+		self.select_item_by_address(address)
+
+	
+	def add_work(self, item: Section | Work | Resource, insert: bool|None = None):
+		"""Добавляет работу в выбранный раздел. 
+		insert=None — в конец раздела; 
+		True/False — до/после указанной работы."""
+		manager = self.model.manager
+		address = None
+
+		if isinstance(item, Section):
+			address = manager.add_work(item.address)
+
+		elif isinstance(item, Work):
+			sec_idx, wrk_idx, _ = item.address
+			if insert is False:
+				address = manager.add_work(sec_idx, wrk_idx+1)
+			elif insert is True:
+				address = manager.add_work(sec_idx, wrk_idx)
+			else:
+				address = manager.add_work(sec_idx)
+
+		elif isinstance(item, Resource):
+			address = manager.add_work(item.address[0])
+
+		if address is None:
+			return
+		
+		self.model.layoutChanged.emit()
+		self.select_item_by_address(address)
+
+
+	def add_resource(self, item: Section | Work | Resource, insert: bool | None = None):
+		""" Добавляет ресурс к работе через контекстное меню 
+		insert=None — в конец списка; 
+		True/False — до/после указанного ресурса."""
+		manager = self.model.manager
+		sec_idx, wrk_idx, rsc_idx = item.address 
+		address = None
+
+		if isinstance(item, Work):
+			address = manager.add_resource(sec_idx, wrk_idx)
+		elif insert is False and isinstance(item, Resource):
+			address = manager.add_resource(sec_idx, wrk_idx, rsc_idx+1)
+		elif insert is True and isinstance(item, Resource):
+			address = manager.add_resource(sec_idx, wrk_idx, rsc_idx)
+
+		if address is None:
+			return
+		
+		self.model.layoutChanged.emit()
+		self.select_item_by_address(address)
+		
 
 	def resource_like_work(self, index: QModelIndex, item: Resource):
 		""" Применяет к ресурсу еденицу измерения и ссылку на значение родителя-работы 
@@ -564,7 +591,7 @@ class BoQ_View(QWidget):
 		return text.strip()
 
 
-	def _set_status(self, indexes: list[QModelIndex], mode):
+	def set_status(self, indexes: list[QModelIndex], mode):
 		""" Назначаяет статус для позиций """
 		for idx in indexes:
 			item = idx.internalPointer()
@@ -580,8 +607,9 @@ class BoQ_View(QWidget):
 				item.status_correct = True
 				item.status_calculated = True
 			self.model.dataChanged.emit(idx, idx, [Qt.ItemDataRole.DisplayRole])
-
+		self.view.viewport().update()
 		self.manager.is_modified = True
+
 
 	def _copy_to_clipboard(self, text):
 		"""Копирует текст в буфер обмена."""
@@ -744,6 +772,7 @@ class BoQ_View(QWidget):
 		for idx in indexes:
 			self.model.dataChanged.emit(idx, idx, [Qt.ItemDataRole.DisplayRole])
 
+ 
 	def _remove_links(self):
 		"""Удаляет наборы ссылок для всех выделенных ячеек в колонке 6."""
 		indexes = self._get_selected_links_indexes()
@@ -752,31 +781,197 @@ class BoQ_View(QWidget):
 		for idx in indexes:
 			item = idx.internalPointer()
 			if isinstance(item, (Work, Resource)):
-				item.remove_links_from_manager()
-				item.links.clear()
+				item.remove_links()
+				
 		for idx in indexes:
 			self.model.dataChanged.emit(idx, idx, [Qt.ItemDataRole.DisplayRole])
 	
-	def _remove_pos(self):
-		current_index = self.view.currentIndex()
-		if not current_index.isValid():
+	
+	def remove_pos(self):
+		"""Удаляет одну или несколько выделенных позиций (разделы, работы, ресурсы).
+
+		Множественное выделение:
+		* один дерево-элемент = один раз (selectedIndexes даёт по индексу
+			на каждую ячейку строки);
+		* если выделен раздел и его потомки — потомки пропускаются;
+		* удаление идёт снизу вверх, чтобы индексы оставшихся не съезжали.
+		"""
+		selection = self.view.selectionModel()
+		if selection is None:
 			return
-		item = current_index.internalPointer()
+
+		# --- 1. Уникальные элементы ---
+		selected_items = {}
+		for idx in selection.selectedIndexes():
+			item = idx.internalPointer()
+			if isinstance(item, (Section, Work, Resource)):
+				selected_items[id(item)] = item
+
+		if not selected_items:
+			return
+
+		# --- 2. Отсев потомков уже выбранных родителей ---
+		#     ВАЖНО: it.address — list, поэтому для set-ключей
+		#     нормализуем к tuple нужной длины.
+		items = list(selected_items.values())
+		sel_sections = {it.address for it in items if isinstance(it, Section)}          # int
+		sel_works    = {tuple(it.address[:2]) for it in items if isinstance(it, Work)}  # (sec, wrk)
+
+		roots = []
+		for it in items:
+			if isinstance(it, Section):
+				roots.append(it)
+			elif isinstance(it, Work):
+				if it.address[0] in sel_sections:
+					continue
+				roots.append(it)
+			else:  # Resource
+				sec_i, wrk_i = it.address[0], it.address[1]
+				if sec_i in sel_sections:
+					continue
+				if (sec_i, wrk_i) in sel_works:
+					continue
+				roots.append(it)
+
+		if not roots:
+			return
+
+		# --- 3. Адресные ключи (ВСЕГДА 3-кортеж — иначе sorted упадёт) ---
+		def addr_key(it):
+			if isinstance(it, Section):
+				return (it.address, -1, -1)
+			if isinstance(it, Work):
+				return (it.address[0], it.address[1], -1)
+			return (it.address[0], it.address[1], it.address[2])   # Resource
+
+		def remove_arg(it):
+			if isinstance(it, Section):
+				return (it.address, None, None)
+			return tuple(it.address)   # формат, который принимает manager.remove_obj
+
+		sorted_roots = sorted(roots, key=addr_key, reverse=True)
+
+		# «Верхний» (минимальный) удаляемый адрес — якорь для выбора после операции
+		top_sec, top_wrk, top_res = addr_key(sorted_roots[-1])
+		target = (
+			top_sec,
+			None if top_wrk == -1 else top_wrk,
+			None if top_res == -1 else top_res,
+		)
+
+		manager = self.manager
+		model = self.model
+
+		self.view.clearSelection()
+		self.view.setCurrentIndex(QModelIndex())
+
+		model.beginResetModel()
+		try:
+			for it in sorted_roots:
+				manager.remove_obj(remove_arg(it))
+		finally:
+			model.endResetModel()
+
+		self.view.expandAll()
+
+		# --- 4. Подбираем ближайший допустимый адрес для выделения ---
+		sec_idx, work_idx, res_idx = target
+		sections = manager.sections
+		if not sections:
+			return
+
+		if sec_idx >= len(sections):
+			sec_idx = len(sections) - 1
+		if sec_idx < 0:
+			sec_idx = 0
+		section = sections[sec_idx]
+
+		if work_idx is not None:
+			if work_idx >= len(section.works):
+				work_idx = len(section.works) - 1
+			if work_idx < 0:
+				self.select_item_by_address((sec_idx, None, None))
+				return
+			work = section.works[work_idx]
+
+			if res_idx is not None:
+				if res_idx >= len(work.resources):
+					res_idx = len(work.resources) - 1
+				if res_idx < 0:
+					self.select_item_by_address((sec_idx, work_idx, None))
+					return
+
+		self.select_item_by_address((sec_idx, work_idx, res_idx))
+		# --- 3. Адресные ключи и сортировка по убыванию ---
+		def addr_key(it):
+			if isinstance(it, Section):
+				return (it.address, -1, -1)
+			if isinstance(it, Work):
+				return (it.address[0], it.address[1], -1)
+			return it.address
+
+		def remove_arg(it):
+			if isinstance(it, Section):
+				return (it.address, None, None)
+			if isinstance(it, Work):
+				return (it.address[0], it.address[1], None)
+			return it.address
+
+		sorted_roots = sorted(roots, key=addr_key, reverse=True)
+
+		# «Верхний» удаляемый адрес — якорь для выбора соседа после операции
+		top_sec, top_wrk, top_res = addr_key(sorted_roots[-1])
+		target = [
+			top_sec,
+			None if top_wrk == -1 else top_wrk,
+			None if top_res == -1 else top_res,
+		]
+
+		manager = self.manager
+		model = self.model
 
 		# Сбросить выделение и текущий индекс до удаления
 		self.view.clearSelection()
 		self.view.setCurrentIndex(QModelIndex())
 
-		self.model.beginResetModel()
+		model.beginResetModel()
 		try:
-			if isinstance(item, Section):
-				self.manager.remove_obj((item.address, None, None))
-			elif isinstance(item, (Work, Resource)):
-				self.manager.remove_obj(item.address)
+			for it in sorted_roots:
+				manager.remove_obj(remove_arg(it))
 		finally:
-			self.model.endResetModel()
+			model.endResetModel()
+
+		# Раскрываем дерево (beginResetModel его свернул)
 		self.view.expandAll()
 
+		# --- 4. Подбираем ближайший допустимый адрес для выделения ---
+		sec_idx, work_idx, res_idx = target
+		sections = manager.sections
+		if not sections:
+			return
+
+		if sec_idx >= len(sections):
+			sec_idx = len(sections) - 1
+		if sec_idx < 0:
+			sec_idx = 0
+		section = sections[sec_idx]
+
+		if work_idx is not None:
+			if work_idx >= len(section.works):
+				work_idx = len(section.works) - 1
+			if work_idx < 0:
+				self.select_item_by_address((sec_idx, None, None))
+				return
+			work = section.works[work_idx]
+
+			if res_idx is not None:
+				if res_idx >= len(work.resources):
+					res_idx = len(work.resources) - 1
+				if res_idx < 0:
+					self.select_item_by_address((sec_idx, work_idx, None))
+					return
+
+		self.select_item_by_address((sec_idx, work_idx, res_idx))
 
 	# --------------------------------- Удаление ----------------------------------------
 	def clear_selected_cells(self):
@@ -810,10 +1005,41 @@ class BoQ_View(QWidget):
 
 		if cleared:
 			self.manager.is_modified = True
+			# self.view.viewport().update()
 			# Обновление происходит автоматически через signal из модели	
 
-	# ======================== Контекстное меню для архива ==============================
+	# ----------------------------- Вспомогательное -------------------------------------
+	def select_item_by_address(self, address: tuple[int, int|None, int|None] | None):
+		"""Выделяет элемент в tree view по адресу (section_idx, work_idx, res_idx)."""
+		self.view.clearSelection()
+		if not address:
+			return
+		model = self.model
+		sec_idx, work_idx, res_idx = address
+		parent = QModelIndex()
+		if sec_idx is None:
+			return
+		sec_index = model.index(sec_idx, 0, parent)
+		if not sec_index.isValid():
+			return
+		if work_idx is None:
+			self.view.setCurrentIndex(sec_index)
+			self.view.scrollTo(sec_index)
+			return
+		work_index = model.index(work_idx, 0, sec_index)
+		if not work_index.isValid():
+			return
+		if res_idx is None:
+			self.view.setCurrentIndex(work_index)
+			self.view.scrollTo(work_index)
+			return
+		res_index = model.index(res_idx, 0, work_index)
+		if not res_index.isValid():
+			return
+		self.view.setCurrentIndex(res_index)
+		self.view.scrollTo(res_index)
 
+	# ======================== Контекстное меню для архива ==============================
 	def show_archive_context_menu(self, pos):
 		menu = QMenu()
 		#restore_action = QAction("Восстановить из архива", self)
@@ -874,4 +1100,3 @@ class BoQ_View(QWidget):
 		finally:
 			model.endResetModel()
 		view.expandAll()
-

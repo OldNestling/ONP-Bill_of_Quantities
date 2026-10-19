@@ -776,7 +776,7 @@ class File_BoQ:
 		self.composer = ''
 		self.composer_position = ''
 		self.date = ''
-		self.status = False
+		self.status: int[0|1|2] = 0
 		self.local_estimate = ''
 		self.log_list = {}
 		self.note = ''
@@ -814,10 +814,12 @@ class File_BoQ:
 				status_done = content.get('Status_Done')
 				if status_done is None:
 					self.status = content.get('Status', 0)
-				elif status_done is False:
-					self.status = 0
+				elif isinstance(status_done, bool):
+					self.status = 2 if status_done else 0
+				elif isinstance(status_done, int) and status_done in (0, 1, 2):
+					self.status = status_done
 				else:
-					self.status = 2
+					self.status = 0
 
 				self.local_estimate = content.get('local_estimate','')
 				self.log_list = content.get('log_list',{})

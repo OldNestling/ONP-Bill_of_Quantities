@@ -36,7 +36,7 @@ def get_all_alias_request(text):
 	matches = re.findall(PATTERN, text)
 	return matches
 
-def get_from_library(alias: str, library: dict):
+def get_from_library(alias: str, library: dict) -> str:
 	"""
 	Возвращает значение по строке-запросу
 	
@@ -46,32 +46,24 @@ def get_from_library(alias: str, library: dict):
 	Returns:
 		:str: значение из библотеки проекта или отчёт об ошибке
 	"""
-	keys = text_after(alias, '@').lower().replace(';','').split('.')
+	keys = text_after(alias, '@').lower().replace(';', '').split('.')
 
-	value = None
-	iter = 0
-
-	for key in keys:
-		if iter > 0 and value is None:
-			break
-		if value is None:
-			value = library.get(key, None)
+	value = library
+	for depth, key in enumerate(keys, start=1):
+		if isinstance(value, dict):
+			if key not in value:
+				return f'[Ошибка запроса в сегменте {depth}]'
+			value = value[key]
+		elif isinstance(value, list):
+			return ' '.join(map(str, value))
 		else:
-			try:
-				value = value.get(key, None)
-				iter += 1
-			except AttributeError:
-				print('Ошибка изъятия значения')
-				if  isinstance(value, list):
-					return f"{' '.join(map(lambda x: str(x), value))}"
-				return f'[{value}]'
-	
+			return f'[{value}]'	# чтобы сразу было видно, что это fallback
+
 	if isinstance(value, dict):
 		return '[Ошибка: не полный ключ]'
-	elif value:
-		return value
-	else:
-		return f'[Ошибка запроса в сегменте {iter+1}]'
+	if isinstance(value, list):	# по архитектуре так быть не может, но на всякий
+		return ' '.join(map(str, value))
+	return str(value)
 	
 
 def extract_numbers_from_string(text):

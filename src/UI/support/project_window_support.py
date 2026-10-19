@@ -395,7 +395,7 @@ class BoQ_Dialog(QDialog):
 			right_layout.addLayout(logs_buttons_layout)
 
 		# Кнопки
-		new_BoQ_buttons = create_ok_cancel_buttons(self, False, 'Создать')
+		new_BoQ_buttons = create_ok_cancel_buttons(self, False, 'Применить' if edit_mode else 'Создать')
 
 		left_layout.addWidget(new_BoQ_buttons)
 
@@ -505,7 +505,7 @@ class BoQ_Dialog(QDialog):
 					'Composer': self._composer_combo_box.currentText(),
 					'Composer_Position': self._composer_positions_combo_box.currentText()
 				},
-				'Status_Done': self.current_data.status if self.edit_mode else False,
+				'Status': self.current_data.status if self.edit_mode else 0,
 				'local_estimate': local_estimate,
 				'log_list': log_list,
 				'note': self.current_data.note if self.edit_mode else ''

@@ -29,6 +29,9 @@ from Core.UserLibs import Library, Group, MainElement, SubElement
 from Core.Project import Project
 from ..ui_utilities import create_separator, Requestion
 from ..resources.icons import Icons
+from ..support.treeview import SmoothTreeView
+
+
 
 class User_Libs_Tab(QWidget):
 	""" Вкладка управления пользовательскими данными """
@@ -153,15 +156,15 @@ class User_Libs_Tab(QWidget):
 		self.control_panel.addStretch()
 
 		# --------------------------------- Таблица -------------------------------------
-		self.tree_view = QTreeView()
+		self.tree_view = SmoothTreeView()
 
 		self.tree_view.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
 		self.tree_view.customContextMenuRequested.connect(self.on_tree_context_menu)
 		self.tree_view.setWordWrap(True)
 		self.tree_view.setUniformRowHeights(False)
-		self.tree_view.setSelectionBehavior(QTreeView.SelectionBehavior.SelectItems)
-		self.tree_view.setEditTriggers(QTreeView.EditTrigger.DoubleClicked |
-										QTreeView.EditTrigger.EditKeyPressed)
+		self.tree_view.setSelectionBehavior(SmoothTreeView.SelectionBehavior.SelectItems)
+		self.tree_view.setEditTriggers(SmoothTreeView.EditTrigger.DoubleClicked |
+										SmoothTreeView.EditTrigger.EditKeyPressed)
 		self.tree_view.setItemDelegate(UserLibsItemDelegate(self.tree_view))
 		
 		# Настройка заголовков
@@ -963,7 +966,7 @@ class UserLibsItemDelegate(QStyledItemDelegate):
 		width = option.rect.width()
 		if width <= 0:
 			tree_view = self.parent()
-			if tree_view and isinstance(tree_view, QTreeView):
+			if tree_view and isinstance(tree_view, SmoothTreeView):
 				width = tree_view.columnWidth(index.column())
 			else:
 				width = 100
@@ -1005,7 +1008,7 @@ class UserLibsItemDelegate(QStyledItemDelegate):
 		model.setData(index, text, Qt.ItemDataRole.EditRole)
 		# Принудительно обновляем геометрию строк
 		tree_view = self.parent()
-		if tree_view and isinstance(tree_view, QTreeView):
+		if tree_view and isinstance(tree_view, SmoothTreeView):
 			tree_view.scheduleDelayedItemsLayout()
 			tree_view.viewport().update()
 
