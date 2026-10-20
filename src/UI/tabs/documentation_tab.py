@@ -549,7 +549,7 @@ class DocumentationModel(QAbstractItemModel):
 				elif col == self.COL_PAGE:
 					return ''
 				elif col == self.COL_LINK:
-					return str(item.link) or ''
+					return str(item.link or '')
 			elif isinstance(item, Document):
 				if col == self.COL_TAG:
 					return str(item.tag)
@@ -560,7 +560,7 @@ class DocumentationModel(QAbstractItemModel):
 				elif col == self.COL_PAGE:
 					return str(item.page)
 				elif col == self.COL_LINK:
-					return str(item.link) or ''
+					return str(item.link or '')
 		elif role == Qt.ItemDataRole.ToolTipRole:
 			if isinstance(item, Book):
 				if col == self.COL_CODE:

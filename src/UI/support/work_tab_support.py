@@ -591,6 +591,7 @@ class FormulaHighlighter(QSyntaxHighlighter):
 		r'@[^\s.,+\-*/()]+(?:\.[^\s.,+\-*/()]+)+'
 	)
 
+
 	def __init__(self, document):
 		super().__init__(document)
 		# Список паттернов с базовым смещением оттенка для каждого типа
@@ -598,6 +599,7 @@ class FormulaHighlighter(QSyntaxHighlighter):
 			(self.PATTERN_POS, 0),   # ссылки на позиции — оттенок от 0
 			(self.PATTERN_LIB, 180)  # библиотечные ссылки — оттенок от 180°
 		]
+
 
 	def highlightBlock(self, text: str):
 		"""Обрабатывает один блок текста."""
@@ -610,6 +612,7 @@ class FormulaHighlighter(QSyntaxHighlighter):
 				fmt = QTextCharFormat()
 				fmt.setForeground(color)
 				self.setFormat(start, length, fmt)
+
 
 	@staticmethod
 	def _color_for_text(text: str, hue_offset: int = 0) -> QColor:
@@ -652,11 +655,11 @@ class BoQItemDelegate(QStyledItemDelegate):
 	# ----------------------------------------------------------------------
 	# Вспомогательные методы
 	# ----------------------------------------------------------------------
-
 	def is_section_item(self, index: QModelIndex) -> bool:
 		"""Возвращает True, если элемент является разделом (Section)."""
 		item = index.internalPointer()
 		return isinstance(item, Section)
+
 
 	def is_flag_dependent_formula(self, index: QModelIndex) -> bool:
 		item: PositionLine = index.internalPointer()
@@ -666,6 +669,7 @@ class BoQItemDelegate(QStyledItemDelegate):
 			return True
 		else:
 			return False
+
 
 	def get_cell_style(self, index: QModelIndex):
 		"""
@@ -710,16 +714,54 @@ class BoQItemDelegate(QStyledItemDelegate):
 			return bg, fg
 		return None, None
 
+
+	@staticmethod
+	def _apply_partical_highlights(
+		doc: QTextDocument, text: str,
+		spans: list[tuple[bool, str]],
+		color: QColor,
+		background: QColor | None = None
+	):
+		"""
+		Накладывает QTextCharFormat на все вхождения подстрок из `spans`,
+		у которых флаг == True. Работает по уже созданному `doc`.
+		"""
+		if not spans:
+			return
+
+		fmt = QTextCharFormat()
+		fmt.setForeground(color)
+		#fmt.setFontWeight(QFont.Weight.Bold)
+		if background is not None:
+			fmt.setBackground(background)
+
+		for should_hl, substring in spans:
+			if not should_hl or not substring:
+				continue
+			start = 0
+			while True:
+				pos = text.find(substring, start)
+				if pos < 0:
+					break
+				cur = QTextCursor(doc)
+				cur.setPosition(pos)
+				cur.setPosition(
+					pos + len(substring),
+					QTextCursor.MoveMode.KeepAnchor
+				)
+				cur.mergeCharFormat(fmt)
+				start = pos + len(substring)
+
 	# ----------------------------------------------------------------------
 	# Отрисовка и размер
 	# ----------------------------------------------------------------------
-
 	def _draw_grid(self, painter, option, index):
 		"""Рисует тонкие границы ячейки."""
 		painter.save()
 		painter.setPen(self.grid_color)
 		painter.drawRect(option.rect)
 		painter.restore()
+
 
 	def paint(self, painter, option, index):
 		item = index.internalPointer()
@@ -766,7 +808,7 @@ class BoQItemDelegate(QStyledItemDelegate):
 		
 		doc.setPlainText(text)
 		text_width = option.rect.width() - 2 * self.margin
-		doc.setTextWidth(max(text_width, 1))
+		#doc.setTextWidth(max(text_width, 1))
 
 		# Приоритет цвета текста: выделение -> кастомный -> стандартный
 		if selected:
@@ -781,6 +823,16 @@ class BoQItemDelegate(QStyledItemDelegate):
 		fmt = QTextCharFormat()
 		fmt.setForeground(color)
 		cursor.mergeCharFormat(fmt)
+
+		# точечная подсветка ссылок с переопределёнными страницами (колонка 6)
+		if index.column() == 6:
+			item = index.internalPointer()
+			if item is not None:
+				spans = getattr(item, 'marked_links', None) or []
+				if spans:
+					hl_color = (option.palette.highlightedText().color()
+					            if selected else QColor("#0065FC"))
+					self._apply_partical_highlights(doc, text, spans, hl_color)
 
 		# Ширина и перенос
 		text_width = option.rect.width() - 2 * self.margin
@@ -803,6 +855,7 @@ class BoQItemDelegate(QStyledItemDelegate):
 		self._draw_grid(painter, option, index)
 
 		painter.restore()
+
 
 	def sizeHint(self, option, index):
 		raw_value = index.data(Qt.ItemDataRole.DisplayRole)
@@ -835,7 +888,6 @@ class BoQItemDelegate(QStyledItemDelegate):
 	# ----------------------------------------------------------------------
 	# ========================== Редактирование ============================
 	# ----------------------------------------------------------------------
-
 	def createEditor(self, parent, option, index):
 		if not (index.flags() & Qt.ItemFlag.ItemIsEditable):
 			return None
@@ -863,6 +915,7 @@ class BoQItemDelegate(QStyledItemDelegate):
 
 		editor.installEventFilter(self)
 		return editor
+
 	
 	def eventFilter(self, obj, event):
 		if isinstance(obj, QTextEdit) and event.type() == QEvent.Type.KeyPress:
@@ -888,6 +941,7 @@ class BoQItemDelegate(QStyledItemDelegate):
 		# Для остальных событий вызываем базовый обработчик
 		return super().eventFilter(obj, event)
 
+
 	def setEditorData(self, editor, index):
 		value = index.data(Qt.ItemDataRole.EditRole)
 		if isinstance(editor, QComboBox):
@@ -904,6 +958,7 @@ class BoQItemDelegate(QStyledItemDelegate):
 		else:
 			# Преобразуем в строку, даже если None или число
 			editor.setPlainText(str(value) if value is not None else "")
+
 
 	def setModelData(self, editor, model, index):
 		if isinstance(editor, QComboBox):
@@ -925,6 +980,8 @@ class BoQItemDelegate(QStyledItemDelegate):
 
 	def updateEditorGeometry(self, editor, option, index):
 		editor.setGeometry(option.rect)
+
+
 
 class SearchBar(QWidget):
 	search_requested = pyqtSignal(str, bool, bool)

@@ -409,7 +409,9 @@ class Style_Manager:
 
 class PositionLine(ABC):
 	""" Объект позии в ведомости объёмов работ """
-	PATTERN = r'(\$?)Р(\d+)\.(\$?)П(\d+)(?:\.(\$?)(\d+))?(_Прим)?'	# паттерн человекочитаемой ссылки на позицию/ресурс (например Р3.П4.1 или $Р3.$П4.1)
+	# паттерн человекочитаемой ссылки на позицию/ресурс (например Р3.П4.1 или $Р3.$П4.1)
+	PATTERN = r'(\$?)Р(\d+)\.(\$?)П(\d+)(?:\.(\$?)(\d+))?(_Прим)?'	
+	LINKS_SEPARATOR = '\n' + '—'*12 + '\n' # разделитель ссылок
 	
 	# ===================================================================================
 
@@ -441,7 +443,8 @@ class PositionLine(ABC):
 
 		# Ссылки на обосновывающие документы. Содержит объекты класса Link
 		self.links: list[Link] = []
-		self.links_cache = None					# Статичные данные
+		self.links_cache = None							# Статичные данные
+		self.marked_links: list[tuple[bool, str]] = []	# список ссылок с меткой о выделении
 		
 		self._raw_comment: str = ''				# Примечание (столбец 8)
 		self._comment_hash = None
@@ -795,7 +798,17 @@ class PositionLine(ABC):
 		references = []
 		for link in self.links:
 			references.append(str(link))
-		return f'\n{"—"*12}\n'.join(references)
+		return self.LINKS_SEPARATOR.join(references)
+
+	def _set_marked_links(self):
+		""" Создаёт список с кортежами, отмечающие ссылки с переопределнными
+		страницами для выделения """
+		self.marked_links = []
+		if not self.links:
+			return
+		
+		for link in self.links:
+			self.marked_links.append((bool(link.user_pages), str(link)))
 	
 	
 	def _sort_links(self):
@@ -831,6 +844,7 @@ class PositionLine(ABC):
 		self._sort_links()
 		self.add_links_to_manager()
 		self._set_links_cache()
+		self._set_marked_links()
 		self.manager.is_modified = True
 
 
@@ -1184,6 +1198,7 @@ class PositionLine(ABC):
 		self._set_qnt_cache()
 		self._set_quantity_formula_cache()
 		self._set_links_cache()
+		self._set_marked_links()
 		self._set_comment_cache()
 
 	# ------------------------------- Вычисление данных -----------------------------------

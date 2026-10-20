@@ -1082,6 +1082,7 @@ class BoQ_manager:
 			obj.remove_links_from_manager()
 			obj.links.clear()
 
+ 
 	def remove_obj(self, indexes: tuple, index_link: int | None = None, in_archive = False) -> bool:
 		"""
 		Удаляет раздел, позицию работы или вложенный в неё ресурс из основного накопителя или из архива
@@ -1092,7 +1093,6 @@ class BoQ_manager:
 		### Returins:
 			- :bool: Результат успешности удаления
 		"""
-
 		solution = self._check_access_to_obj(indexes, in_archive)
 
 		if not solution:
@@ -1151,6 +1151,7 @@ class BoQ_manager:
 			return True
 		else:
 			return False
+
 
 	def drop_to_archive(self, indexes: tuple) -> bool:
 		"""
@@ -1359,10 +1360,7 @@ class BoQ_manager:
 			# ---------- Вставка ссылок ----------
 			if obj_type is list and obj and is_links:
 				targ_obj: PositionLine = self.get_object(indexes)
-				targ_obj.remove_links_from_manager()
-				targ_obj.links = copy.deepcopy(obj)
-				targ_obj.add_links_to_manager()
-				self.is_modified = True
+				targ_obj.set_links(copy.deepcopy(obj))
 				return True
 
 			# ---------- Вставка раздела ----------

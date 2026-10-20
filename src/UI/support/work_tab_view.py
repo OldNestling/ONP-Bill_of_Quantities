@@ -811,8 +811,6 @@ class BoQ_View(QWidget):
 			return
 
 		# --- 2. Отсев потомков уже выбранных родителей ---
-		#     ВАЖНО: it.address — list, поэтому для set-ключей
-		#     нормализуем к tuple нужной длины.
 		items = list(selected_items.values())
 		sel_sections = {it.address for it in items if isinstance(it, Section)}          # int
 		sel_works    = {tuple(it.address[:2]) for it in items if isinstance(it, Work)}  # (sec, wrk)
@@ -859,94 +857,21 @@ class BoQ_View(QWidget):
 			None if top_res == -1 else top_res,
 		)
 
-		manager = self.manager
-		model = self.model
-
 		self.view.clearSelection()
 		self.view.setCurrentIndex(QModelIndex())
 
-		model.beginResetModel()
+		self.model.beginResetModel()
 		try:
 			for it in sorted_roots:
-				manager.remove_obj(remove_arg(it))
+				self.manager.remove_obj(remove_arg(it))
 		finally:
-			model.endResetModel()
+			self.model.endResetModel()
 
 		self.view.expandAll()
 
 		# --- 4. Подбираем ближайший допустимый адрес для выделения ---
 		sec_idx, work_idx, res_idx = target
-		sections = manager.sections
-		if not sections:
-			return
-
-		if sec_idx >= len(sections):
-			sec_idx = len(sections) - 1
-		if sec_idx < 0:
-			sec_idx = 0
-		section = sections[sec_idx]
-
-		if work_idx is not None:
-			if work_idx >= len(section.works):
-				work_idx = len(section.works) - 1
-			if work_idx < 0:
-				self.select_item_by_address((sec_idx, None, None))
-				return
-			work = section.works[work_idx]
-
-			if res_idx is not None:
-				if res_idx >= len(work.resources):
-					res_idx = len(work.resources) - 1
-				if res_idx < 0:
-					self.select_item_by_address((sec_idx, work_idx, None))
-					return
-
-		self.select_item_by_address((sec_idx, work_idx, res_idx))
-		# --- 3. Адресные ключи и сортировка по убыванию ---
-		def addr_key(it):
-			if isinstance(it, Section):
-				return (it.address, -1, -1)
-			if isinstance(it, Work):
-				return (it.address[0], it.address[1], -1)
-			return it.address
-
-		def remove_arg(it):
-			if isinstance(it, Section):
-				return (it.address, None, None)
-			if isinstance(it, Work):
-				return (it.address[0], it.address[1], None)
-			return it.address
-
-		sorted_roots = sorted(roots, key=addr_key, reverse=True)
-
-		# «Верхний» удаляемый адрес — якорь для выбора соседа после операции
-		top_sec, top_wrk, top_res = addr_key(sorted_roots[-1])
-		target = [
-			top_sec,
-			None if top_wrk == -1 else top_wrk,
-			None if top_res == -1 else top_res,
-		]
-
-		manager = self.manager
-		model = self.model
-
-		# Сбросить выделение и текущий индекс до удаления
-		self.view.clearSelection()
-		self.view.setCurrentIndex(QModelIndex())
-
-		model.beginResetModel()
-		try:
-			for it in sorted_roots:
-				manager.remove_obj(remove_arg(it))
-		finally:
-			model.endResetModel()
-
-		# Раскрываем дерево (beginResetModel его свернул)
-		self.view.expandAll()
-
-		# --- 4. Подбираем ближайший допустимый адрес для выделения ---
-		sec_idx, work_idx, res_idx = target
-		sections = manager.sections
+		sections = self.manager.sections
 		if not sections:
 			return
 
