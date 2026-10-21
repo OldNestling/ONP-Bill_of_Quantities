@@ -496,19 +496,24 @@ class BoQ_manager:
 	def check_changes(self):
 		""" Проверяет изменение в позициях и сбрасывает статус "осметчено" """
 		is_changed = False
+
+		def __compare_res(obj: Work | Resource):
+			nonlocal is_changed
+			compare_name_res = obj.compare_name()
+			compare_qnt_res = obj.check_qnt_and_depends()
+			compare_comment_res = obj.compare_comment_and_dependents()
+			if any((compare_name_res, compare_qnt_res, compare_comment_res)): is_changed = True
+
 		for section in self.sections:
 			section: Section
 			for work in section.works:
+				__compare_res(work)
 				work.update_cache_fields()
-				if not work.compare_name(): is_changed = True
-				work.check_qnt_and_depends()
-				if not work.compare_comment_and_dependents(): is_changed = True
 
 				for resource in work.resources:
+					__compare_res(resource)
 					resource.update_cache_fields()
-					if not resource.compare_name(): is_changed = True
-					resource.check_qnt_and_depends()
-					if not resource.compare_comment_and_dependents(): is_changed = True
+
 		if is_changed:
 			self.is_modified = True
 

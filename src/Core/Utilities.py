@@ -136,15 +136,33 @@ def convert_value(text: str) -> int | float | str:
 	
 	# Если не получилось - возвращаем строку
 	return value
+
 	
 def resource_path(relative_path):
-	"""Получить абсолютный путь к файлу ресурса, работающий и в .exe, и в скрипте."""
-	try:
-		# PyInstaller создаёт временную папку и хранит её путь в _MEIPASS
-		base_path = sys._MEIPASS
-	except AttributeError:
-		base_path = os.path.abspath(".")
-	return os.path.join(base_path, relative_path)
+    """
+    Абсолютный путь к файлу ресурса.
+
+    Приоритет:
+      1. Путь относительно исходников (работает, когда код запущен из репозитория,
+         в т.ч. через лаунчер с внешним кодом — ресурсы обновляются вместе с кодом).
+      2. sys._MEIPASS (для обычной сборки PyInstaller, где ресурсы упакованы в _internal).
+    """
+    # 1. Пытаемся найти рядом с исходниками
+    try:
+        base_src = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        candidate = os.path.join(base_src, relative_path)
+        if os.path.exists(candidate):
+            return candidate
+    except (NameError, OSError):
+        pass
+
+    # 2. Фолбэк на _MEIPASS / текущее поведение
+    try:
+        base_path = sys._MEIPASS
+    except AttributeError:
+        base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(base_path, relative_path)
+
 
 def get_hash_text(text: str) -> str:
 	""" Используется для сравнения изменений текстовых ячеек в позициях """

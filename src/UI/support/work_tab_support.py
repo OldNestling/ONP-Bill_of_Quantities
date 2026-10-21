@@ -831,7 +831,7 @@ class BoQItemDelegate(QStyledItemDelegate):
 				spans = getattr(item, 'marked_links', None) or []
 				if spans:
 					hl_color = (option.palette.highlightedText().color()
-					            if selected else QColor("#0065FC"))
+					            if selected else QColor("#AA00D4"))
 					self._apply_partical_highlights(doc, text, spans, hl_color)
 
 		# Ширина и перенос

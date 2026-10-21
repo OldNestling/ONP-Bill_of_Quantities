@@ -518,9 +518,9 @@ class PositionLine(ABC):
 			text = '=' + text
 
 		self.raw_name = text
-		name = self.process_library_requests(text).removeprefix('=').strip()
-		self.compare_name(name)
-		self._set_name_cache(name)
+		current_name = self.name
+		self.compare_name(current_name)
+		self._set_name_cache(current_name)
 
 	
 	def compare_name(self, text = None):
@@ -714,7 +714,7 @@ class PositionLine(ABC):
 		return True
 
 
-	def check_qnt_and_depends(self, res: str | None = None, isSetFlag = True):
+	def check_qnt_and_depends(self, res: str | None = None, isSetFlag = True) -> bool:
 		"""
 		Выполняет сопоставления compare_qnt для себя и завивсимых позиций
 		### Args:
@@ -722,9 +722,13 @@ class PositionLine(ABC):
 			- :isSetFlag: сигнал о том, что необходимо установить флаг формулы
 		"""
 		check = self.compare_qnt(res, isSetFlag)
+		checks = set()
 		if not check:
 			for depend in (self.dependents or ()):
-				depend.check_qnt_and_depends()
+				checks.add(depend.check_qnt_and_depends())
+		if not check or not any(checks):
+			return False
+		return True
 
 	# ---------------------------------- Примечание -------------------------------------
 	@property
