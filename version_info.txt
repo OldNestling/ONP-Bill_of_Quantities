@@ -1,0 +1,40 @@
+VSVersionInfo(
+  ffi=FixedFileInfo(
+    # версия файла (четыре числа)
+    filevers=(1, 0, 3, 8),
+    # версия продукта
+    prodvers=(1, 0, 3, 8),
+    # маска флагов (обычно 0x3f)
+    mask=0x3f,
+    # флаги (0 – без флагов)
+    flags=0x0,
+    # операционная система (0x40004 = NT/32-bit)
+    OS=0x40004,
+    # тип файла (1 = приложение)
+    fileType=0x1,
+    # подтип (0 – не определен)
+    subtype=0x0,
+    # дата (0,0 – не заполняется)
+    date=(0, 0)
+  ),
+  kids=[
+    StringFileInfo(
+      [
+        StringTable(
+          # языковой код: 0419 – русский, 04B0 – Unicode
+          u'040904B0',
+          [
+            StringStruct(u'FileDescription', u'Система работы с ведомостью объемов работ'),
+            StringStruct(u'FileVersion', u'1.0.3.8'),
+            StringStruct(u'InternalName', u'myapp.exe'),
+            StringStruct(u'LegalCopyright', u'Copyright (C) 2026 OldNestling'),
+            StringStruct(u'OriginalFilename', u'ONP_Система_ВОР.exe'),
+            StringStruct(u'ProductName', u'ONP: Система ВОР'),
+            StringStruct(u'ProductVersion', u'1.0.3.8'),
+          ])
+      ]),
+    VarFileInfo([
+      VarStruct(u'Translation', [1049, 1200])   # 1033 = русский, 1200 = Unicode
+    ])
+  ]
+)
