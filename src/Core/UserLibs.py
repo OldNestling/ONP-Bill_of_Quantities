@@ -42,7 +42,6 @@ class LibManager(DataLibraryManager):
 		return Library.deserialization(data)
 
 	# --------------------------- Взаимодействие с БД -----------------------------------
-
 	def get_libs_list(self) -> list[dict]:
 		output = []
 		for lib in self.library:
@@ -54,12 +53,14 @@ class LibManager(DataLibraryManager):
 				}
 			)
 		return output
+		
 
 	def create_lib(self):
 		if not self.project:
 			return
 		obj = Library()
 		self.library.append(obj)
+
 	
 	def remove_lib(self, index):
 		if not  self.project:
@@ -68,6 +69,7 @@ class LibManager(DataLibraryManager):
 			del self.library[index]
 		except IndexError:
 			return
+
 		
 	def create_group(self, lib_idx):
 		if not self.project:
@@ -75,6 +77,7 @@ class LibManager(DataLibraryManager):
 		if lib_idx < len(self.library):
 			lib = self.library[lib_idx]
 			lib.create_group()
+
 
 	def move_lib(self, from_index: int, to_index: int) -> bool:
 		"""Перемещает библиотеку с from_index на позицию to_index.
@@ -86,12 +89,20 @@ class LibManager(DataLibraryManager):
 			return True
 		return False
 
+
 	def build_library(self) -> dict:
-		dictionary = {}
+		project_library: dict = self.project.library
 		for lib in self.library:
+			lib_alias = lib.alias_key.lower()
+
+			if lib_alias in project_library:
+				continue
+
 			lib_content = {}
+
 			for group in lib.groups:
 				group_content = {}
+			
 				for main_el in group.main_elements:
 					main_element = {
 						'работа': main_el.work_text,
@@ -100,6 +111,7 @@ class LibManager(DataLibraryManager):
 						'прим1': main_el.note1,
 						'прим2': main_el.note2,
 					}
+			
 					for sub in main_el.sub_elements:
 						sub_element = {
 							'ресурс': sub.resource_text,
@@ -108,10 +120,12 @@ class LibManager(DataLibraryManager):
 							'прим2': sub.note2,
 						}
 						main_element[sub.alias_key.lower()] = sub_element
+			
 					group_content[main_el.alias_key.lower()] = main_element
+			
 				lib_content[group.alias_key.lower()] = group_content
-			dictionary[lib.alias_key.lower()] = lib_content
-		return dictionary
+			
+			project_library[lib_alias] = lib_content
 
 	
 

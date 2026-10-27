@@ -15,7 +15,7 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 import json
-from .Utilities import fixing_decimals
+from .Utilities import fixing_decimals, text_after
 from .DataLib import DataLibraryManager
 
 
@@ -33,10 +33,11 @@ class Machinery_Manager(DataLibraryManager):
 
 	FILE = 'Machinery' 				# Файл с данными
 
+
 	def __init__(self, project):
 		super().__init__()
 		self.project = project
-		self.library = []  			#  список всех созданных объектов
+		self.library: list[Machine] = []  			#  список всех созданных объектов
 		self.MACHINES = (
 			'-',
 			'Экскаватор', 
@@ -76,7 +77,6 @@ class Machinery_Manager(DataLibraryManager):
 				data[m.category].append(m)
 		return data
 		
-	
 	# ---------------------------- Взаимодействии с объектами ----------------------------
 	def create_object(self):
 		"""
@@ -85,6 +85,7 @@ class Machinery_Manager(DataLibraryManager):
 		if self.project:
 			obj = Machine()
 			self.library.append(obj)
+
 	
 	def restore_lib(self, data):
 		""" Редактирует данные объекта"""
@@ -94,6 +95,7 @@ class Machinery_Manager(DataLibraryManager):
 				for dct in data:
 					obj = Machine.deserialization(dct)
 					self.library.append(obj)
+
 
 	def move_object(self, index: int, moving: int):
 		"""
@@ -116,17 +118,28 @@ class Machinery_Manager(DataLibraryManager):
 			obj = self.library.pop(index)
 			self.library.insert(new_index, obj)
 			return new_index
+
 	
 	def remove_object(self, index):
 		""" Удаляет элемент из списка """
 		if self.project and index in (range(len(self.library))):
 			del self.library[index]
 
+
 	def show_lib(self):
 		""" Функция для отладки. Выводит информацию о объектах """
 		print('БД материалов в проекте:')
 		for object in self.library:
 			print(object)
+
+
+	def build_machinery_library(self):
+		machinery_key = 'всм'	# Ведомость средств механизации
+		project_library = self.project.library
+		project_library[machinery_key] = {}
+		for machine in self.library:
+			alias = machine.alias.lower()
+			project_library[machinery_key][alias] = machine.work
 
 			
 
@@ -137,7 +150,8 @@ class Machine:
 		self.alias: str = alias if alias else ''	# Псевдоним для ДБ
 		self._work: str = work if work else ''		# Текст работы с применением средства механизации
 		self.category = '-'
-	
+
+
 	@property
 	def alias_work(self):
 		if self.alias:
@@ -145,10 +159,12 @@ class Machine:
 		else:
 			return 'псевдоним не указан'
 	
+
 	@property
 	def name(self):
 		return self._name
 	
+
 	@name.setter
 	def name(self, text: str):
 		self._name = text.strip().replace('\n', ' ').replace('  ', ' ')
@@ -158,14 +174,13 @@ class Machine:
 	def work(self):
 		return self._work
 	
+
 	@work.setter
 	def work(self, text: str):
 		fix_text  = text.strip().replace('\n', ' ').replace('  ', ' ')
 		self._work = fixing_decimals(fix_text)
 
-
 	# ===================================== Методы ======================================
-
 	def serialization(self):
 		"Преобразует объект в словарь для сохранения в JSON"
 		data = {
@@ -175,6 +190,7 @@ class Machine:
 			'work': self.work
 		}
 		return data
+
 	
 	@classmethod
 	def deserialization(cls, data: dict | None = None):

@@ -30,6 +30,7 @@ class Soils_Manager(DataLibraryManager):
 	GESN_4_FILE = 'ГЭСН_4.json'
 	GESN_5_FILE = 'ГЭСН_5.json'
 
+
 	def __init__(self, project):
 		super().__init__()
 		self.project = project # Единый глобальный объект, хранящий настройки и артубты для всех модулей
@@ -38,11 +39,11 @@ class Soils_Manager(DataLibraryManager):
 		self._update_gesn_data()
 		# Устанавливка режима сопоставления
 		Soil._compare_mode = self.project.work_modes.get('ground_complementation_mode',False) if self.project else False 
-	
 
 	# ------------------------------- Загрузка и сохранение БД -----------------------------
 	def deserialization_function(self, data):
 		return self.soil_deserializer(data)
+
 	
 	def load_lib(self):
 		if not self.project or self._file_path is None or self._file_path is None:
@@ -111,8 +112,44 @@ class Soils_Manager(DataLibraryManager):
 		self._update_gesn_data()
 		self.unlock()
 
-	# ------------------------------ Загрузка и сохранение JSON ----------------------------
 
+	def build_soils_library(self):
+		""" Заполняет ссылки на БД библиотеки грунтов в проекте """
+		soils_key = 'вг'
+		project_library = self.project.library
+		project_library[soils_key] = {}
+		soils = list(self.library.values())
+		for soil in soils:
+			local_key = soil.local_num.lower()
+			project_library[soils_key][local_key] = {
+				'y': soil.accepted_density,
+				'прим1': soil._note1,
+				'прим2': soil._note2,
+			}
+
+			if soil.gesn_1_obj:
+				gesn1 = soil.gesn_1_obj
+				project_library[soils_key][local_key]['гэсн1'] = {
+					str(i): getattr(gesn1, f'work_{i}') for i in range(1, 14)
+				}
+
+			if soil.gesn_4_obj:
+				project_library[soils_key][local_key]['гэсн4'] = {
+					'группа': soil.gesn_4_obj.soil_group
+				}
+
+			if soil.gesn_5_obj:
+				gesn5 = soil.gesn_5_obj
+				project_library[soils_key][local_key]['гэсн5'] = {
+					'группа1': gesn5.soil_group_1,
+					'группа2': gesn5.soil_group_2,
+					'расход_630': gesn5.expenditure_1,
+					'расход_720': gesn5.expenditure_2,
+					'расход_830': gesn5.expenditure_3,
+					'расход_1020': gesn5.expenditure_4,
+				}
+
+	# ------------------------------ Загрузка и сохранение JSON ----------------------------
 	@staticmethod
 	def soil_serializer(obj_soil):
 		""" Создаеn словарь Python для экземляра объекта класса Soil для сериализации в json """
@@ -307,6 +344,7 @@ class Soils_Manager(DataLibraryManager):
 			soil = data[key]
 			soil['num'] = key
 			return Gesn1.json_deserializer(soil)
+
 	
 	def get_gesn_4_obj(self, key : str, gesn_data = None):
 		""" Преобразует выбранный словарь из файла JSON в объект dataclass Gesn1
@@ -371,7 +409,6 @@ class Soils_Manager(DataLibraryManager):
 		soil = Soil(local_num, local_name, local_density, gesn_1_obj, gesn_4_obj, gesn_5_obj, note1, note2, comment)
 		self.library[local_num] = soil
 
-	# удалить слой ИГИ из коллекцию
 
 	def edit_soil(self, data):
 		old_soil_num = data.get('old_soil_num')
@@ -426,6 +463,7 @@ class Soils_Manager(DataLibraryManager):
 		except KeyError:
 			self.reload_lib()
 
+
 	def copy_soil(self, key):
 		""" 
 		Создаёт коипю ИГЭ с временным именем-заглушкой
@@ -445,7 +483,6 @@ class Soils_Manager(DataLibraryManager):
 
 	
 #-------------------------------------------------------------------------------------------
-
 @dataclass
 class Gesn1:
 	""" класс объекта для импорта данных из ГЭСН_1.json """
@@ -488,9 +525,9 @@ class Gesn1:
 	work_13: int | str | None = None
 
 	# ===================================== Методы =====================================
-
 	def __str__(self):
 		return f'Грунт по ГЭСН 1: {self.num} ({self.name}), плотность {self.density} кг/м³ [{self.work_1}|{self.work_2}|{self.work_3}|{self.work_4}|{self.work_5}|{self.work_6}|{self.work_7}|{self.work_8}|{self.work_9}|{self.work_10}|{self.work_11}|{self.work_12}|{self.work_13}]'
+
 
 	def json_serializer(self):
 		gesn_1_dict = {
@@ -513,11 +550,14 @@ class Gesn1:
 		}
 		return gesn_1_dict
 
+
 	@classmethod
 	def json_deserializer(cls, data: dict | None):
 		if data is None:
 			return None
 		return cls(**data)
+
+
 
 @dataclass
 class Gesn4:
@@ -537,12 +577,12 @@ class Gesn4:
 	soil_group: int | None = None # Группа грунтов
 	description: str = None # Наименование и характеристика грунтов
 
+
 	@property
 	def num(self):
 		return f'{self.drillability_type}-{self.soil_group}'
 
 	# ===================================== Методы =====================================
-
 	def json_serializer(self):
 		gesn_4_dict = {
 			'drillability_type' : self.drillability_type,
@@ -551,11 +591,13 @@ class Gesn4:
 		}
 		return gesn_4_dict
 
+
 	@classmethod
 	def json_deserializer(cls, data: dict | None):
 		if data is None:
 			return None
 		return cls(**data)
+
 
 
 @dataclass
@@ -582,9 +624,9 @@ class Gesn5:
 	expenditure_4: float | None = None
 
 	# ===================================== Методы =====================================
-
 	def __str__(self):
 		return f'Грунт по ГЭСН 5: {self.num} ({self.name}), [{self.expenditure_1}|{self.expenditure_2}|{self.expenditure_3}|{self.expenditure_4}]'
+
 
 	def json_serializer(self):
 		gesn_5_dict = {
@@ -605,7 +647,7 @@ class Gesn5:
 			return None
 		return cls(**data)
 
-#-------------------------------------------------------------------------------------------
+
 
 class Soil:
 	"""Класс для создания объектов, представляющих собой инженерно-геологические слои по результат изысканий. 
@@ -638,8 +680,10 @@ class Soil:
 		self.note2: str | None =  note2 # Примечание №2 (замещает автовычисление)
 		self.comment: str | None = comment # пользовательское примечание
 
+
 	def __str__(self):
 		return f"Грунт № {self.local_num}: {self.local_name}, принятая плотность - {self.accepted_density} т/м³"
+
 
 	@property
 	def accepted_density(self):
@@ -667,6 +711,7 @@ class Soil:
 				text = f'{self.note1} γ=({self.accepted_density} т/м³)' 
 		return text
 
+
 	@property
 	def _note2(self):
 		'''Итоговое примечание №2'''
@@ -684,7 +729,6 @@ class Soil:
 		return text
 
 	# ===================================== Методы =====================================
-
 	def get_density(self, local_density, gesn_density):
 		""" Определение плотности грунта по ГЭСН или по ИГИ """		
 		deviation = lambda n1, n2: abs(1-n1/n2) # Подфункция для вычисления отклонения двух чисел
@@ -733,32 +777,41 @@ class Soil:
 		else:
 			res = local_density
 		return res
+
 	
 	def set_local_num(self,local_num):
 		self.local_num = local_num
 
+
 	def set_local_name(self, local_name):
 		self.local_name = local_name.strip()
+
 
 	def set_local_density(self, local_density):
 		self.local_density = convert_value(local_density)
 
+
 	def set_gesn_1_obj(self, gesn_1_obj):
 		self.gesn_1_obj = gesn_1_obj
+
 
 	def set_gesn_4_obj(self, gesn_4_obj):
 		self.gesn_4_obj = gesn_4_obj
 
+
 	def set_gesn_5_obj(self, gesn_5_obj):
 		self.gesn_5_obj = gesn_5_obj
+
 
 	def set_note1(self, note1):
 		""" Задать примечания №1 """
 		self.note1 = note1
 
+
 	def set_note2(self, note2):
 		""" Задать примечания №2 """
 		self.note2 = note2
+
 	
 	def set_comment(self, comment):
 		""" Задать локальное примечание """

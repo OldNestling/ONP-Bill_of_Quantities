@@ -18,7 +18,7 @@ from PyQt6.QtWidgets import (
 	QWidget,QVBoxLayout, QMessageBox, QHeaderView, QMenu, QApplication, 
 	QSplitter, QAbstractItemView, QLineEdit, QTextEdit
 	)
-from PyQt6.QtGui import QAction, QColor, QTextCursor
+from PyQt6.QtGui import QAction, QColor, QTextCursor, QKeySequence
 from PyQt6.QtCore import Qt, QModelIndex, QEvent, QTimer
 
 from ..resources.icons import Icons
@@ -159,6 +159,22 @@ class BoQ_View(QWidget):
 	
 	def eventFilter(self, obj, event):
 		if obj is self.view and event.type() == QEvent.Type.KeyPress:
+			mods = event.modifiers()
+			 # --- Ctrl + ` / ё в любой раскладке ---
+			# Ставим до обработки printable-символов и до Ctrl+V.
+			if (mods & Qt.KeyboardModifier.ControlModifier
+					and not (mods & (Qt.KeyboardModifier.ShiftModifier
+									| Qt.KeyboardModifier.AltModifier
+									| Qt.KeyboardModifier.MetaModifier))):
+				# English: key()=Key_QuoteLeft, text()="`"
+				# Russian: key()=0x451,          text()="ё"
+				# Любая другая раскладка: ловим по физической клавише.
+				#   Windows VK_OEM_3 = 0xC0; X11 (linux) XK_grave = 0x60; macOS kVK_ANSI_Grave = 0x32
+				if (event.key() == Qt.Key.Key_QuoteLeft
+						or event.text() in ('`', 'ё', 'Ё')
+						or event.nativeVirtualKey() in (0xC0, 0x60, 0x32)):
+					self._copy_current_address()
+					return True
 			# --- Delete ---
 			if event.key() == Qt.Key.Key_Delete:
 				self.clear_selected_cells()
@@ -356,6 +372,7 @@ class BoQ_View(QWidget):
 				paste_text_action = menu.addAction('Вставить текст')
 				paste_text_action.setIcon(paste_icon)
 				paste_text_action.setShortcut('Ctrl+V')
+				paste_text_action.triggered.connect(self._paste_text)
 			# копирование объектов ссылок
 			if col == 6: 
 				copy_links_action = copy_submenu.addAction('Копировать набор ссылок')

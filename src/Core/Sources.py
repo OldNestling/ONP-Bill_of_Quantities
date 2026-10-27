@@ -15,11 +15,12 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 import json
-from .Utilities import convert_value
+from .Utilities import convert_value, text_after
 from .DataLib import DataLibraryManager
 
 # Данный модуль организует работу с базой источников проетка, данными о транспортировки до них
 # Содержит класс Source_Manager для управления БД и класс Source как основной элемент БД
+
 
 
 class Sources_Manager(DataLibraryManager):
@@ -45,11 +46,12 @@ class Sources_Manager(DataLibraryManager):
 		'ВЗиС',
 		'ЩПС'
 	)
+
 	
 	def __init__(self, project):
 		super().__init__()
 		self.project = project # Единый глобальный объект, хранящий настройки и артубты для всех модулей
-		self.library = []
+		self.library: list[Source] = []
 		self.load_lib()
 		Source._transportation_mode = self.project.work_modes.get('transportation_mode',False) if self.project else False
 
@@ -61,6 +63,7 @@ class Sources_Manager(DataLibraryManager):
 	# ----------------------------------- Работа с БД -----------------------------------
 	def set_work_mode(self):
 		Source._transportation_mode = self.project.work_modes.get('transportation_mode',False) if self.project else False
+
 	
 	def get_sources_data(self) -> list:
 		""" Собирает данные для диалога земляных работ.
@@ -71,6 +74,7 @@ class Sources_Manager(DataLibraryManager):
 			source: Source
 			sources_list.append((source.name, source.alias))
 		return sources_list
+
 
 	def get_aliases(self) -> list:
 		output = []
@@ -83,8 +87,7 @@ class Sources_Manager(DataLibraryManager):
 				output.append(alias)
 		return sorted(output)
 
-	# ---------------------------- Взаимодействии с источниками ----------------------------
-
+	# -------------------------- Взаимодействии с источниками ---------------------------
 	def create_source(self, data):
 		"""
 		Создаёт объект источник и добавляет в коллекцию 
@@ -127,7 +130,8 @@ class Sources_Manager(DataLibraryManager):
 				comment
 			)
 			self.library.append(obj)
-	
+
+
 	def edit_source(self, index, data):
 		""" Редактирует данные объекта-источника"""
 		if self.project and data and index in list(range(len(self.library))):
@@ -155,6 +159,7 @@ class Sources_Manager(DataLibraryManager):
 			obj.note = note
 			obj.comment = comment
 
+
 	def move_obj(self, index: int, moving: int):
 		"""
 		Передвигает объект-источник в списке и возвращает новый индекс
@@ -176,17 +181,33 @@ class Sources_Manager(DataLibraryManager):
 			obj = self.library.pop(index)
 			self.library.insert(new_index, obj)
 			return new_index
+
 	
 	def remove_sorce(self, index):
 		""" Удаляет элемент из списка """
 		if self.project:
 			del self.library[index]
 
+
 	def show_sources(self):
 		""" Функция для отладки. Выводит информацию о объектах-источников """
 		print('БД источников в проекте:')
 		for source in self.library:
 			print(source)
+
+
+	def build_sources_library(self):
+		sources_key = 'ви'
+		project_library: dict = self.project.library
+		project_library[sources_key] = {}
+		for source in self.library:
+			_, alias, work_part = source.alias_work.split('.')
+			format_alias = alias.lower()
+			project_library[sources_key][format_alias] = {
+				work_part.lower(): source._work_text,
+				text_after(source.alias_transportation, '.', 2).lower(): source.transportation_text,
+				text_after(source.alias_note, '.', 2).lower(): source.note,
+			}
 
 			
 
@@ -207,6 +228,7 @@ class Source:
 	"""
 
 	_transportation_mode = False # Режим подробного вывыда транспортировки
+
 
 	def __init__(
 			self,
@@ -231,26 +253,35 @@ class Source:
 		self.work_text = work_text								# Замещение текста работы при необходимости
 		self.note = note 										# Примечание
 		self.comment = comment 									# Локальный комментарий
+
 	
+	def __str__(self):
+		return f'{self.name}: {self.transportation_text} {"("+self.note+")" if self.note else ""}'
+
+
 	@property
 	def alias(self):
 		if self._alias:
 			return f'ВИ.{self._alias}'
 		else:
 			return 'Отсутствует псевданим'
-	
+
+
 	@alias.setter
 	def alias(self, string: str):
 		self._alias = string.strip().replace(' ','')
-		
+
+
 	@property
 	def alias_work(self):
 		return f'{self.alias}.Работа'
-	
+
+
 	@property
 	def alias_transportation(self):
 		return f'{self.alias}.Перевозка'
-	
+
+
 	@property
 	def alias_note(self):
 		return f'{self.alias}.Прим'
@@ -259,10 +290,13 @@ class Source:
 	@property
 	def _total_length(self):	# Общее расстояние
 		return self.advanced_coating+self.transitional_coating+self.ground_coating
-	
+
+
 	@property
 	def _tonnage(self):
 		return self.tonnage if self.tonnage else 15
+
+
 	@property
 	def _work_text(self):
 		if self.work_text:
@@ -299,12 +333,8 @@ class Source:
 				return f'{self._work_text} на расстояние до {self._total_length} км'
 			else:
 				return f'{self._work_text}'
-		
-	def __str__(self):
-		return f'{self.name}: {self.transportation_text} {"("+self.note+")" if self.note else ""}'
 
-	# ======================================= Методы =======================================
-
+	# ===================================== Методы ======================================
 	def serialization(self):
 		"Преобразует объект в словарь для сохранения в JSON"
 		data = {
@@ -320,6 +350,7 @@ class Source:
 			'comment': self.comment
 		}
 		return data
+	
 	
 	@classmethod
 	def deserialization(cls, data: dict | None = None):
@@ -338,6 +369,7 @@ class Source:
 				comment = data.get('comment')
 			)
 			return  obj
-		
+
+
 	def set_comment(self, text):
 		self.comment = text

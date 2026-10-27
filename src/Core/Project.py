@@ -52,6 +52,7 @@ class Project:
 		app_dir.mkdir(parents=True, exist_ok=True)
 		return app_dir
 
+
 	@staticmethod
 	def load_recent_dirs() -> list:
 		"""Загружает список последних использованных директорий"""
@@ -67,6 +68,7 @@ class Project:
 		except FileNotFoundError:
 			pass
 		return []
+
 
 	@staticmethod
 	def save_recent_dir(dir_path: str | Path) -> None:
@@ -84,6 +86,7 @@ class Project:
 		filename = app_dir / RECENT_DIRS_LOG
 		with open(filename, "w", encoding="utf-8") as f:
 			json.dump(dirs, f, indent=4, ensure_ascii=False)
+
 	
 	@staticmethod
 	def get_path_to_template() -> Path:
@@ -108,6 +111,7 @@ class Project:
 		if path.exists():
 			return path
 
+
 	@staticmethod
 	def save_path_to_template(path: Path):
 		""" Сохраняет файл с путем к шаблонному проекту в папке настроек программы """
@@ -118,7 +122,6 @@ class Project:
 			json.dump({'path': path}, f, indent=4, ensure_ascii=False)
 
 	# ================================== Инициализация ==================================
-
 	def __init__(
 			self, 
 			base_dir = None, 
@@ -156,7 +159,11 @@ class Project:
 
 		self.recent_dirs: list | None = None			# Список прошлых директорий
 		self.project_BoQs: tuple[File_BoQ] = tuple()	# Кортеж с объектами данных о файлах BoQ
-		self.library = dict() 							# Словарь всех библиотек проекта, используемых для ссылок
+		
+		# Словарь всех библиотек проекта, используемых для ссылок
+		# модиицируется менеджерами
+		self.library = dict() 							
+		
 		self.clipboard: tuple | None = None				# буфер обмена для работы с разделами. 
 		self.now = datetime.now()						# Для работы с текущей датой
 
@@ -171,7 +178,6 @@ class Project:
 		self.documentation_manager = DOCs_Manager(self)			# единый менеджер документации
 
 	# =============================== Загрузка/Сохранение ===============================
-
 	def _get_clean_start(self):
 		'''Функция инициализации базовых настроек среды и проекта при отсутствии загрузочного файла Project.json'''
 		import Templates.ProjectTemplate as Template
@@ -198,6 +204,7 @@ class Project:
 
 		# ГИПы
 		self.chiefs = list(Template.CHIEFS)
+
 
 	def _get_load_data(self):
 		'''Функция инициализации базовых настроек среды и проекта из загрузочного файла Project.json'''
@@ -241,6 +248,7 @@ class Project:
 			else:
 				self.chiefs = []
 
+
 	def start_project_settings(self):
 		'''Функция получения настроек проекта из файла настроек или из шаблона'''
 
@@ -248,6 +256,7 @@ class Project:
 			self._get_load_data() # загрузка данных из файла настроек проекта
 		else:
 			self._get_clean_start() # инициация базы данных из шаблона
+
 
 	def saving_settings(self):
 		""" Сохраняет параметры и настройки проекта """
@@ -266,6 +275,7 @@ class Project:
 		folder.mkdir(parents=True, exist_ok=True) # parents=True — рекурсивно создаёт вложенные папки
 		with open(self.settings_file_path, "w", encoding="utf-8") as f: # сохранение параметров в JSON файл
 			json.dump(export_elements, f, indent=4, ensure_ascii=False)
+
 
 	def create_new_refinement(self, name: str):
 		""" Создаёт новую ревизию методом копирования содержимого текущего каталога """
@@ -316,6 +326,7 @@ class Project:
 				filename = filename.replace('__', '_')
 			return filename
 
+
 		name = __сleaning_filename_of_special_characters(filename)
 
 		file_path: Path = self.project_BoQs_path / f'{name}.json'
@@ -336,6 +347,7 @@ class Project:
 		except Exception as e:
 			return False
 		return True
+
 	
 	def open_BoQ(self, idx_BoQ) -> BoQ_manager:
 		try:
@@ -358,6 +370,7 @@ class Project:
 		except FileIsBusy:
 			return BoQ_manager(self, file.path, True)		# Открытие в режиме чтения
 
+
 	def open_BoQ_for_export(self, file_BoQ):
 		"""
 		Загружает BoQ_manager из файла раздела без проверки блокировки.
@@ -368,7 +381,6 @@ class Project:
 		return manager
 
 	# =========================== Работа с атрибутами проекта ===========================
-
 	def select_unit(self):
 		'''Назначение ключа еденицы измерения для поиска'''
 		i=0
@@ -380,137 +392,35 @@ class Project:
 		return key_list[unit_id]
 
 	# ------------------------------- Изменение атрибутов -------------------------------
-
 	def set_project_name(self):
 		ConstructionSite = input('Введите новое название проекта: ')
 		self.project_data['ConstructionSite'] = ConstructionSite
 		code = input('Укажите новый шифр объекта: ')
 		self.project_data['Code'] = code
+
 	
 	def set_verifier(self):
 		verifier = input('Введите имя ответственного за проект ГИПа: ')
 		self.project_data['Verifier'] = verifier
 
 	# =========================== Работа с библиотекой ссылок ===========================
-
 	def set_library(self):
 		"""
 		Создаёт библиотеку ссылок на переменные проекта в виде словаря,
 		запросы к которому отправляются через self.process_library_requests()
 		TODO перевести функцию генерацию в модули, сдесь только вызов
 		"""
-		self.library = {}
+		self.library = {}	# модифицируется менеджерами библиотек
 
 		if self.soils_manager:
-			self._build_soils_library()
+			self.soils_manager.build_soils_library()
 		if self.sources_manager:
-			self._build_sources_library()
+			self.sources_manager.build_sources_library()
 		if self.machinery_manager:
-			self._build_machinery_library()
+			self.machinery_manager.build_machinery_library()
 		if self.libraries_manager:
-			self.library.update(self.libraries_manager.build_library())
+			self.libraries_manager.build_library()
 
-	def _build_soils_library(self):
-		soils_key = 'вг'
-		self.library[soils_key] = {}
-		soils = list(self.soils_manager.library.values())
-		for soil in soils:
-			local_key = soil.local_num.lower()
-			self.library[soils_key][local_key] = {
-				'y': soil.accepted_density,
-				'прим1': soil._note1,
-				'прим2': soil._note2,
-			}
-			if soil.gesn_1_obj:
-				gesn1 = soil.gesn_1_obj
-				self.library[soils_key][local_key]['гэсн1'] = {
-					str(i): getattr(gesn1, f'work_{i}') for i in range(1, 14)
-				}
-			if soil.gesn_4_obj:
-				self.library[soils_key][local_key]['гэсн4'] = {
-					'группа': soil.gesn_4_obj.soil_group
-				}
-			if soil.gesn_5_obj:
-				gesn5 = soil.gesn_5_obj
-				self.library[soils_key][local_key]['гэсн5'] = {
-					'группа1': gesn5.soil_group_1,
-					'группа2': gesn5.soil_group_2,
-					'расход_630': gesn5.expenditure_1,
-					'расход_720': gesn5.expenditure_2,
-					'расход_830': gesn5.expenditure_3,
-					'расход_1020': gesn5.expenditure_4,
-				}
-
-	def _build_sources_library(self):
-		sources_key = 'ви'
-		self.library[sources_key] = {}
-		for source in self.sources_manager.library:
-			_, alias, work_part = source.alias_work.split('.')
-			format_alias = alias.lower()
-			self.library[sources_key][format_alias] = {
-				work_part.lower(): source._work_text,
-				text_after(source.alias_transportation, '.', 2).lower(): source.transportation_text,
-				text_after(source.alias_note, '.', 2).lower(): source.note,
-			}
-
-	def _build_materials_library(self):
-		materials_key = 'вм'
-		self.library[materials_key] = {}
-		for material in self.materials_manager.library:
-			_, alias, work_part = material.alias_work.split('.')
-			format_alias = alias.lower()
-			self.library[materials_key][format_alias] = {
-				work_part.lower(): material.work_text,
-				text_after(material.alias_material, '.', 2).lower(): material.material_text,
-				text_after(material.alias_factor, '.', 2).lower(): material.factor,
-				text_after(material.alias_note1, '.', 2).lower(): material.note1,
-				text_after(material.alias_note2, '.', 2).lower(): material.note2,
-			}
-
-	def _build_turnover_library(self):
-		turnover_key = 'во'
-		self.library[turnover_key] = {}
-		for obj in self.reuse_manager.library:
-			_, alias, note_part = obj._alias_note.split('.')
-			format_alias = alias.lower()
-			self.library[turnover_key][format_alias] = {
-				note_part.lower(): obj._note
-			}
-
-	def _build_road_constr_library(self):
-		rc_key = 'вдо'
-		self.library[rc_key] = {}
-		for road_constr in self.road_constr_manager.library:
-			_, rc_alias = road_constr.alias.split('.')
-			format_rc_alias = rc_alias.lower()
-			self.library[rc_key][format_rc_alias] = {}
-
-			for layer in road_constr.layers:
-				layer_alias, work_part = layer.alias_work.split('.')
-				format_layer_alias = layer_alias.lower()
-				layer_dict = self.library[rc_key][format_rc_alias][format_layer_alias] = {}
-				layer_dict[work_part.lower()] = layer.work_text
-				layer_dict[text_after(layer.alias_material, '.').lower()] = layer.material_text
-				layer_dict[text_after(layer.alias_factor, '.').lower()] = layer.factor
-				layer_dict[text_after(layer.alias_note1, '.').lower()] = layer.note1
-				layer_dict[text_after(layer.alias_note2, '.').lower()] = layer.note2
-
-				if layer.children:
-					for sub in layer.children:
-						sub_alias = sub.alias.lower()
-						sub_dict = self.library[rc_key][format_rc_alias][sub_alias] = {}
-						sub_dict[work_part.lower()] = sub.work_text
-						sub_dict[text_after(sub.alias_material, '.').lower()] = sub.material_text
-						sub_dict[text_after(sub.alias_factor, '.').lower()] = sub.factor
-						sub_dict[text_after(sub.alias_note1, '.').lower()] = sub.note1
-						sub_dict[text_after(sub.alias_note2, '.').lower()] = sub.note2
-	
-	def _build_machinery_library(self):
-		machinery_key = 'всм'	# Ведомость средств механизации
-		self.library[machinery_key] = {}
-		for machine in self.machinery_manager.library:
-			alias = machine.alias.lower()
-			self.library[machinery_key][alias] = machine.work
 
 	def get_all_library_paths(self) -> tuple:
 		"""
@@ -518,6 +428,7 @@ class Project:
 		например ('@вг.пгс.у', '@вдо.покрытие.асфальт.работа', ...).
 		"""
 		result = []
+
 
 		def walk(current_dict, current_path):
 			for key, value in current_dict.items():
@@ -528,10 +439,13 @@ class Project:
 					# конечное значение — формируем строку обращения
 					full_alias = '.'.join(new_path)
 					result.append(full_alias.upper())
+
+
 		if not self.library:
 			self.set_library()
 		walk(self.library, [])
 		return tuple(sorted(result))
+
 
 	def get_soils_gesn1_data(self) -> list:
 		""" Собирает данные для диалога земляных работ
@@ -541,11 +455,13 @@ class Project:
 		if not self.soils_manager:
 			return
 		return self.soils_manager.get_soils_gesn1_data()
+
 	
 	def get_soils_gesn5_data(self) -> list:
 		if not self.soils_manager:
 			return
 		return self.soils_manager.get_soils_gesn5_data()
+
 	
 	def get_sources_data(self) -> list:
 		""" Собирает данные для диалога земляных работ.
@@ -553,6 +469,7 @@ class Project:
 		if not self.sources_manager:
 			return
 		return self.sources_manager.get_sources_data()
+
 	
 	def get_machines_data(self)-> list:
 		""" Собирает данные для диалога земляных работ
@@ -571,13 +488,16 @@ class Project:
 	def open_project_folder(self):
 		open_folder(self.base_dir)
 
+
 	def open_xml_folder(self):
 		path = self.base_dir / 'XML'
 		open_folder(path)
 
+
 	def open_pdf_folder(self):
 		path = self.base_dir / 'PDF'
 		open_folder(path)
+
 	
 	def emergency_shutdown(self):
 		""" Преобразует lock-файлы открытых пользователем ведомостей в резервные копии исходных файлов """
@@ -595,8 +515,7 @@ class Project:
 			new_name = name + '_' + timestamp + '.json'
 			file.rename(self.project_BoQs_path / new_name)
 
-	# ============================== Импорт библиотек проекта ============================
-
+	# ============================== Импорт библиотек проекта ===========================
 	def get_data_from_other_project (self, path: str | Path) -> dict | None:
 		""" Проверяет, какие данные из проекта доступны для импорта  и агрегирует их в словарь"""
 		if isinstance(path, Path):
@@ -616,6 +535,7 @@ class Project:
 				project_data = json.load(f)
 		except Exception:
 			return None
+
 
 		def __get_library_file_data(root_path: Path, library_manager: DataLibraryManager):
 			path = root_path / self.sourсes_folder / (library_manager.FILE+'.json')
@@ -679,6 +599,7 @@ class Project:
 			else:
 				results['units_settings'] = False
 
+
 		def __process_project_list_data(current_lib: list, key: str):
 			""" Импортирует в коллекции self.performers, self.chiefs, self.posts новые данные """
 			nonlocal results, is_was_project_import, data
@@ -696,6 +617,7 @@ class Project:
 			else:
 				results[key] = False
 
+
 		project_libs = zip(
 			('performers_lib', 'chiefs_lib', 'posts_lib'),
 			(self.performers, self.chiefs, self.posts)
@@ -710,7 +632,6 @@ class Project:
 		# -----//-----
 
 		# ----- Импорт библиотек из менеджеров данных ----
-
 		def __get_selected_libs(libs: list, selection: list[int]) -> list | None:
 			""" Получает определённые библиотеки из всех выбранных в другом проекте
 			### Args:
@@ -725,6 +646,7 @@ class Project:
 				except IndexError: continue
 
 			return import_libs
+
 		
 		def __import_lib_data(key: str, manager: DataLibraryManager):
 			""" Импортирует из другого проекта данные указанной библиотеки , добавляет к текущей, сохраняет
@@ -749,6 +671,7 @@ class Project:
 
 			manager.save_lib()
 			results[key] = True
+
 
 		# библиотеки из менеджеров данных
 		managers = (self.soils_manager, self.sources_manager,
@@ -787,6 +710,7 @@ class File_BoQ:
 		self._exists = self.path.exists()
 		if self._exists:
 			self._load_metadata(locked_files)
+
 		
 	def _load_metadata(self, locked_files):
 		"""Загружает только метаданные из JSON-файла."""
@@ -827,6 +751,7 @@ class File_BoQ:
 		except (json.JSONDecodeError, PermissionError) as e:
 			print(f"Ошибка при чтении файла {self.path}: {e}")
 
+
 	def _load_data(self):
 		"""Загружает полные данные раздела (ключ 'data') при необходимости."""
 		if self.project is None:
@@ -840,6 +765,7 @@ class File_BoQ:
 		except Exception as e:
 			print(f"Ошибка загрузки данных из {self.path}: {e}")
 			return
+
 
 	@property
 	def status_lock(self) -> tuple:
@@ -863,7 +789,8 @@ class File_BoQ:
 			if filename == f_name:
 				return (True, user)
 		return (False, None)
-	
+
+
 	def _get_locked_files(self):
 		locked_files = self.project.project_BoQs_path.glob('*.lock') 	# Список открытых файлов
 		locked_files = list(filter(lambda f: f.stem.startswith(self.path.stem), locked_files))
@@ -890,12 +817,14 @@ class File_BoQ:
 			return True
 		except FileNotFoundError:
 			raise FileNotFoundError
-	
+
+
 	def unlock(self):
 		"""	Удаляет файл блокировки	"""
 		username = get_user_log('get_name')
 		filename: Path = self.path.parent / f'{self.path.stem}__{username}.lock'
 		filename.unlink()
+
 
 	def remove_lock(self):
 		locked_files = self._get_locked_files()
@@ -923,9 +852,11 @@ class File_BoQ:
 			self.path = new_file_path
 		else:
 			self.unlock()
-	
+
+
 	def remove_file(self):
 		self.path.unlink(True)
+
 
 	def merge_filse(self, second_file: Path):
 		pass
@@ -940,7 +871,8 @@ class FileIsBusy(Exception):
 	def __init__(self, username):
 		super().__init__()
 		self.username = username		# Текущий активный пользователь
-	
+
+
 	def get_data(self):
 		return self.username
 
