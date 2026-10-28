@@ -61,6 +61,7 @@ class Soils_Manager(DataLibraryManager):
 		except Exception as e:
 			raise RuntimeError(f'{"-"*40}\nОшибка загрузки файла {self._file_path}: {e}')
 
+
 	def save_lib(self):
 		if not self.project or not self.lock_owned:
 			return False
@@ -123,8 +124,9 @@ class Soils_Manager(DataLibraryManager):
 			local_key = soil.local_num.lower()
 			project_library[soils_key][local_key] = {
 				'y': soil.accepted_density,
-				'прим1': soil._note1,
-				'прим2': soil._note2,
+				'прим1': soil.note1,
+				'прим2': soil.note2,
+				'прим3': soil.note3
 			}
 
 			if soil.gesn_1_obj:
@@ -161,11 +163,13 @@ class Soils_Manager(DataLibraryManager):
 				"gesn_1_obj": obj_soil.gesn_1_obj.json_serializer() if obj_soil.gesn_1_obj else None,
 				"gesn_4_obj": obj_soil.gesn_4_obj.json_serializer() if obj_soil.gesn_4_obj else None,
 				"gesn_5_obj": obj_soil.gesn_5_obj.json_serializer() if obj_soil.gesn_5_obj else None,
-				"note1": obj_soil.note1,
-				"note2": obj_soil.note2,
+				"note1": obj_soil._note1,
+				"note2": obj_soil._note2,
+				"note3": obj_soil.note3,
 				"comment": obj_soil.comment
 			}
 			return json_soil
+
 		
 	def soil_deserializer(self, dict_soil):
 		""" Распознаёт еденичный объект класса Soil из предоставленного словаря json и 
@@ -187,6 +191,7 @@ class Soils_Manager(DataLibraryManager):
 				Gesn5.json_deserializer(gesn_5_obj),
 				dict_soil.get('note1'),
 				dict_soil.get('note2'),
+				dict_soil.get('note3'),
 				dict_soil.get('comment')				
 			)
 			
@@ -194,6 +199,7 @@ class Soils_Manager(DataLibraryManager):
 				self.library[key] = soil
 		else:
 			print('Предоставленные данные не подлежат десериализации')
+
 
 	def save_gesn1_data(self, data):
 		""" Сохраняет изменения в базе данных по ГЭСН 1 """
@@ -206,7 +212,8 @@ class Soils_Manager(DataLibraryManager):
 				json.dump(gesn1_data, f, indent=4, ensure_ascii=False)
 		except Exception as e:
 			print(f'{"-"*40}\nПроизошла ошибка: {e}')
-	
+
+
 	def save_gesn5_data(self, data):
 		""" Сохраняет изменения в базе данных по ГЭСН 5 """
 		gesn5_data = {}
@@ -220,7 +227,6 @@ class Soils_Manager(DataLibraryManager):
 			print(f'{"-"*40}\nПроизошла ошибка: {e}')
 
 	# --------------------------------- Данные ГЭСН -------------------------------------
-
 	@property
 	def gesn_1_data(self):
 		""" Получает БД ГЭСН 1 """
@@ -236,7 +242,7 @@ class Soils_Manager(DataLibraryManager):
 			except Exception as e:
 				print(f'{"-"*40}\Произошла ошибка: {e}')
 
-	
+
 	@property
 	def gesn_4_data(self):
 		""" Получает БД ГЭСН 4 """
@@ -252,7 +258,7 @@ class Soils_Manager(DataLibraryManager):
 			except Exception as e:
 				print(f'{"-"*40}\Произошла ошибка: {e}')
 
-	
+
 	@property
 	def gesn_5_data(self):
 		""" Получает БД ГЭСН 5 """
@@ -267,26 +273,25 @@ class Soils_Manager(DataLibraryManager):
 				return GESN_DATA['data']
 			except Exception as e:
 				print(f'{"-"*40}\Произошла ошибка: {e}')
-	
-	
+
+
 	def get_gesn1_headers(self):
 		""" Получает заголвки по столбцов для таблицы по ГЭСН 1 """
 		headers = ['№', 'Наименование и краткая характеристика грунтов']
 		headers.extend(list(Gesn1.short_names.values()))
 		return headers
-	
+
+
 	def get_gesn4_headers(self):
 		""" Получает заголвки по столбцов для таблицы по ГЭСН 4 """
 		return list(Gesn4.short_names.values())
-	
+
+
 	def get_gesn5_headers(self):
 		""" Получает заголвки по столбцов для таблицы по ГЭСН 5 """
 		return list(Gesn5.short_names.values())
 
-
-
 	# ----------------------- Передача данных ----------------------------------
-	
 	def get_soils_gesn1_data(self) -> list:
 		""" Собирает данные для диалога земляных работ
 		Возвращает список с кортежами внутри которых: номер грунта, доступные работы
@@ -311,7 +316,8 @@ class Soils_Manager(DataLibraryManager):
 				works_list.append((name, f'ВГ.{key}.ГЭСН1.{i}', i-1))
 			soils_list.append((key, works_list))
 		return soils_list
-	
+
+
 	def get_soils_gesn5_data(self) -> list:
 		soils: dict = self.library
 		soils_list = []
@@ -323,9 +329,7 @@ class Soils_Manager(DataLibraryManager):
 			soils_list.append(soil)
 		return soils_list
 
-
 	# ------------------------- Работа с ИГЭ -----------------------------------
-
 	def show_soils(self):
 		print('Текущий список ИГЭ в базе:')
 		for key, value in self.library.items():
@@ -390,23 +394,31 @@ class Soils_Manager(DataLibraryManager):
 			return Gesn5.json_deserializer(soil)
 
 
-	def create_soil(
-			self, 
-			local_num, 
-			local_name, 
-			local_density, 
-			gesn_1_num=None, 
-			gesn_4_num=None, 
-			gesn_5_num=None, 
-			note1=None, 
-			note2=None, 
-			comment=None
-	):
+	def create_soil(self, data: dict):
 		""" Создать слой ИГЭ и добавить коллекцию """
+		local_num = data.get('local_num')
+		local_name = data.get('local_name')
+		local_density = data.get('local_density')
+		
+		gesn_1_num = data.get('gesn_1_num')
 		gesn_1_obj = self.get_gesn_1_obj(gesn_1_num) if gesn_1_num else None
+		
+		gesn_4_num = data.get('gesn_4_num')
 		gesn_4_obj = self.get_gesn_4_obj(gesn_4_num) if gesn_4_num else None
+		
+		gesn_5_num = data.get('gesn_5_num')
 		gesn_5_obj = self.get_gesn_5_obj(gesn_5_num) if gesn_5_num else None
-		soil = Soil(local_num, local_name, local_density, gesn_1_obj, gesn_4_obj, gesn_5_obj, note1, note2, comment)
+		
+		note1 = data.get('note1')
+		note2 = data.get('note2')
+		note3 = data.get('note3')
+		comment = data.get('comment')
+		
+		soil = Soil(
+			local_num, local_name, local_density,
+			gesn_1_obj, gesn_4_obj, gesn_5_obj,
+			note1, note2, note3, comment
+		)
 		self.library[local_num] = soil
 
 
@@ -420,6 +432,7 @@ class Soils_Manager(DataLibraryManager):
 		gesn_5_num = data.get('gesn_5_num')
 		note1 = data.get('note1')
 		note2 = data.get('note2')
+		note3 = data.get('note3')
 		comment = data.get('comment')
 
 		gesn_1_obj = self.get_gesn_1_obj(gesn_1_num) if gesn_1_num else None
@@ -429,15 +442,16 @@ class Soils_Manager(DataLibraryManager):
 		if old_soil_num == local_num:
 			soil = self.library.get(old_soil_num)
 
-			soil.set_local_num(local_num)
-			soil.set_local_name(local_name)
-			soil.set_local_density(local_density)
-			soil.set_gesn_1_obj(gesn_1_obj)
-			soil.set_gesn_4_obj(gesn_4_obj)
-			soil.set_gesn_5_obj(gesn_5_obj)
-			soil.set_note1(note1)
-			soil.set_note2(note2)
-			soil.set_comment(comment)
+			soil.local_num = local_num
+			soil.local_name = local_name.strip() if isinstance(local_name, str) else ''
+			soil.local_density = convert_value(local_density)
+			soil.gesn_1_obj = gesn_1_obj
+			soil.gesn_4_obj = gesn_4_obj
+			soil.gesn_5_obj = gesn_5_obj
+			soil.note1 = note1
+			soil.note2 = note2
+			soil.note3 = note3
+			soil.comment = comment
 		
 		else:
 			del self.library[old_soil_num]
@@ -451,6 +465,7 @@ class Soils_Manager(DataLibraryManager):
 				gesn_5_obj,
 				note1,
 				note2,
+				note3,
 				comment
 			)
 
@@ -477,12 +492,12 @@ class Soils_Manager(DataLibraryManager):
 		if key:
 			new_obj = copy.deepcopy(self.library[key])
 			new_key = 'ИГЭ_'
-			new_obj.set_local_num(new_key)
+			new_obj.local_num = new_key
 			self.library[new_obj.local_num] = new_obj
 			return new_key
 
 	
-#-------------------------------------------------------------------------------------------
+
 @dataclass
 class Gesn1:
 	""" класс объекта для импорта данных из ГЭСН_1.json """
@@ -668,7 +683,8 @@ class Soil:
 
 	def __init__(
 		self, local_num, local_name, local_density, 
-		gesn_1_obj = None, gesn_4_obj = None, gesn_5_obj = None,  note1=None, note2=None, comment = None
+		gesn_1_obj = None, gesn_4_obj = None, gesn_5_obj = None,
+		note1=None, note2=None, note3=None, comment = None
 	):
 		self.local_num: str = local_num # номер ИГЭ
 		self.local_name: str = local_name.strip() # наименование по результатом ИГИ
@@ -676,8 +692,9 @@ class Soil:
 		self.gesn_1_obj: Gesn1 | None = gesn_1_obj # данные по ГЭСН 1
 		self.gesn_4_obj: Gesn4 | None = gesn_4_obj # данные по ГЭСН 4
 		self.gesn_5_obj: Gesn5 | None = gesn_5_obj # данные по ГЭСН 5
-		self.note1: str | None =  note1 # Примечание №1 (замещает автовычисление)
-		self.note2: str | None =  note2 # Примечание №2 (замещает автовычисление)
+		self._note1: str | None =  note1 	# Примечание №1 (замещает автовычисление)
+		self._note2: str | None =  note2 	# Примечание №2 (замещает автовычисление)
+		self._note3: str | None = note3		# Примечание №3 (статичный, пользовательский)
 		self.comment: str | None = comment # пользовательское примечание
 
 
@@ -696,37 +713,66 @@ class Soil:
 			
 	
 	@property
-	def _note1(self):
+	def note1(self):
 		'''Итоговое примечание №1'''
 		none_data = {None, 'None', '-', '', ' '}
-		if self.note1 in none_data:
+		if self._note1 in none_data:
 			if self.gesn_1_obj:
 				text = f'{self.local_name} ({self.gesn_1_obj.num} по ГЭСН 1) γ=({self.accepted_density} т/м³)' 
 			else:
 				text = f'{self.local_name} γ=({self.accepted_density} т/м³)' 
 		else:
 			if self.gesn_1_obj:
-				text = f'{self.note1} ({self.gesn_1_obj.num} по ГЭСН 1) γ=({self.accepted_density} т/м³)' 
+				text = f'{self._note1} ({self.gesn_1_obj.num} по ГЭСН 1) γ=({self.accepted_density} т/м³)' 
 			else:
-				text = f'{self.note1} γ=({self.accepted_density} т/м³)' 
+				text = f'{self._note1} γ=({self.accepted_density} т/м³)' 
 		return text
 
 
+	@note1.setter
+	def note1(self, text):
+		self._note1 = self.__fix_text(text)
+
+
+	def get_raw_note1(self):
+		return self._note1		
+
+
 	@property
-	def _note2(self):
+	def note2(self):
 		'''Итоговое примечание №2'''
 		none_data = {None, 'None', '-', '', ' '}
-		if self.note2 in none_data:
+		if self._note2 in none_data:
 			if self.gesn_5_obj:
 				text = f'{self.local_name} ({self.gesn_5_obj.num} по ГЭСН 5) γ=({self.accepted_density} т/м³)' 
 			else:
 				text = f'{self.local_name} γ=({self.accepted_density} т/м³)' 
 		else:
 			if self.gesn_5_obj:
-				text = f'{self.note2} ({self.gesn_5_obj.num} по ГЭСН 5) γ=({self.accepted_density} т/м³)' 
+				text = f'{self._note2} ({self.gesn_5_obj.num} по ГЭСН 5) γ=({self.accepted_density} т/м³)' 
 			else:
-				text = f'{self.note2} γ=({self.accepted_density} т/м³)' 
+				text = f'{self._note2} γ=({self.accepted_density} т/м³)' 
 		return text
+
+
+	@note2.setter
+	def note2(self, text):
+		self._note2 = self.__fix_text(text)
+
+
+	def get_raw_note2(self):
+		return self._note2		
+	
+
+	@property
+	def note3(self):
+		return self._note3
+
+
+	@note3.setter
+	def note3(self, text):
+		""" Дополнительное примечание, полностью записываемое полльзователем """
+		self._note3 = self.__fix_text(text)
 
 	# ===================================== Методы =====================================
 	def get_density(self, local_density, gesn_density):
@@ -778,42 +824,18 @@ class Soil:
 			res = local_density
 		return res
 
-	
-	def set_local_num(self,local_num):
-		self.local_num = local_num
 
+	@staticmethod
+	def __fix_text(text: str) -> str|None:
+		""" Очищяет текст от лишних пробелов и проверяет на валидность """
+		if not text or not isinstance(text, str):
+			return None
 
-	def set_local_name(self, local_name):
-		self.local_name = local_name.strip()
+		output = text.replace(' ', ' ') # заменяем неразрывный пробел
+		while '  ' in output:
+			output = output.replace('  ', ' ')
 
-
-	def set_local_density(self, local_density):
-		self.local_density = convert_value(local_density)
-
-
-	def set_gesn_1_obj(self, gesn_1_obj):
-		self.gesn_1_obj = gesn_1_obj
-
-
-	def set_gesn_4_obj(self, gesn_4_obj):
-		self.gesn_4_obj = gesn_4_obj
-
-
-	def set_gesn_5_obj(self, gesn_5_obj):
-		self.gesn_5_obj = gesn_5_obj
-
-
-	def set_note1(self, note1):
-		""" Задать примечания №1 """
-		self.note1 = note1
-
-
-	def set_note2(self, note2):
-		""" Задать примечания №2 """
-		self.note2 = note2
-
-	
-	def set_comment(self, comment):
-		""" Задать локальное примечание """
-		self.comment = comment
-	
+		if output in {'None', ' ', '-'}:
+			return None
+		
+		return output

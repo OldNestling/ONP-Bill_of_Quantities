@@ -241,9 +241,6 @@ class Soils_Tab(QWidget):
 
 
 
-				
-
-
 class ProjectSoilsWidget(QWidget):
 	"""Представление для работы с грунтами проекта (ИГЭ)"""
 	def __init__(self, soil_manager, main_window, tab_index):
@@ -261,22 +258,26 @@ class ProjectSoilsWidget(QWidget):
 		self.soils_table.verticalHeader().setVisible(False)
 		self.soils_table.setWordWrap(True)
 		self.soils_table.verticalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
-		self.soils_table.setColumnCount(9)
-		self.soils_table.setHorizontalHeaderLabels([
-			'№\nИГЭ', 
-			'Описание грунта', 
-			'Плотность\nпо ИГИ,\nγ, т/м³', 
-			'Принятая\nплотность,\nγ, т/м³', 
-			'№ по\nГЭСН 1', 
-			'№ по\nГЭСН 4', 
-			'№ по\nГЭСН 5',
-			'Примечание №1',
-			'Примечание №2'
-			])
-		column_widths = (100, 400, 100, 100, 100, 100, 100, 250, 250)
+		headers = (
+			'№\nИГЭ', 						# 0
+			'Описание грунта', 				# 1
+			'Плотность\nпо ИГИ,\nγ, т/м³',	# 2
+			'Принятая\nплотность,\nγ, т/м³',# 3
+			'№ по\nГЭСН 1',					# 4
+			'№ по\nГЭСН 4',					# 5
+			'№ по\nГЭСН 5',					# 6
+			'Примечание №1',				# 7
+			'Примечание №2',				# 8
+			'Примечание №3'					# 9
+			)
+		self.soils_table.setColumnCount(len(headers))
+		self.soils_table.setHorizontalHeaderLabels(headers)
+
+		column_widths = (100, 400, 100, 100, 100, 100, 100, 250, 250, 250)
 		for col, width in enumerate(column_widths):
 			self.soils_table.setColumnWidth(col, width)
 			self.soils_table.horizontalHeader().setSectionResizeMode(col, QHeaderView.ResizeMode.Interactive)
+		
 		header = self.soils_table.horizontalHeader()
 		font = header.font()
 		font.setBold(True)
@@ -356,6 +357,7 @@ class ProjectSoilsWidget(QWidget):
 
 		# Изначально отключаем кнопки манипуляции
 		self.set_manipulation_buttons_enabled(False)
+
 	
 	def set_manipulation_buttons_enabled(self, enabled):
 		"""Включает/отключает кнопки редактирования"""
@@ -392,6 +394,7 @@ class ProjectSoilsWidget(QWidget):
 			self.gesn1_widget.set_data(None)
 			self.gesn4_widget.set_data(None)
 			self.gesn5_widget.set_data(None)
+
 	
 	def set_project(self, project):
 		self.manager = project.soils_manager
@@ -412,44 +415,60 @@ class ProjectSoilsWidget(QWidget):
 			self.gesn4_widget.set_data(None)
 			self.gesn5_widget.set_data(None)
 			return
+		
 		sotred_soils = dict(sorted(self.manager.library.items()))
 		self.soils_table.setRowCount(len(sotred_soils))
 		for row, (num, soil) in enumerate(sotred_soils.items()):
+
 			num_item = QTableWidgetItem(num)
 			num_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
 			self.soils_table.setItem(row, 0, num_item)
+
 			self.soils_table.setItem(row, 1, QTableWidgetItem(soil.local_name))
+
 			local_density_item = QTableWidgetItem(str(soil.local_density))
 			local_density_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
 			self.soils_table.setItem(row, 2, local_density_item)
+
 			accepted_density_item = QTableWidgetItem(str(soil.accepted_density))
 			accepted_density_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
 			accepted_density_item.setToolTip(f'ВГ.{num}.Y')
 			self.soils_table.setItem(row, 3, accepted_density_item)
+
 			gesn_1_num = soil.gesn_1_obj.num if soil.gesn_1_obj else '-'
 			gesn_1_num_item = QTableWidgetItem(gesn_1_num)
 			gesn_1_num_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
 			self.soils_table.setItem(row, 4, gesn_1_num_item)
+			
 			gesn_4_num = soil.gesn_4_obj.num if soil.gesn_4_obj else '-'
 			gesn_4_num_item = QTableWidgetItem(gesn_4_num)
 			gesn_4_num_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
 			self.soils_table.setItem(row, 5, gesn_4_num_item)
+
 			gesn_5_num = soil.gesn_5_obj.num if soil.gesn_5_obj else '-'
 			gesn_5_num_item = QTableWidgetItem(gesn_5_num)
 			gesn_5_num_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
 			self.soils_table.setItem(row, 6, gesn_5_num_item)
-			note1_item = QTableWidgetItem(soil._note1)
-			note1_item.setToolTip(f'ВГ.{num}.прим1')
+
+			note1_item = QTableWidgetItem(soil.note1)
+			note1_item.setToolTip(f'ВГ.{num}.Прим1')
 			self.soils_table.setItem(row, 7, note1_item)
-			note2_item = QTableWidgetItem(soil._note2)
-			note2_item.setToolTip(f'ВГ.{num}.прим2')
+
+			note2_item = QTableWidgetItem(soil.note2)
+			note2_item.setToolTip(f'ВГ.{num}.Прим2')
 			self.soils_table.setItem(row, 8, note2_item)
+
+			note3_item = QTableWidgetItem(soil.note3)
+			note3_item.setToolTip(f'ВГ.{num}.Прим3')
+			self.soils_table.setItem(row, 9, note3_item)
 
 			if self.soils_table.rowCount() > 0:
 				self.soils_table.selectRow(0)
+
 		# Обновляем вкладки в соответствии с текущим выделением
 		self.update_status()
 		self.on_soil_selected()
+
 
 	def update_status(self):
 		""" Обновляет статус доступности """
@@ -463,6 +482,7 @@ class ProjectSoilsWidget(QWidget):
 		elif isinstance(data, dict):
 			user = data.get('user', 'неизвестен')
 			self.status_label.setText(f'Занято пользователем\n{user}')
+
 
 	def toggle_edit_mode(self):
 		"""Включает режим редактирования (блокировка)."""
@@ -483,6 +503,7 @@ class ProjectSoilsWidget(QWidget):
 			self.set_manipulation_buttons_enabled(False)
 			QMessageBox.warning(self, 'Редактирование',
 									'Не удалось заблокировать файл для других пользователей')
+
 
 	def on_table_context_menu(self, pos):
 		# Получаем позицию и индекс ячейки
@@ -586,9 +607,9 @@ class ProjectSoilsWidget(QWidget):
 			else:
 				action_copy_link = menu.addAction("Копировать ссылку...")
 				action_copy_link.setEnabled(False)
-		# Обработка колонкок Примечание 1 и 2 (индекс 8)
-		elif col == 7 or col == 8:
-			note_num = {7:'Прим1',8:'Прим2'}
+		# Обработка колонкок Примечание 1, 2 и 3
+		elif col in (7, 8, 9):
+			note_num = {7:'Прим1',8:'Прим2', 9: 'Прим3'}
 			if soil:
 				action = menu.addAction("Копировать ссылку")
 				action.triggered.connect(lambda checked, ln=local_num: self._copy_to_clipboard(f'@ВГ.{ln}.{note_num[col]}'))
@@ -597,6 +618,7 @@ class ProjectSoilsWidget(QWidget):
 				action.setDisabled(True)
 		# Показываем меню в глобальных координатах
 		menu.exec(self.soils_table.viewport().mapToGlobal(pos))
+
 	
 	def _show_note_menu(self, soil, pos):
 		"""Показывает меню заметок для грунта"""
@@ -616,6 +638,7 @@ class ProjectSoilsWidget(QWidget):
 			if action == action_add:
 				self._edit_comment(soil)
 
+
 	def _edit_comment(self, obj):
 		"""Открывает диалог редактирования примечания"""
 		dialog = QDialog(self)
@@ -632,13 +655,13 @@ class ProjectSoilsWidget(QWidget):
 			new_note = text_edit.toPlainText().strip()
 			self._set_comment(obj, new_note if new_note else None)
 
+
 	def _set_comment(self, obj, comment):
 		"""Сохраняет комментарий и обновляет таблицу"""
 		obj.set_comment(comment)
 		self.update_ui()  # обновляем таблицу для перерисовки треугольника
 		
 	# ---------------------------------- Работа с ИГЭ -----------------------------------
-
 	def open_soil_macker_dialog(self):
 		""" Создать новый грунт """
 		if self.manager is None:
@@ -647,19 +670,9 @@ class ProjectSoilsWidget(QWidget):
 
 		if dialog.exec() == QDialog.DialogCode.Accepted:
 			data = dialog.get_data()
-			
-			self.manager.create_soil(
-				local_num = data.get('local_num'),
-				local_name = data.get('local_name'),
-				local_density = data.get('local_density'),
-				gesn_1_num = data.get('gesn_1_num'),
-				gesn_4_num = data.get('gesn_4_num'),
-				gesn_5_num = data.get('gesn_5_num'),
-				note1 = data.get('note1'),
-				note2 = data.get('note2'),
-				comment = data.get('comment')
-			)
+			self.manager.create_soil(data)
 			self.update_ui()
+
 
 	def open_soil_edit_dialog(self, num_from_copy : str | bool = False):
 		""" Редактировать текущий грунт """
@@ -677,6 +690,7 @@ class ProjectSoilsWidget(QWidget):
 			data = dialog.get_data()
 			self.manager.edit_soil(data)
 			self.update_ui()
+
 
 	def preliminary_soil_check(self, action:str):
 		"""
@@ -698,7 +712,8 @@ class ProjectSoilsWidget(QWidget):
 		soil_num = self.soils_table.item(row,0).text()
 
 		return soil_num
-	
+
+
 	def save_soils(self):
 		""" Сохраняет библиотку ИГЭ """
 		if self.manager is not None:
@@ -711,6 +726,7 @@ class ProjectSoilsWidget(QWidget):
 			print("Невозможно сохранить: менеджер грунтов или проект не назначены")
 		self.update_ui()
 
+
 	def reload_soils(self):
 		""" Обновляет список ИГЭ и их объекты ГЭСН """
 		if self.manager is not None:
@@ -719,7 +735,8 @@ class ProjectSoilsWidget(QWidget):
 			self.set_manipulation_buttons_enabled(False)
 		else:
 			print("Не удалось актуализировать ИГЭ")
-	
+
+
 	def remove_soil(self):
 		""" Удаляет выбранный ИГЭ """
 		soil_num = self.preliminary_soil_check('Удаление ИГЭ')
@@ -732,7 +749,8 @@ class ProjectSoilsWidget(QWidget):
 		if reply == QMessageBox.StandardButton.Yes:
 			self.manager.remove_soil(soil_num)
 			self.update_ui()
-	
+
+
 	def copy_soil(self):
 		""" Создают копию текущего грунта и вызывает окно редактирования """
 		soil_num = self.preliminary_soil_check('Дублирование ИГЭ')
@@ -741,7 +759,6 @@ class ProjectSoilsWidget(QWidget):
 		self.open_soil_edit_dialog(key)
 	
 	# ------------------------------------
-	
 	def _copy_to_clipboard(self, text):
 		clipboard = QApplication.clipboard()
 		clipboard.setText(text)
@@ -757,6 +774,7 @@ class Gesn1Widget(QWidget):
 		self.on_main_view = on_main_view
 		self.setup_ui()
 		self.update_ui()
+
 
 	def setup_ui(self):
 		# ------------------ Таблица взаимодействия с данными ГЭСН 1 ------------------
@@ -844,12 +862,15 @@ class Gesn1Widget(QWidget):
 		if self.obj_data is None and self.on_main_view is False:
 			layout.addLayout(button_box)
 
+
 	def set_project(self, project,):
 		self.soil_manager = project.soils_manager
 		self.update_ui()
-	
+
+
 	def update_ui(self):
 		self.update_table()
+
 
 	def update_table(self):
 		'''Обновляет таблицу в двух режимах: полная таблица ГЭСН 1 или информация по текущему грунту
@@ -901,10 +922,12 @@ class Gesn1Widget(QWidget):
 				self.gesn1_table.setItem(2 + row, col, work_item)
 		self.gesn1_table.blockSignals(False)
 
+
 	def set_data(self, obj):
 		"""Устанавливает объект для отображения и обновляет таблицу."""
 		self.obj_data = obj
 		self.update_ui()
+
 
 	def saving_change(self):
 		reply = Requestion.ask(
@@ -938,7 +961,8 @@ class Gesn1Widget(QWidget):
 					column += 1
 				export_dict[key] = row_data
 			self.soil_manager.save_gesn1_data(export_dict)
-	
+
+
 	@staticmethod
 	def create_bold_item(text, alignment=Qt.AlignmentFlag.AlignCenter):
 		'''Создаёт ячейку заголовка с жирным текстом и выравниванием
@@ -965,6 +989,7 @@ class Gesn4Widget(QWidget):
 		self.setup_ui()
 		self.update_ui()
 
+
 	def setup_ui(self):
 		layout = QVBoxLayout(self)
 		info_label = QLabel('<b>Приложение IV. Приложение 4.1<br>Распределение грунтов по буримости</b>')
@@ -985,17 +1010,21 @@ class Gesn4Widget(QWidget):
 
 		layout.addWidget(self.gesn4_table)
 
+
 	def set_project(self, project):
 		self.soil_manager = project.soils_manager
 		self.update_ui()
 
+
 	def update_ui(self):
 		self.update_table()
-	
+
+
 	def set_data(self, obj):
 		"""Устанавливает объект для отображения и обновляет таблицу."""
 		self.obj_data = obj
 		self.update_ui()
+
 
 	def update_table(self):
 		self.gesn4_table.blockSignals(True)
@@ -1076,6 +1105,7 @@ class Gesn4Widget(QWidget):
 		self.gesn4_table.blockSignals(False)
 
 
+
 class Gesn5Widget(QWidget):
 	"""Представление для ГЭСН 5"""
 	def __init__(self, soil_manager, obj_data = None, on_main_view = False):
@@ -1085,6 +1115,7 @@ class Gesn5Widget(QWidget):
 		self.on_main_view = on_main_view
 		self.setup_ui()
 		self.update_ui()
+
 
 	def setup_ui(self):
 		layout = QVBoxLayout(self)
@@ -1162,12 +1193,15 @@ class Gesn5Widget(QWidget):
 
 			layout.addLayout(button_box)
 
+
 	def set_project(self, project):
 		self.soil_manager = project.soils_manager
 		self.update_ui()
 
+
 	def update_ui(self):
 		self.update_table()
+
 
 	def update_table(self):
 		'''Обновляет таблицу в двух режимах: полная таблица ГЭСН 5 или информация по текущему грунту
@@ -1209,11 +1243,13 @@ class Gesn5Widget(QWidget):
 				self.gesn5_table.setItem(2 + row, col, table_item)
 
 		self.gesn5_table.blockSignals(False)
-	
+
+
 	def set_data(self, obj):
 		"""Устанавливает объект для отображения и обновляет таблицу."""
 		self.obj_data = obj
 		self.update_ui()
+
 
 	def saving_change(self):
 		reply = Requestion.ask(
@@ -1249,7 +1285,8 @@ class Gesn5Widget(QWidget):
 					column += 1
 				export_dict[key] = row_data
 			self.soil_manager.save_gesn5_data(export_dict)
-	
+
+
 	@staticmethod
 	def create_bold_item(text, alignment=Qt.AlignmentFlag.AlignCenter):
 		'''Создаёт ячейку заголовка с жирным текстом и выравниванием
@@ -1263,6 +1300,8 @@ class Gesn5Widget(QWidget):
 		item.setTextAlignment(alignment)
 		item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
 		return item
+
+
 
 class Soil_Dialog(QDialog):
 	"""Окно создания/редактирования ИГЭ"""
@@ -1279,15 +1318,17 @@ class Soil_Dialog(QDialog):
 
 		self.setup_ui()
 
+
 	@property
-	def soil(self):
+	def soil(self) -> Soil:
 		""" Возвращает объект Soil """
 		if self.edit_mode:
 			return self.soils_manager.library.get(self.soil_num)
 		return None
-	
+
+
 	@property
-	def gesn1_tuple(self):
+	def gesn1_tuple(self) -> tuple[list[str], list[str]]:
 		data = self.soils_manager.gesn_1_data
 		nums = ['-'] 
 		names = ['-']
@@ -1297,7 +1338,8 @@ class Soil_Dialog(QDialog):
 		nums = tuple(nums)
 		names = tuple(names)
 		return (nums, names)
-	
+
+
 	@property
 	def gesn4_tuple(self):
 		data = self.soils_manager.gesn_4_data
@@ -1307,7 +1349,8 @@ class Soil_Dialog(QDialog):
 				text = f'{sect}-{soil.get('soil_group')}'
 				gesn_4_list.append(text)
 		return tuple(gesn_4_list)
-	
+
+
 	@property
 	def gesn5_tuple(self):
 		data = self.soils_manager.gesn_5_data
@@ -1320,93 +1363,119 @@ class Soil_Dialog(QDialog):
 		names = tuple(names)
 		return (nums, names)
 
+
 	def setup_ui(self):
 		main_layout = QVBoxLayout(self)
 
 		# --------------------- Поля ввода и редактирования данных ----------------------
 		# Номер ИГЭ
 		main_layout.addWidget(QLabel('Номер грунта <i>(Цифробуквенное обозначение, без ИГЭ)</i>'))
-		__num = text_after(self.soil_num, 'ИГЭ_') if self.edit_mode else ''
-		self._num_edit_line = QLineEdit(__num)
-		self._num_edit_line.setPlaceholderText('Укажите номер ИГЭ')
-		main_layout.addWidget(self._num_edit_line)
+		num = text_after(self.soil_num, 'ИГЭ_') if self.edit_mode else ''
+		self.num_edit_line = QLineEdit(num)
+		self.num_edit_line.setPlaceholderText('Укажите номер ИГЭ')
+		main_layout.addWidget(self.num_edit_line)
+		
 		# Наименование ИГЭ
 		main_layout.addWidget(QLabel('Наименование грунта по ИГИ:'))
-		__name = self.soil.local_name if self.edit_mode else ''
-		self._name_edit_plane = QPlainTextEdit(__name)
-		self._name_edit_plane.setPlaceholderText('Укажите имя ИГЭ')
-		self._name_edit_plane.setLineWrapMode(QPlainTextEdit.LineWrapMode.WidgetWidth)
-		self._name_edit_plane.setMaximumHeight(45)
-		main_layout.addWidget(self._name_edit_plane)
+		name = self.soil.local_name if self.edit_mode else ''
+		self.name_edit_plane = QPlainTextEdit(name)
+		self.name_edit_plane.setPlaceholderText('Укажите имя ИГЭ')
+		self.name_edit_plane.setLineWrapMode(QPlainTextEdit.LineWrapMode.WidgetWidth)
+		self.name_edit_plane.setMaximumHeight(45)
+		main_layout.addWidget(self.name_edit_plane)
+		
 		# Плотность грунта
 		main_layout.addWidget(QLabel('Плотность грунта по ИГИ (т/м³):'))
-		__density = self.soil.local_density if self.edit_mode else 0
-		self._density_spine_box = QDoubleSpinBox() # QLineEdit(str(__density))
-		self._density_spine_box.setMinimum(0.00)
-		self._density_spine_box.setDecimals(2)
-		self._density_spine_box.setSingleStep(0.1)
-		self._density_spine_box.setLocale(QLocale(QLocale.Language.English, QLocale.Country.UnitedStates))
-		self._density_spine_box.setValue(__density)
-		self._density_spine_box.setMaximumWidth(120)
-		main_layout.addWidget(self._density_spine_box)
+		density = self.soil.local_density if self.edit_mode else 0
+		self.density_spine_box = QDoubleSpinBox() # QLineEdit(str(__density))
+		self.density_spine_box.setMinimum(0.00)
+		self.density_spine_box.setDecimals(2)
+		self.density_spine_box.setSingleStep(0.1)
+		self.density_spine_box.setLocale(QLocale(QLocale.Language.English, QLocale.Country.UnitedStates))
+		self.density_spine_box.setValue(density)
+		self.density_spine_box.setMaximumWidth(120)
+		main_layout.addWidget(self.density_spine_box)
+		
 		# Сопоставление с ГЭСН 1
 		main_layout.addWidget(QLabel('Соответствует ГЭСН 1:'))
-		__gesn_1_names = self.gesn1_tuple[1]
-		self._gesn_1_num_combbox = QComboBox()
-		self._gesn_1_num_combbox.addItems(__gesn_1_names)
-		__gesn_1_num = self.soil.gesn_1_obj.name if self.edit_mode and self.soil.gesn_1_obj  else '-'
-		self._gesn_1_num_combbox.setCurrentText(__gesn_1_num)
-		main_layout.addWidget(self._gesn_1_num_combbox)
+
+		gesn_1_names = self.gesn1_tuple[1]
+		gesn_1_names = [(name[:100]+'...') if len(name)>100 else name for name in gesn_1_names]
+		
+		self.gesn_1_num_combbox = QComboBox()
+		self.gesn_1_num_combbox.addItems(gesn_1_names)
+		gesn_1_num = self.soil.gesn_1_obj.name if self.edit_mode and self.soil.gesn_1_obj  else '-'
+		self.gesn_1_num_combbox.setCurrentText(gesn_1_num)
+		main_layout.addWidget(self.gesn_1_num_combbox)
+		
 		# Сопоставление с ГЭСН 4
 		main_layout.addWidget(QLabel('Соответствует ГЭСН 4:'))
-		self._gesn_4_num_combbox = QComboBox()
-		self._gesn_4_num_combbox.addItems(self.gesn4_tuple)
-		__gesn_4_num = self.soil.gesn_4_obj.num if self.edit_mode and self.soil.gesn_4_obj else '-'
-		self._gesn_4_num_combbox.setCurrentText(__gesn_4_num)
-		main_layout.addWidget(self._gesn_4_num_combbox)
+		self.gesn_4_num_combbox = QComboBox()
+		self.gesn_4_num_combbox.addItems(self.gesn4_tuple)
+		gesn_4_num = self.soil.gesn_4_obj.num if self.edit_mode and self.soil.gesn_4_obj else '-'
+		self.gesn_4_num_combbox.setCurrentText(gesn_4_num)
+		main_layout.addWidget(self.gesn_4_num_combbox)
+		
 		# Сопоставление с ГЭСН 5
 		main_layout.addWidget(QLabel('Соответствует ГЭСН 5:'))
-		self._gesn_5_num_combbox = QComboBox()
-		__gesn_5_names = self.gesn5_tuple[1]
-		self._gesn_5_num_combbox.addItems(__gesn_5_names)
-		__gesn_5_num = self.soil.gesn_5_obj.name if self.edit_mode and self.soil.gesn_5_obj else '-'
-		self._gesn_5_num_combbox.setCurrentText(__gesn_5_num)
-		main_layout.addWidget(self._gesn_5_num_combbox)
+		self.gesn_5_num_combbox = QComboBox()
+		
+		gesn_5_names = self.gesn5_tuple[1]
+		gesn_5_names = [(name[:100]+'...') if len(name)>100 else name for name in gesn_5_names]
+		
+		self.gesn_5_num_combbox.addItems(gesn_5_names)
+		gesn_5_num = self.soil.gesn_5_obj.name if self.edit_mode and self.soil.gesn_5_obj else '-'
+		self.gesn_5_num_combbox.setCurrentText(gesn_5_num)
+		main_layout.addWidget(self.gesn_5_num_combbox)
+		
 		# Краткое наименование для примечания 1
 		main_layout.addWidget(QLabel('Краткое имя для примечания 1 <i>(необязательно)</i>:'))
-		__note1 = self.soil.note1 if self.edit_mode else ''
-		self._note1_edit_plane = QPlainTextEdit(__note1)
-		self._note1_edit_plane.setLineWrapMode(QPlainTextEdit.LineWrapMode.WidgetWidth)
-		self._note1_edit_plane.setMaximumHeight(45)
-		self._note1_edit_plane.setPlaceholderText('Заменяет полное наименование на указанный вариант')
-		main_layout.addWidget(self._note1_edit_plane)
+		note1 = self.soil.get_raw_note1() if self.edit_mode else ''
+		self.note1_edit_plane = QPlainTextEdit(note1)
+		self.note1_edit_plane.setLineWrapMode(QPlainTextEdit.LineWrapMode.WidgetWidth)
+		self.note1_edit_plane.setMinimumHeight(45)
+		self.note1_edit_plane.setPlaceholderText('Заменяет полное наименование на указанный вариант')
+		main_layout.addWidget(self.note1_edit_plane)
+	
 		# Краткое наименование для примечания 2
 		main_layout.addWidget(QLabel('Краткое имя для примечания 2 <i>(необязательно)</i>:'))
-		__note2 = self.soil.note2 if self.edit_mode else ''
-		self._note2_edit_plane = QPlainTextEdit(__note2)
-		self._note2_edit_plane.setLineWrapMode(QPlainTextEdit.LineWrapMode.WidgetWidth)
-		self._note2_edit_plane.setPlaceholderText('Заменяет полное наименование на указанный вариант')
-		self._note2_edit_plane.setMaximumHeight(45)
-		main_layout.addWidget(self._note2_edit_plane)
+		note2 = self.soil.get_raw_note2() if self.edit_mode else ''
+		self.note2_edit_plane = QPlainTextEdit(note2)
+		self.note2_edit_plane.setLineWrapMode(QPlainTextEdit.LineWrapMode.WidgetWidth)
+		self.note2_edit_plane.setPlaceholderText('Заменяет полное наименование на указанный вариант')
+		self.note2_edit_plane.setMinimumHeight(45)
+		main_layout.addWidget(self.note2_edit_plane)
+
+		# Пользовательское примечание №3
+		main_layout.addWidget(QLabel('Примечание 3 <i>(необязательно)</i>:'))
+		note3 = self.soil.note3 if self.edit_mode else ''
+		self.note3_edit_plane = QPlainTextEdit(note3 or '')
+		self.note3_edit_plane.setLineWrapMode(QPlainTextEdit.LineWrapMode.WidgetWidth)
+		self.note3_edit_plane.setPlaceholderText('Пользовательское примечание')
+		self.note3_edit_plane.setMinimumHeight(45)
+		main_layout.addWidget(self.note3_edit_plane)
+	
 		# Локальный комментарий
 		main_layout.addWidget(QLabel('Локальный комментарий по грунту <i>(необязательно)</i>:'))
-		__comment = self.soil.comment if self.edit_mode else ''
-		self._comment_edit_plane = QPlainTextEdit(__comment)
-		self._comment_edit_plane.setLineWrapMode(QPlainTextEdit.LineWrapMode.WidgetWidth)
-		main_layout.addWidget(self._comment_edit_plane)
+		comment = self.soil.comment if self.edit_mode else ''
+		self.comment_edit_plane = QPlainTextEdit(comment)
+		self.comment_edit_plane.setLineWrapMode(QPlainTextEdit.LineWrapMode.WidgetWidth)
+		self.comment_edit_plane.setMinimumHeight(45)
+		main_layout.addWidget(self.comment_edit_plane)
 		
 		# --------------------------- Кнопки взаимодействия -----------------------------
 
 		btns = create_ok_cancel_buttons(self, self.edit_mode)
 		main_layout.addWidget(btns)
 
+
 	def accept(self):
 		none_list = {None, 'None', ' ', '', '-', 0, 0.00}
 		solution = True
 		checed_items = (
-			self._num_edit_line.text(),
-			self._name_edit_plane.toPlainText(),
-			self._density_spine_box.value()
+			self.num_edit_line.text(),
+			self.name_edit_plane.toPlainText(),
+			self.density_spine_box.value()
 		)
 
 		for i in checed_items:
@@ -1418,11 +1487,11 @@ class Soil_Dialog(QDialog):
 			QMessageBox.warning(self, "Ошибка", "Номер ИГЭ, наименование и плотность должны быть заполнены.")
 			return
 
-		if f'ИГЭ_{self._num_edit_line.text()}' in self.soils_manager.library and not self.edit_mode:
+		if f'ИГЭ_{self.num_edit_line.text()}' in self.soils_manager.library and not self.edit_mode:
 			QMessageBox.warning(self, "Внимание", "Грунт с таким номером  ИГЭ уже существует")
 			return
-		elif f'ИГЭ_{self._num_edit_line.text()}' in self.soils_manager.library and (
-			self.edit_mode and f'ИГЭ_{self._num_edit_line.text()}' != self.soil_num
+		elif f'ИГЭ_{self.num_edit_line.text()}' in self.soils_manager.library and (
+			self.edit_mode and f'ИГЭ_{self.num_edit_line.text()}' != self.soil_num
 		):
 			QMessageBox.warning(
 				self, "Внимание", "Изменения номера текущего грунта невозможно, так как новый номер уже существует"
@@ -1435,39 +1504,44 @@ class Soil_Dialog(QDialog):
 		
 		return super().accept()
 
-	def get_data(self):
 
+	def get_data(self):
 		none_list = {None, 'None', ' ', '', '-'}
 
-		if self._gesn_1_num_combbox.currentText() in none_list:
+		if self.gesn_1_num_combbox.currentText() in none_list:
 			gesn_1_num = None
 		else:
-			gesn_1_num = self.gesn1_tuple[0][self._gesn_1_num_combbox.currentIndex()]
+			gesn_1_num = self.gesn1_tuple[0][self.gesn_1_num_combbox.currentIndex()]
 		
-		if self._gesn_4_num_combbox.currentText() in none_list:
+		if self.gesn_4_num_combbox.currentText() in none_list:
 			gesn_4_num = None
 		else:
-			gesn_4_num = self.gesn4_tuple[self._gesn_4_num_combbox.currentIndex()]
+			gesn_4_num = self.gesn4_tuple[self.gesn_4_num_combbox.currentIndex()]
 		
-		if self._gesn_5_num_combbox.currentText() in none_list:
+		if self.gesn_5_num_combbox.currentText() in none_list:
 			gesn_5_num = None
 		else:
-			gesn_5_num = self.gesn5_tuple[0][self._gesn_5_num_combbox.currentIndex()]
+			gesn_5_num = self.gesn5_tuple[0][self.gesn_5_num_combbox.currentIndex()]
 
-		note1 = None if self._note1_edit_plane.toPlainText() in none_list else self._note1_edit_plane.toPlainText()
-		note2 = None if self._note2_edit_plane.toPlainText() in none_list else self._note2_edit_plane.toPlainText()
-		comment = None if self._comment_edit_plane.toPlainText() in none_list else self._comment_edit_plane.toPlainText()
+		note1 = None if self.note1_edit_plane.toPlainText() in none_list else self.note1_edit_plane.toPlainText()
+		
+		note2 = None if self.note2_edit_plane.toPlainText() in none_list else self.note2_edit_plane.toPlainText()
+
+		note3 = self.note3_edit_plane.toPlainText()
+
+		comment = None if self.comment_edit_plane.toPlainText() in none_list else self.comment_edit_plane.toPlainText()
 
 		data = {
 			'old_soil_num': self.soil_num,
-			'local_num': f'ИГЭ_{self._num_edit_line.text()}',
-			'local_name': self._name_edit_plane.toPlainText(),
-			'local_density': round(self._density_spine_box.value(), 2),
+			'local_num': f'ИГЭ_{self.num_edit_line.text()}',
+			'local_name': self.name_edit_plane.toPlainText(),
+			'local_density': round(self.density_spine_box.value(), 2),
 			'gesn_1_num': gesn_1_num,
 			'gesn_4_num': gesn_4_num,
 			'gesn_5_num': gesn_5_num,
 			'note1': note1,
 			'note2': note2,
+			'note3': note3,
 			'comment': comment
 		}
 		return data
