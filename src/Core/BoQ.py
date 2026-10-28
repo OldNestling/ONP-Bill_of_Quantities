@@ -155,7 +155,7 @@ class BoQ_manager:
 			save_path =  self.file.parent / f'{save_as}.json'	# новый путь
 			self.file = save_path
 		data = self.serialization()
-		data['data_scheme']=2
+		data['data_scheme']=3
 		if not data:
 			if save_as: self.file = old_path # откатываем путь к файлу
 			return False

@@ -28,7 +28,8 @@ from Core.Utilities import (
 )
 from abc import ABC
 from Core.Computing_Module import (
-	eval_functions, get_all_alias_request, get_from_library, floor_to_precision, ceil_to_precision
+	eval_functions, get_all_alias_request, get_from_library, floor_to_precision, ceil_to_precision,
+	fix_older_alias_for_source_note
 )
 
 
@@ -1250,9 +1251,8 @@ class PositionLine(ABC):
 			except TypeError:
 				new_text = new_text.replace(address, '#ОШИБКА')
 		return new_text
-		
-	# ------------------------------ Загрузка и сохранение ---------------------------------
 
+	# ------------------------------ Загрузка и сохранение ---------------------------------
 	def serialization(self) -> dict:
 		""" Преобразует объект в словарь для JSON """
 		if self.manager:
@@ -1303,7 +1303,18 @@ class PositionLine(ABC):
 		obj.raw_unit = data.get('raw_unit', '-')
 		obj._raw_quantity_formula = data.get('raw_quantity_formula', '0') 
 		obj.quantity_cache = data.get('quantity_cache')
-		obj._raw_comment = data.get('raw_comment', '')
+		
+		raw_comment = data.get('raw_comment', '')
+		# исправляем устаревшую версию схемы данных для примечаний источников
+		if data_scheme in (1, 2):
+			fixed_comment = fix_older_alias_for_source_note(raw_comment)
+			if fixed_comment != raw_comment:
+				# по идеи ссылки на БД не могут быть в архивных позициях,
+				# но на всякий случай с проверкой
+				if manager: manager.is_modified = True
+				raw_comment = fixed_comment
+
+		obj._raw_comment = raw_comment
 
 		# получаем данные с учетом версии читаемого файла сохранения,
 		# ранее имена и архитектура были выбраны неудачно 

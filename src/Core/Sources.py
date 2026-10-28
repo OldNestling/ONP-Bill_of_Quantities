@@ -132,32 +132,57 @@ class Sources_Manager(DataLibraryManager):
 			self.library.append(obj)
 
 
-	def edit_source(self, index, data):
-		""" Редактирует данные объекта-источника"""
-		if self.project and data and index in list(range(len(self.library))):
-			name = data.get('name')
-			alias = data.get('alias')
-			advanced_coating = data.get('advanced_coating')
-			transitional_coating = data.get('transitional_coating')
-			ground_coating = data.get('ground_coating')
-			tonnage = data.get('tonnage')
-			transport = data.get('transport')
-			work_text = data.get('work_text')
-			note = data.get('note')
-			comment = data.get('comment')
+	def edit_source(self, index, data: dict):
+		""" Редактирует данные объекта-источника по данным из фронтенда"""
 
-			obj: Source = self.library[index]
+		def __fix_spaces(text: str) -> str:
+			""" Очищяет текст от лишних пробелов """
+			output = text.replace(' ', ' ') # заменяем неразрывный пробел
+			while '  ' in output:
+				output.replace('  ', ' ')
+			return output
 
-			obj.name = name
-			obj.alias = alias
-			obj.advanced_coating = convert_value(advanced_coating)
-			obj.transitional_coating = convert_value(transitional_coating)
-			obj.ground_coating = convert_value(ground_coating)
-			obj.tonnage = convert_value(tonnage)
-			obj.transport = transport
-			obj.work_text = work_text
-			obj.note = note
-			obj.comment = comment
+
+		def __process_field(key: str) -> str | None:
+			nonlocal data
+			none_list = {'None', ' ', '-'}
+
+			text = data.get(key)
+			if not text or text in none_list or not isinstance(text, str):
+				text = None
+			else:
+				text = __fix_spaces(text)
+			return text
+
+
+		if not self.project or not data or index not in list(range(len(self.library))):
+			return
+
+		advanced_coating = data.get('advanced_coating')
+		transitional_coating = data.get('transitional_coating')
+		ground_coating = data.get('ground_coating')
+		tonnage = data.get('tonnage')
+
+		work_text = __process_field('work_text')
+		text_after_work = __process_field('text_after_work')
+		note1 = __process_field('note1')
+		note2 = __process_field('note2')
+		comment = __process_field('comment')
+		
+		obj: Source = self.library[index]
+
+		obj.name = data.get('name')
+		obj.alias = data.get('alias')
+		obj.advanced_coating = convert_value(advanced_coating)
+		obj.transitional_coating = convert_value(transitional_coating)
+		obj.ground_coating = convert_value(ground_coating)
+		obj.tonnage = convert_value(tonnage)
+		obj.transport = data.get('transport')
+		obj.work_text = work_text
+		obj.text_after_work = text_after_work
+		obj.note1 = note1
+		obj.note2 = note2
+		obj.comment = comment
 
 
 	def move_obj(self, index: int, moving: int):
@@ -206,7 +231,8 @@ class Sources_Manager(DataLibraryManager):
 			project_library[sources_key][format_alias] = {
 				work_part.lower(): source._work_text,
 				text_after(source.alias_transportation, '.', 2).lower(): source.transportation_text,
-				text_after(source.alias_note, '.', 2).lower(): source.note,
+				text_after(source.alias_note1, '.', 2).lower(): source.note1,
+				text_after(source.alias_note2, '.', 2).lower(): source.note2
 			}
 
 			
@@ -240,7 +266,9 @@ class Source:
 			tonnage: int | str = 15,
 			transport: str = 'автосамосвалами',
 			work_text: str | None = None,
-			note: str | None = None,
+			text_after_work: str | None = None,
+			note1: str | None = None,
+			note2: str | None = None,
 			comment: str | None = None
 	):
 		self.name = name										# Наименование
@@ -251,12 +279,14 @@ class Source:
 		self.tonnage = tonnage									# Тоннаж перевозки (по умолччанию 15)
 		self.transport = transport								# Техника, осуществляющая перевозку
 		self.work_text = work_text								# Замещение текста работы при необходимости
-		self.note = note 										# Примечание
+		self.text_after_work = text_after_work					# Добавочный текст
+		self.note1 = note1 										# Примечание
+		self.note2 = note2
 		self.comment = comment 									# Локальный комментарий
 
 	
 	def __str__(self):
-		return f'{self.name}: {self.transportation_text} {"("+self.note+")" if self.note else ""}'
+		return f'{self.name}: {self.transportation_text} {"("+self.note1+")" if self.note1 else ""}'
 
 
 	@property
@@ -283,8 +313,13 @@ class Source:
 
 
 	@property
-	def alias_note(self):
-		return f'{self.alias}.Прим'
+	def alias_note1(self):
+		return f'{self.alias}.Прим1'
+
+
+	@property
+	def alias_note2(self):
+		return f'{self.alias}.Прим2'
 
 
 	@property
@@ -314,25 +349,34 @@ class Source:
 			if self.advanced_coating > 0:
 				advanced_coating_text =  f'до {self.advanced_coating} км по дорогам с усоврешенствованным покрытием'
 				couting_text_list.append(advanced_coating_text)
+			
 			if 	self.transitional_coating > 0:
 				transitional_coating_text = f'до {self.transitional_coating} км по дорогам с переходным покрытием'
 				couting_text_list.append(transitional_coating_text)
+			
 			if self.ground_coating > 0:
 				ground_coating_text = f'до {self.ground_coating} км по дорогам с грунтовым покрытием'
 				couting_text_list.append(ground_coating_text)
+			
 			if len(couting_text_list) > 1:
 				strat_text = f' на расстояние до {self._total_length} км, в том числе:\n'
 				union_text = strat_text + ';\n'.join(couting_text_list)+'.'
+			
 			elif len(couting_text_list) == 1:
 				union_text = f' на расстояние {couting_text_list[0]}'
+		
 			else:
 				union_text = ''
-			return self._work_text + union_text
+		
+			final_part = self.text_after_work if self.text_after_work else ''
+
+			return self._work_text + union_text + final_part
 		else:
+			final_part = self.text_after_work if self.text_after_work else ''
 			if self._total_length > 0:
-				return f'{self._work_text} на расстояние до {self._total_length} км'
+				return f'{self._work_text} на расстояние до {self._total_length} км{final_part}'
 			else:
-				return f'{self._work_text}'
+				return f'{self._work_text}{final_part}'
 
 	# ===================================== Методы ======================================
 	def serialization(self):
@@ -346,7 +390,9 @@ class Source:
 			'tonnage': self.tonnage,
 			'transport': self.transport,
 			'work_text': self.work_text,
-			'note': self.note,
+			'text_after_work': self.text_after_work,
+			'note': self.note1,
+			'note2': self.note2,
 			'comment': self.comment
 		}
 		return data
@@ -365,7 +411,9 @@ class Source:
 				tonnage = data.get('tonnage', 15),
 				transport = data.get('transport','автосамосвалами'),
 				work_text = data.get('work_text'),
-				note = data.get('note'),
+				text_after_work = data.get('text_after_work'),
+				note1 = data.get('note'),
+				note2 = data.get('note2'),
 				comment = data.get('comment')
 			)
 			return  obj

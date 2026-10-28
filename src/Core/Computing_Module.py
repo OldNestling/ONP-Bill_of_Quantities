@@ -30,11 +30,31 @@ ERROR_MASSEGE = '#ОШИБКА'
 #---------------------------------------------------------------------------------------
 
 
-def get_all_alias_request(text):
+def get_all_alias_request(text) -> list[str]:
 	""" Получает список обращений к библотеке проекта, декорированных начальным символом @ """
 	PATTERN = r'@[^\s.,+\-*/()]+(?:\.[^\s.,+\-*/()]+)+'
 	matches = re.findall(PATTERN, text)
 	return matches
+
+
+def fix_older_alias_for_source_note(text: str) -> str:
+	""" Раньше у источников было только одно поле примечания.
+	По просьбе пользователей было добавлено второе, и в старых версиях файлов
+	возникла необходимость привести псевдоним первого примечания к нумерованному виду 
+	"""
+	fixed_text = text
+	aliases: list[str] = get_all_alias_request(fixed_text)
+	aliases = list(
+		filter(
+			lambda a: (a.lower().startswith('@ви') and a.lower().endswith('.прим')),
+			aliases
+		)
+	)
+	for alias in aliases:
+		fixed_text = fixed_text.replace(alias, alias+'1')
+
+	return fixed_text
+		
 
 def get_from_library(alias: str, library: dict) -> str:
 	"""

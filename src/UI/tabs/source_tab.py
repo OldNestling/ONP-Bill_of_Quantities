@@ -16,16 +16,20 @@
 
 from PyQt6.QtWidgets import (
 	QWidget, QLabel, QPushButton, QDialog, QVBoxLayout, QHBoxLayout, 
-	QPlainTextEdit, QMessageBox, QTableWidget, QTableWidgetItem, 
+	QPlainTextEdit, QMessageBox, QTableWidget, QTableWidgetItem,
 	QHeaderView, QComboBox, QSpinBox, QDialogButtonBox, QMenu, QApplication)
 from PyQt6.QtCore import Qt
 from ..ui_utilities import TableWithNotes, create_ok_cancel_buttons, Switch, create_separator
 from ..resources.icons import Icons
-from Core.Sources import Sources_Manager
+from Core.Sources import Sources_Manager, Source
+
+
 
 class Sources_Tab(QWidget):
 	""" Представление вкладки работы с источниками проекта """
 	ICON = Icons.source_tab
+
+
 	def __init__(self, project, main_window=None):
 		super().__init__()
 		self.project = project
@@ -34,6 +38,7 @@ class Sources_Tab(QWidget):
 		self.manager: Sources_Manager = project.sources_manager if project else None    # еденичный экземпляр менеджера взаимодействия с источниками проекта 
 		self.setup_ui()
 		self.update_ui()
+	
 	
 	def setup_ui(self):
 		main_layout = QVBoxLayout(self) # Основной лейаут
@@ -64,16 +69,12 @@ class Sources_Tab(QWidget):
 		# Автоматическая высота строк (подстраивается под текст)
 		self.sources_table.verticalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
 		
-
 		# Фиксированная ширина столбцов
-		column_widths = (30, 250, 150, 100, 100, 100, 60, 200, 300, 100)
+		column_widths = (30, 250, 150, 100, 100, 100, 60, 200, 300, 150, 150)
 		self.sources_table.setColumnCount(len(column_widths))
 		for col, width in enumerate(column_widths):
 			self.sources_table.setColumnWidth(col, width)
-			if col in (0, 2, 3, 4, 5, 6, 9):
-				self.sources_table.horizontalHeader().setSectionResizeMode(col, QHeaderView.ResizeMode.Fixed)
-			else:
-				self.sources_table.horizontalHeader().setSectionResizeMode(col, QHeaderView.ResizeMode.Stretch)
+			self.sources_table.horizontalHeader().setSectionResizeMode(col, QHeaderView.ResizeMode.Interactive)
 		
 		# Вставляем две строки для многоуровневого заголовка
 		self.sources_table.insertRow(0)  # строка 0 – объединённые группы
@@ -86,21 +87,22 @@ class Sources_Tab(QWidget):
 
 		# Заполняем строки подзаголовков
 		headers = (
-			'№',
-			'Наименование',
-			'Псевдоним',
-			'Усоверш.тип покрытия',
-			'Переходный тип покрытия',
-			'Грунтовый тип покрытия',
-			'Общее',
-			'Работа',
-			'Работ с учётом расстояния',
-			'Примечание'
+			'№',							# 0
+			'Наименование',					# 1
+			'Псевдоним',					# 2
+			'Усоверш.тип покрытия',			# 3
+			'Переходный тип покрытия',		# 4
+			'Грунтовый тип покрытия',		# 5
+			'Общее',						# 6
+			'Работа',						# 7
+			'Работ с учётом расстояния',	# 8
+			'Примечание №1',				# 9
+			'Примечание №2'					# 10
 		)
 
 		for col, text in enumerate(headers):
 			item = self.create_bold_item(text)
-			if col in (0, 1, 2, 7, 8, 9):
+			if col in (0, 1, 2, 7, 8, 9, 10):
 				self.sources_table.setItem(0, col, item)
 				self.sources_table.setSpan(0, col, 2, 1)
 			else:
@@ -162,6 +164,7 @@ class Sources_Tab(QWidget):
 
 		# Изначально отключаем кнопки манипуляции
 		self.set_manipulation_buttons_enabled(False)
+
 	
 	def set_manipulation_buttons_enabled(self, enabled):
 		"""Включает/отключает кнопки редактирования"""
@@ -189,6 +192,7 @@ class Sources_Tab(QWidget):
 			user = data.get('user', 'неизвестен')
 			self.status_label.setText(f'Занято пользователем\n{user}')
 
+
 	def update_ui(self):
 		# Обновление лейбла режима
 		if self.project:
@@ -201,11 +205,14 @@ class Sources_Tab(QWidget):
 				self.work_mode_label.setText('<b>Режим сложного покрытия отключён</b>')
 				self.transportation_toggle.setChecked(False)
 			self.transportation_toggle.blockSignals(False)
+		
 		# Обновление таблицы
 		self.sources_table.blockSignals(True)
+		
 		# Удаляем все старые строки данных (оставляем только две заголовочные)
 		while self.sources_table.rowCount() > 2:
 			self.sources_table.removeRow(2)
+		
 		if self.manager is None:
 			self.sources_table.blockSignals(False)
 			return
@@ -219,65 +226,84 @@ class Sources_Tab(QWidget):
 		line = 1
 		for row, source in enumerate(data):
 			self.sources_table.insertRow(2+row)   # добавляем строку на позицию 2+row
+			
 			# Заполняем ячейки
 			num_source = line
 			num_item = QTableWidgetItem(str(num_source))
 			num_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
 			num_item.setFlags(num_item.flags() & ~Qt.ItemFlag.ItemIsEditable)  # убираем флаг редактирования
 			self.sources_table.setItem(2+row, 0, num_item)
+			
 			# Наименование
 			name_item = QTableWidgetItem(str(source.name))
 			name_item.setFlags(name_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
 			self.sources_table.setItem(2+row, 1, name_item)
+			
 			# Псевдоним для обращения в среде ВОР
 			alias_item = QTableWidgetItem(f'{source._alias}')
 			alias_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
 			alias_item.setFlags(alias_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
 			self.sources_table.setItem(2+row, 2, alias_item)
+		
 			# Усоверш. тип покрытия
 			advanced_coating_item = QTableWidgetItem(str(source.advanced_coating))
 			advanced_coating_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
 			advanced_coating_item.setFlags(advanced_coating_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
 			self.sources_table.setItem(2+row, 3, advanced_coating_item)
+		
 			# Переходный тип покрытия
 			transitional_coating_item = QTableWidgetItem(str(source.transitional_coating))
 			transitional_coating_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
 			transitional_coating_item.setFlags(transitional_coating_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
 			self.sources_table.setItem(2+row, 4, transitional_coating_item)
+		
 			# Грунтовый тип покрытия
 			ground_coating_item = QTableWidgetItem(str(source.ground_coating))
 			ground_coating_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
 			ground_coating_item.setFlags(ground_coating_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
 			self.sources_table.setItem(2+row, 5, ground_coating_item)
+			
 			# Общее расстояние
 			total_length_item = QTableWidgetItem(str(source._total_length))
 			total_length_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
 			total_length_item.setFlags(total_length_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
 			self.sources_table.setItem(2+row, 6, total_length_item)
+			
 			# Работа
 			work_text_item = QTableWidgetItem(source._work_text)
 			work_text_item.setFlags(work_text_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
 			work_tooltip = source.alias_work
 			work_text_item.setToolTip(work_tooltip)
 			self.sources_table.setItem(2+row, 7, work_text_item)
+			
 			# Работа и расстояние
 			transportation_text_item = QTableWidgetItem(source.transportation_text)
 			transportation_text_item.setFlags(transportation_text_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
 			transportation_text_tooltip = source.alias_transportation
 			transportation_text_item.setToolTip(transportation_text_tooltip)
 			self.sources_table.setItem(2+row, 8, transportation_text_item)
-			# Примечание
-			note_item = QTableWidgetItem(source.note)
-			note_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-			note_item.setFlags(note_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
-			note_tooltip = source.alias_note
-			note_item.setToolTip(note_tooltip)
-			self.sources_table.setItem(2+row, 9, note_item)
+			
+			# Примечание 1
+			note1_item = QTableWidgetItem(source.note1)
+			note1_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+			note1_item.setFlags(note1_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+			note1_tooltip = source.alias_note1
+			note1_item.setToolTip(note1_tooltip)
+			self.sources_table.setItem(2+row, 9, note1_item)
+
+			# Примечание 2
+			note2_item = QTableWidgetItem(source.note2)
+			note2_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+			note2_item.setFlags(note2_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+			note2_tooltip = source.alias_note1
+			note2_item.setToolTip(note2_tooltip)
+			self.sources_table.setItem(2+row, 10, note2_item)
 
 			line += 1
 
 		self.sources_table.blockSignals(False)
 		self.update_status()
+
 
 	def toggle_edit_mode(self):
 		"""Включает режим редактирования (блокировка)."""
@@ -298,7 +324,8 @@ class Sources_Tab(QWidget):
 			self.set_manipulation_buttons_enabled(False)
 			QMessageBox.warning(self, 'Редактирование',
 									'Не удалось заблокировать файл для других пользователей')
-			
+
+
 	def on_table_context_menu(self, pos):
 		# Получаем позицию и индекс ячейки
 		index = self.sources_table.indexAt(pos)
@@ -327,12 +354,13 @@ class Sources_Tab(QWidget):
 		action_copy_value.triggered.connect(lambda: self._copy_to_clipboard(cell_text))
 
 		# Обработка колонки работы (индекс 7)
-		if col in (7, 8, 9):
+		if col in (7, 8, 9, 10):
 			if source:
 				text_dict = {
 					7: source.alias_work,
 					8: source.alias_transportation,
-					9: source.alias_note
+					9: source.alias_note1,
+					10: source.alias_note2
 				}
 				action = menu.addAction("Копировать ссылку")
 				action.triggered.connect(lambda checked, txt=text_dict[col]: self._copy_to_clipboard(f'@{txt}'))
@@ -343,9 +371,11 @@ class Sources_Tab(QWidget):
 		# Показываем меню в глобальных координатах
 		menu.exec(self.sources_table.viewport().mapToGlobal(pos))
 
+
 	def _copy_to_clipboard(self, text):
 		clipboard = QApplication.clipboard()
 		clipboard.setText(text)
+
 
 	def _show_note_menu(self, source, pos):
 		"""Показывает меню заметок для грунта"""
@@ -365,6 +395,7 @@ class Sources_Tab(QWidget):
 			if action == action_add:
 				self._edit_comment(source)
 
+
 	def _edit_comment(self, obj):
 		"""Открывает диалог редактирования примечания"""
 		dialog = QDialog(self)
@@ -381,10 +412,12 @@ class Sources_Tab(QWidget):
 			new_note = text_edit.toPlainText().strip()
 			self._set_comment(obj, new_note if new_note else None)
 
+
 	def _set_comment(self, obj, comment):
 		"""Сохраняет комментарий и обновляет таблицу"""
 		obj.set_comment(comment)
 		self.update_ui()  # обновляем таблицу для перерисовки треугольника
+
 
 	@staticmethod
 	def create_bold_item(text, alignment=Qt.AlignmentFlag.AlignCenter):
@@ -400,8 +433,7 @@ class Sources_Tab(QWidget):
 		item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
 		return item
 
-	# ----------------------------------------- Обновление проекта  -----------------------------------------
-	
+	# ------------------------------- Обновление проекта  -------------------------------
 	def set_project(self, project):
 		"""Обновляет проект во вкладке и во всех дочерних виджетах."""
 		self.project = project
@@ -409,10 +441,12 @@ class Sources_Tab(QWidget):
 		self.sources_table.set_manager(self.manager)
 		self.update_ui()
 
+
 	def tab_selected(self):
 		"""Вызывается при активации вкладки."""
 		self.update_ui()
-	
+
+
 	def settings_changed(self):
 		"""Вызывается при изменении настроек проекта"""
 		if self.project:
@@ -422,7 +456,6 @@ class Sources_Tab(QWidget):
 			self.update_ui
 	
 	# --------------------------------- Переключатель режима  ---------------------------
-
 	def on_transportation_mode_toggled(self, checked):
 		"""Обрабатывает переключение режима представления транспортировки по типу покрытия."""
 		if self.project is not None:
@@ -432,8 +465,8 @@ class Sources_Tab(QWidget):
 			print(f"Режим подробного маршрута транспортировки: {checked}")
 		else:
 			pass
-	# ------------------------------------ Работа кнопок --------------------------------
 
+	# ------------------------------------ Работа кнопок --------------------------------
 	def preliminary_source_check(self, action:str):
 		"""
 		Предварительная проверка корректности запроса.
@@ -460,6 +493,7 @@ class Sources_Tab(QWidget):
 		row = current_row-2
 		return row
 
+
 	def open_source_macker_dialog(self):
 		""" Создать новый объект-источник """
 		if self.manager is None:
@@ -471,6 +505,7 @@ class Sources_Tab(QWidget):
 			
 			self.manager.create_source(data)
 			self.update_ui()
+
 
 	def open_source_edit_dialog(self):
 		if self.manager is None:
@@ -487,6 +522,7 @@ class Sources_Tab(QWidget):
 			self.manager.edit_source(source_num, data)
 			self.update_ui()
 
+
 	def save_sources(self):
 		if self.manager is not None:
 			res = self.manager.save_lib()
@@ -498,12 +534,14 @@ class Sources_Tab(QWidget):
 			print("Невозможно сохранить: менеджер источников или проект не назначены")
 		self.update_ui()
 
+
 	def reload_sources(self):
 		if self.manager is None:
 			return
 		self.manager.reload_lib()
 		self.set_manipulation_buttons_enabled(False)
 		self.update_ui()
+
 
 	def remove_source(self):
 		if self.manager is None:
@@ -514,6 +552,7 @@ class Sources_Tab(QWidget):
 			return
 		self.manager.remove_sorce(source_num)
 		self.update_ui()
+
 
 	def move_up_source(self):
 		if self.manager is None:
@@ -526,6 +565,7 @@ class Sources_Tab(QWidget):
 		self.update_ui()
 		self.sources_table.selectRow(index+2)
 
+
 	def move_down_source(self):
 		if self.manager is None:
 			return
@@ -537,6 +577,8 @@ class Sources_Tab(QWidget):
 			return
 		self.update_ui()
 		self.sources_table.selectRow(index+2)
+
+
 
 class Source_Dialog(QDialog):
 	"""Окно создания/редактирования источника"""
@@ -552,26 +594,29 @@ class Source_Dialog(QDialog):
 
 		self.setup_ui()
 
+
 	@property
-	def source(self):
+	def source(self) -> Source | None:
 		""" Возвращает объект Source """
 		if self.edit_mode:
 			return self.sources_manager.library[self.source_num]
 		return None
-	
+
+
 	def setup_ui(self):
-		main_layout = QVBoxLayout(self)
+		left_layout = QVBoxLayout()
 
 		# ----------------------- Поля ввода и редактирования данных --------------------
 		# Наименование
-		main_layout.addWidget(QLabel('Наименование источника:'))
+		left_layout.addWidget(QLabel('Наименование источника:'))
 		__name = self.source.name if self.edit_mode else ''
 		self._name_edit_plane = QPlainTextEdit(__name)
-		self._name_edit_plane.setMinimumHeight(100)
+		self._name_edit_plane.setMaximumHeight(100)
 		self._name_edit_plane.setPlaceholderText('Укажите наименование источника')
-		main_layout.addWidget(self._name_edit_plane)
+		left_layout.addWidget(self._name_edit_plane)
+		
 		# Псевдоним
-		main_layout.addWidget(QLabel('Псевдоним:'))
+		left_layout.addWidget(QLabel('Псевдоним:'))
 
 		self._alias_combobox = QComboBox()
 		self._alias_combobox.addItems(self.sources_manager.get_aliases())
@@ -581,92 +626,131 @@ class Source_Dialog(QDialog):
 		
 		self._alias_combobox.setCurrentText(__alias)
 		self._alias_combobox.setPlaceholderText('Укажите псевданим. Например: металл')
-		main_layout.addWidget(self._alias_combobox)
+		left_layout.addWidget(self._alias_combobox)
+		
 		# Усоверш. тип покрытия
-		main_layout.addWidget(QLabel('Протяжение усовершенствованного типа покрытия:'))
+		left_layout.addWidget(QLabel('Протяжение усовершенствованного типа покрытия:'))
 		__advanced_coating = self.source.advanced_coating if self.edit_mode else 0
 		self._advanced_coating_spine_box = QSpinBox()
 		self._advanced_coating_spine_box.setMinimum(0)
 		self._advanced_coating_spine_box.setMaximum(10000)
 		self._advanced_coating_spine_box.setValue(__advanced_coating)
-		main_layout.addWidget(self._advanced_coating_spine_box)
+		left_layout.addWidget(self._advanced_coating_spine_box)
+		
 		# Переходный тип покрытия
-		main_layout.addWidget(QLabel('Протяжение переходного типа покрытия:'))
+		left_layout.addWidget(QLabel('Протяжение переходного типа покрытия:'))
 		__transitional_coating = self.source.transitional_coating if self.edit_mode else 0
 		self._transitional_coating_spine_box = QSpinBox()
 		self._transitional_coating_spine_box.setMinimum(0)
 		self._transitional_coating_spine_box.setMaximum(10000)
 		self._transitional_coating_spine_box.setValue(__transitional_coating)
-		main_layout.addWidget(self._transitional_coating_spine_box)
+		left_layout.addWidget(self._transitional_coating_spine_box)
+		
 		# Грунтовый тип покрытия
-		main_layout.addWidget(QLabel('Протяжение грунтового типа покрытия:'))
+		left_layout.addWidget(QLabel('Протяжение грунтового типа покрытия:'))
 		__ground_coating = self.source.ground_coating if self.edit_mode else 0
 		self._ground_coating_spine_box = QSpinBox()
 		self._ground_coating_spine_box.setMinimum(0)
 		self._ground_coating_spine_box.setMaximum(10000)
 		self._ground_coating_spine_box.setValue(__ground_coating)
-		main_layout.addWidget(self._ground_coating_spine_box)
+		left_layout.addWidget(self._ground_coating_spine_box)
+		
 		# Тоннаж перевозки
-		main_layout.addWidget(QLabel('Грузоподъёмность до, т:'))
+		left_layout.addWidget(QLabel('Грузоподъёмность до, т:'))
 		__tonnage = self.source._tonnage if self.edit_mode else 15
 		self._tonnage_spine_box = QSpinBox()
 		self._tonnage_spine_box.setMinimum(0)
 		self._tonnage_spine_box.setMaximum(1000)
 		self._tonnage_spine_box.setValue(__tonnage)
-		main_layout.addWidget(self._tonnage_spine_box)
+		left_layout.addWidget(self._tonnage_spine_box)
+		
 		# Транспорт
-		main_layout.addWidget(QLabel('Транспорт для перевозки:'))
+		left_layout.addWidget(QLabel('Транспорт для перевозки:'))
 		__transports_list = ['автосамосвалами', 'бортовыми автомобилями']
 		__current_transport = self.source.transport if self.edit_mode else 'автосамосвалами'
 		self._tranport_combo_box = QComboBox()
 		self._tranport_combo_box.addItems(__transports_list)
 		self._tranport_combo_box.setEditable(True)
 		self._tranport_combo_box.setCurrentText(__current_transport)
-		main_layout.addWidget(self._tranport_combo_box)
+		left_layout.addWidget(self._tranport_combo_box)
+
+		left_layout.addStretch()
+
+		# --- Правая сторона ---
+		
+		right_layout = QVBoxLayout()
+
 		# Замещение текста работы при необходимости
-		main_layout.addWidget(QLabel('Замещение текста работы. (Опционально)'))
-		__work_text = self.source.work_text if self.edit_mode else None
-		if __work_text is None and self.source is None:
-			self._work_text_edit_plane = QPlainTextEdit()
+		right_layout.addWidget(QLabel('Замещение текста работы (опционально):'))
+		work_text = self.source.work_text if self.edit_mode else None
+		if work_text is None and self.source is None:
+			self.work_text_edit_plane = QPlainTextEdit()
 			text = f'Транспортировка {self._tranport_combo_box.currentText()} грузоподъёмностью до {self._tonnage_spine_box.value()} т'
-			self._work_text_edit_plane.setPlaceholderText(text)
-			self._work_text_edit_plane.setMinimumHeight(100)
+			self.work_text_edit_plane.setPlaceholderText(text)
+			self.work_text_edit_plane.setMinimumHeight(100)
 		else:
-			self._work_text_edit_plane = QPlainTextEdit(__work_text)
-			self._work_text_edit_plane.setPlaceholderText(self.source._work_text)
-			self._work_text_edit_plane.setMinimumHeight(100)
-		main_layout.addWidget(self._work_text_edit_plane)
+			self.work_text_edit_plane = QPlainTextEdit(work_text)
+			self.work_text_edit_plane.setPlaceholderText(self.source._work_text)
+			self.work_text_edit_plane.setMinimumHeight(100)
+		right_layout.addWidget(self.work_text_edit_plane)
+		
 		# Подключаем обновление placeholder при изменении тонажа
 		self._tonnage_spine_box.valueChanged.connect(self.update_work_text_placeholder)
 		self._tranport_combo_box.currentTextChanged.connect(self.update_work_text_placeholder)
-		# Примечание
-		main_layout.addWidget(QLabel('Текст примечания:'))
-		__note = self.source.note if self.edit_mode else ''
-		self._note_edit_plane = QPlainTextEdit(__note)
-		self._note_edit_plane.setPlaceholderText('Укажите текст примечания')
-		self._note_edit_plane.setMinimumHeight(50)
-		main_layout.addWidget(self._note_edit_plane)
+
+		# текст после сформированной части
+		right_layout.addWidget(QLabel('Текст после работы (опционально):'))
+		text_after_work = self.source.text_after_work if self.edit_mode else None
+		self.text_after_work_edit_plane = QPlainTextEdit(text_after_work if not text_after_work else None)
+		self.text_after_work_edit_plane.setPlaceholderText('Текст после сформированной части')
+		self.text_after_work_edit_plane.setMinimumHeight(100)
+		right_layout.addWidget(self.text_after_work_edit_plane)
+		
+		# Примечание 1
+		right_layout.addWidget(QLabel('Текст примечания 1:'))
+		note1 = self.source.note1 if self.edit_mode else ''
+		self._note1_edit_plane = QPlainTextEdit(note1)
+		self._note1_edit_plane.setPlaceholderText('Укажите текст примечания')
+		self._note1_edit_plane.setMinimumHeight(50)
+		right_layout.addWidget(self._note1_edit_plane)
+		
+		# Примечание 2
+		right_layout.addWidget(QLabel('Текст примечания 2:'))
+		note2 = self.source.note2 if self.edit_mode else ''
+		self._note2_edit_plane = QPlainTextEdit(note2)
+		self._note2_edit_plane.setPlaceholderText('Укажите текст примечания №2')
+		self._note2_edit_plane.setMinimumHeight(50)
+		right_layout.addWidget(self._note2_edit_plane)
+		
 		# Локальный комментарий
-		main_layout.addWidget(QLabel('Локальный комментарий:'))
+		right_layout.addWidget(QLabel('Локальный комментарий:'))
 		__comment = self.source.comment if self.edit_mode else ''
 		self._comment_edit_plane = QPlainTextEdit(__comment)
 		self._comment_edit_plane.setPlaceholderText('Укажите текст локального комментария')
 		self._comment_edit_plane.setMinimumHeight(50)
-		main_layout.addWidget(self._comment_edit_plane)
+		right_layout.addWidget(self._comment_edit_plane)
+
+		right_layout.addStretch()
 
 		# ---------------------------- Кнопки взаимодействия ----------------------------
+		edit_fields_layout = QHBoxLayout()
+		edit_fields_layout.addLayout(left_layout)
+		edit_fields_layout.addLayout(right_layout)
+
+		main_layout = QVBoxLayout(self)
+		main_layout.addLayout(edit_fields_layout)
 
 		btns = create_ok_cancel_buttons(self, self.edit_mode)
 		main_layout.addWidget(btns)
+		self.resize(100, 100)
 
 	# ====================================== Методы =====================================
 	def update_work_text_placeholder(self):
 		tonnage = self._tonnage_spine_box.value()
 		tranport = self._tranport_combo_box.currentText()
 		default_text = f"Транспортировка {tranport} грузоподъёмностью до {tonnage} т"
-		self._work_text_edit_plane.setPlaceholderText(default_text)
+		self.work_text_edit_plane.setPlaceholderText(default_text)
 		
-
 
 	def accept(self):
 		none_list = {None, 'None', ' ', '', '-'}
@@ -682,10 +766,10 @@ class Source_Dialog(QDialog):
 			return
 		
 		return super().accept()
+
 	
 	def get_data(self):
-		none_list = {None, 'None', ' ', '', '-'}
-
+		""" Передаёт данные из диалогового окна """
 		name = self._name_edit_plane.toPlainText()
 		alias = self._alias_combobox.currentText()
 		advanced_coating = self._advanced_coating_spine_box.value()
@@ -693,13 +777,12 @@ class Source_Dialog(QDialog):
 		ground_coating = self._ground_coating_spine_box.value()
 		tonnage = self._tonnage_spine_box.value()
 		transport = self._tranport_combo_box.currentText()
-		work_text = self._work_text_edit_plane.toPlainText()
-		if work_text in none_list:
-			work_text = None
-		note = self._note_edit_plane.toPlainText()
+		work_text = self.work_text_edit_plane.toPlainText()
+		text_after_work = self.text_after_work_edit_plane.toPlainText()
+		
+		note1 = self._note1_edit_plane.toPlainText()
+		note2 = self._note2_edit_plane.toPlainText()
 		comment = self._comment_edit_plane.toPlainText()
-		if comment in none_list:
-			comment = None
 
 		data = {
 			'name': name,
@@ -710,7 +793,9 @@ class Source_Dialog(QDialog):
 			'tonnage': tonnage,
 			'transport': transport,
 			'work_text': work_text,
-			'note': note,
+			'text_after_work': text_after_work,
+			'note1': note1,
+			'note2': note2,
 			'comment': comment
 		}
 		return data
