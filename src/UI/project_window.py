@@ -28,6 +28,7 @@ from PyQt6.QtGui import QColor, QDesktopServices
 
 from Core.Project import Project, File_BoQ, FileIsBusy
 from Core.Convertor_BoQ import Convertor, ShemaError
+from Templates.About import PROGRAM_NAME
 
 from .ui_utilities import create_separator, Requestion, UpdateChecker
 from .tabs.settings_tab import SettingsTab 
@@ -59,8 +60,9 @@ class Project_Window(QWidget):
 		# Запускаем фоновую проверку обновлений
 		self._start_update_check()
 
+
 	def initializeUI(self):
-		self.setWindowTitle('Система работы с ВОР')
+		self.setWindowTitle(PROGRAM_NAME)
 		self.tabs_icons = []
 
 		# Создаём TabWidget
@@ -86,6 +88,7 @@ class Project_Window(QWidget):
 		self.resize(900, 600)
 		self.center_window()
 
+
 	def append_tab(self, tab, name: str):
 		""" Обрабатывает созданную вкладку в системе """
 		self.tab_widget.addTab(tab, name)
@@ -99,6 +102,7 @@ class Project_Window(QWidget):
 		if hasattr(tab, 'main_window'):
 			tab.main_window = self
 		self.other_tabs.append(tab)
+
 	
 	def create_other_tabs(self):
 		"""Создаёт дополнительные вкладки и блокирует их."""
@@ -127,28 +131,34 @@ class Project_Window(QWidget):
 		# Блокируем дополнительные вкладки
 		self.set_other_tabs_enabled(False)
 
+
 	def set_other_tabs_enabled(self, enabled):
 		"""Включает/отключает дополнительные вкладки (кроме первой)."""
 		for i in range(1, self.tab_widget.count()):
 			self.tab_widget.setTabEnabled(i, enabled)
+
 
 	def update_all_tabs_project(self):
 		"""Обновляет ссылку на проект во всех вкладках (кроме главной)"""
 		for tab in self.other_tabs:
 			if hasattr(tab, 'set_project'):
 				tab.set_project(self.project)
+
 	
 	def tab_changed(self, index):
 		"""Вызывается при переключении вкладки"""
 		current_tab = self.tab_widget.widget(index)
 		if hasattr(current_tab, 'tab_selected'):
 			current_tab.tab_selected()
+
 	
 	def notify_settings_changed(self):
 		"""Вызывается при изменении настроек проекта (например, переключении режимов)."""
 		for tab in self.other_tabs:
 				if hasattr(tab, 'settings_changed'):
 					tab.settings_changed()
+
+
 	def closeEvent(self, event):
 		#Останавливаем фоновую проверку обновлений
 		checker = getattr(self, '_update_checker', None)
@@ -204,6 +214,15 @@ class Project_Window(QWidget):
 		else:
 			return self.project_directory
 
+
+	def set_window_title(self):
+		if not self.project or not self.project.shorted_name:
+			text = f'{PROGRAM_NAME} (Короткое наименование проекта не задано)'
+		else:
+			text = f'{PROGRAM_NAME} ({self.project.shorted_name})'
+		self.setWindowTitle(text)
+
+
 	def set_project_dir(self, new_dir: Path = None):
 		""" Задаёт рабочию директорию для проекта
 		:new_dir: путь к новой ревизии, получаемый при её создании """
@@ -251,7 +270,6 @@ class Project_Window(QWidget):
 			btn_browse = QPushButton("Выбрать другую папку...")
 			layout.addWidget(btn_browse)
 
-
 			# Обработка выбора
 			selected_dir = None
 			def on_browse():
@@ -284,12 +302,14 @@ class Project_Window(QWidget):
 		# Создаём или пересоздаём проект
 		self.project_directory = selected_dir
 		self.project = Project(base_dir=selected_dir)
+		self.set_window_title()
 		# Разблокируем остальные вкладки
 		self.set_other_tabs_enabled(True)
 		self.catalog_is_selected = True
 		# Уведомляем главную вкладку
 		self.main_tab.on_project_dir_changed()
 		self.update_all_tabs_project()
+
 
 	def save_project_data(self):
 		"""Сохраняет настройки проекта, если проект выбран."""
@@ -299,12 +319,14 @@ class Project_Window(QWidget):
 		else:
 			print("Невозможно сохранить: проект не выбран")
 
+
 	def center_window(self):
 		screen = QApplication.primaryScreen().availableGeometry()
 		window_size = self.geometry()
 		x = (screen.width() - window_size.width()) // 2
 		y = (screen.height() - window_size.height()) // 2
 		self.move(x, y)
+
 
 	def open_project_folder(self):
 		""" Открывает текущую папку проекта """
@@ -313,6 +335,7 @@ class Project_Window(QWidget):
 			return
 		
 		self.project.open_project_folder()
+
 
 	def new_refinement(self):
 		"""Создаёт новую ревизию текущего проекта и переключается на неё."""
@@ -411,9 +434,7 @@ class Project_Window(QWidget):
 		if reply == QMessageBox.StandardButton.Yes and url:
 			QDesktopServices.openUrl(QUrl(url))
 
-# --------------------------------------------------------------------------------------
-# =================================== ВКЛАДКА: ПРОЕКТ ==================================
-# --------------------------------------------------------------------------------------
+
 
 class MainProjectTab(QWidget):
 	"""Первая вкладка с управлением проектом и разделами."""
@@ -423,6 +444,7 @@ class MainProjectTab(QWidget):
 		self.main_window: Project_Window = main_window
 		self.project: Project = main_window.project
 		self.setup_ui()
+
 
 	def setup_ui(self):
 		# ----------------------------- Справка -----------------------------------------
@@ -451,7 +473,6 @@ class MainProjectTab(QWidget):
 		self.button_open_dir.setEnabled(False)
 		self.button_open_dir.clicked.connect(self.main_window.open_project_folder)
 
-
 		self.button_new_refinement = QPushButton('Копировать ревизию')
 		self.button_new_refinement.setFixedWidth(156)
 		self.button_new_refinement.setEnabled(False)
@@ -461,7 +482,6 @@ class MainProjectTab(QWidget):
 		dir_h_box.addWidget(create_separator(QFrame.Shape.VLine, QFrame.Shadow.Sunken))
 		dir_h_box.addWidget(self.button_open_dir)
 		dir_h_box.addWidget(self.button_new_refinement)
-
 
 		button_directory = QPushButton('Задать каталог проекта')
 		button_directory.setIcon(Icons.database)
@@ -475,7 +495,6 @@ class MainProjectTab(QWidget):
 		dir_group.setMaximumHeight(70)
 
 		# ----------------------- Группа информации о проекте  --------------------------
-
 		self.construction_site_label = QLabel('<b>Наименование объекта:</b>')
 
 		self.construction_site_text = QTextBrowser()
@@ -535,7 +554,6 @@ class MainProjectTab(QWidget):
 		project_info_group.setMaximumHeight(170)
 
 		# ------------------------- Группа информации о разделах  -----------------------
-
 		self.project_BoQs_table = BoQs_TableWidget(main_tab=self)
 		self.project_BoQs_table.itemSelectionChanged.connect(self.update_logs_table)
 
@@ -623,21 +641,26 @@ class MainProjectTab(QWidget):
 	def get_constaction_site(self):
 		return "Нет данных" if not self.project else self.project.construction_site
 
+
 	def get_code(self):
 		return "Нет данных" if not self.project else self.project.code
 
+
 	def get_verifier(self):
 		return "Нет данных" if not self.project else self.project.verifier['Name']
-	
+
+
 	def get_description(self):
 		return "Нет данных" if not self.project else self.project.description
 
+ 
 	def load_project_data(self):
 		"""Обновляет лейблы информации о проекте."""
 		self.construction_site_text.setText(self.get_constaction_site())
 		self.code_label.setText(f'<b>Шифр:</b> {self.get_code()}')
 		self.verifier_label.setText(f'<b>ГИП:</b> {self.get_verifier()}')
 		self.description.setText(f'{self.get_description().replace('\n','<br>')}')
+
 
 	def tab_selected(self):
 		"""Вызывается при переключении на вкладку 'Проект'."""
@@ -678,6 +701,7 @@ class MainProjectTab(QWidget):
 		self.project_BoQs_table.update_table(self.project.BoQs)
 		self.update_logs_table()
 
+
 	def update_logs_table(self):
 		if self.project is None:
 			return
@@ -693,6 +717,7 @@ class MainProjectTab(QWidget):
 		else:
 			self.table_BoQ_logs.clearContents()
 			self.table_BoQ_logs.setRowCount(0)
+
 
 	def preliminary_BoQ_check(self, action):
 		if self.project is None:
@@ -714,6 +739,7 @@ class MainProjectTab(QWidget):
 			return (False, None)
 		return (True, file_BoQ)
 
+
 	def open_BoQ_macker_dialog(self):
 		if self.project is None:
 			return
@@ -731,6 +757,7 @@ class MainProjectTab(QWidget):
 			if not act:
 				QMessageBox.warning(self, 'Создание раздела', 'Не удалось создать файл')
 			self.reload_BoQs_table()
+
 
 	def edit_selected_BoQ(self):
 		if self.project is None:
@@ -770,6 +797,7 @@ class MainProjectTab(QWidget):
 			else:
 				file_BoQ.unlock()
 
+
 	def delete_selected_BoQ(self):
 		access, file_BoQ = self.preliminary_BoQ_check('Удаление раздела')
 		if access:
@@ -782,6 +810,7 @@ class MainProjectTab(QWidget):
 				file_BoQ.remove_file()
 				self.reload_BoQs_table()
 
+
 	def open_PI_edit_dialog(self):
 		if self.project is None:
 			return
@@ -789,18 +818,27 @@ class MainProjectTab(QWidget):
 			self,
 			chiefs= self.project.chiefs,
 			construction_site = self.project.construction_site,
+			shorted_name = self.project.shorted_name,
 			code = self.project.code,
 			verifier_name = self.project.verifier['Name'],
 			description = self.project.description
 		)
 		if dialog.exec() == QDialog.DialogCode.Accepted:
 			data = dialog.get_data()
+
+			shorted_name = data.get('ShortedName')
+			if not shorted_name:
+				shorted_name = None
+			self.project.shorted_name = shorted_name
+			self.main_window.set_window_title()
+			
 			self.project.construction_site = data['ConstructionSite']
 			self.project.code = data['Code']
 			self.project.verifier['Name'] = data['VerifierName']
 			self.project.description = data['Description']
 			self.load_project_data()
 	
+
 	def open_file_BoQ(self) -> bool:
 		"""Открывает все выбранные ведомости во вкладке 'Ведомости'."""
 		if self.project is None:
@@ -864,7 +902,8 @@ class MainProjectTab(QWidget):
 		if reply == QMessageBox.StandardButton.Yes:
 			file_BoQ.remove_lock()
 			self.reload_BoQs_table()
-	
+
+
 	def import_files(self):
 		if not self.project:
 			return
@@ -944,6 +983,7 @@ class MainProjectTab(QWidget):
 		elif success_count == 0 and files:
 			QMessageBox.warning(self, 'Импорт', "Ни один файл не был импортирован.")
 
+
 	def show_sheet_selection_dialog(self, file_name, sheet_names):
 		"""
 		Отображает диалог с множественным выбором листов.
@@ -974,10 +1014,12 @@ class MainProjectTab(QWidget):
 		selected = [item.text() for item in list_widget.selectedItems()]
 		return selected
 
+
 	def log_message(self, msg):
 		"""Выводит сообщение в лог (если есть виджет лога, иначе в консоль)."""
 		# В текущем интерфейсе нет виджета лога на главной вкладке, поэтому просто print
 		print(msg)
+
 
 	def export_selected_BoQs(self):
 		"""Экспорт выбранных разделов в XML/GGE/PDF"""

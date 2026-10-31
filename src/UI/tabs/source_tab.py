@@ -701,7 +701,7 @@ class Source_Dialog(QDialog):
 		# текст после сформированной части
 		right_layout.addWidget(QLabel('Текст после работы (опционально):'))
 		text_after_work = self.source.text_after_work if self.edit_mode else None
-		self.text_after_work_edit_plane = QPlainTextEdit(text_after_work if not text_after_work else None)
+		self.text_after_work_edit_plane = QPlainTextEdit(text_after_work if text_after_work else None)
 		self.text_after_work_edit_plane.setPlaceholderText('Текст после сформированной части')
 		self.text_after_work_edit_plane.setMinimumHeight(100)
 		right_layout.addWidget(self.text_after_work_edit_plane)

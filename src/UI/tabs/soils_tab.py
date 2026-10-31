@@ -1402,31 +1402,31 @@ class Soil_Dialog(QDialog):
 		gesn_1_names = self.gesn1_tuple[1]
 		gesn_1_names = [(name[:100]+'...') if len(name)>100 else name for name in gesn_1_names]
 		
-		self.gesn_1_num_combbox = QComboBox()
-		self.gesn_1_num_combbox.addItems(gesn_1_names)
+		self.gesn_1_num_combobox = QComboBox()
+		self.gesn_1_num_combobox.addItems(gesn_1_names)
 		gesn_1_num = self.soil.gesn_1_obj.name if self.edit_mode and self.soil.gesn_1_obj  else '-'
-		self.gesn_1_num_combbox.setCurrentText(gesn_1_num)
-		main_layout.addWidget(self.gesn_1_num_combbox)
+		self.gesn_1_num_combobox.setCurrentText(gesn_1_num)
+		main_layout.addWidget(self.gesn_1_num_combobox)
 		
 		# Сопоставление с ГЭСН 4
 		main_layout.addWidget(QLabel('Соответствует ГЭСН 4:'))
-		self.gesn_4_num_combbox = QComboBox()
-		self.gesn_4_num_combbox.addItems(self.gesn4_tuple)
+		self.gesn_4_num_combobox = QComboBox()
+		self.gesn_4_num_combobox.addItems(self.gesn4_tuple)
 		gesn_4_num = self.soil.gesn_4_obj.num if self.edit_mode and self.soil.gesn_4_obj else '-'
-		self.gesn_4_num_combbox.setCurrentText(gesn_4_num)
-		main_layout.addWidget(self.gesn_4_num_combbox)
+		self.gesn_4_num_combobox.setCurrentText(gesn_4_num)
+		main_layout.addWidget(self.gesn_4_num_combobox)
 		
 		# Сопоставление с ГЭСН 5
 		main_layout.addWidget(QLabel('Соответствует ГЭСН 5:'))
-		self.gesn_5_num_combbox = QComboBox()
+		self.gesn_5_num_combobox = QComboBox()
 		
 		gesn_5_names = self.gesn5_tuple[1]
 		gesn_5_names = [(name[:100]+'...') if len(name)>100 else name for name in gesn_5_names]
 		
-		self.gesn_5_num_combbox.addItems(gesn_5_names)
+		self.gesn_5_num_combobox.addItems(gesn_5_names)
 		gesn_5_num = self.soil.gesn_5_obj.name if self.edit_mode and self.soil.gesn_5_obj else '-'
-		self.gesn_5_num_combbox.setCurrentText(gesn_5_num)
-		main_layout.addWidget(self.gesn_5_num_combbox)
+		self.gesn_5_num_combobox.setCurrentText(gesn_5_num)
+		main_layout.addWidget(self.gesn_5_num_combobox)
 		
 		# Краткое наименование для примечания 1
 		main_layout.addWidget(QLabel('Краткое имя для примечания 1 <i>(необязательно)</i>:'))
@@ -1472,13 +1472,13 @@ class Soil_Dialog(QDialog):
 	def accept(self):
 		none_list = {None, 'None', ' ', '', '-', 0, 0.00}
 		solution = True
-		checed_items = (
+		checked_items = (
 			self.num_edit_line.text(),
 			self.name_edit_plane.toPlainText(),
 			self.density_spine_box.value()
 		)
 
-		for i in checed_items:
+		for i in checked_items:
 			if i in none_list:
 				solution = False
 				break
@@ -1498,7 +1498,7 @@ class Soil_Dialog(QDialog):
 			)
 			return
 		
-		if isinstance(convert_value(checed_items[2]), str):
+		if isinstance(convert_value(checked_items[2]), str):
 			QMessageBox.warning(self, "Внимание", "Плотность указана не корректно")
 			return
 		
@@ -1508,20 +1508,20 @@ class Soil_Dialog(QDialog):
 	def get_data(self):
 		none_list = {None, 'None', ' ', '', '-'}
 
-		if self.gesn_1_num_combbox.currentText() in none_list:
+		if self.gesn_1_num_combobox.currentText() in none_list:
 			gesn_1_num = None
 		else:
-			gesn_1_num = self.gesn1_tuple[0][self.gesn_1_num_combbox.currentIndex()]
+			gesn_1_num = self.gesn1_tuple[0][self.gesn_1_num_combobox.currentIndex()]
 		
-		if self.gesn_4_num_combbox.currentText() in none_list:
+		if self.gesn_4_num_combobox.currentText() in none_list:
 			gesn_4_num = None
 		else:
-			gesn_4_num = self.gesn4_tuple[self.gesn_4_num_combbox.currentIndex()]
+			gesn_4_num = self.gesn4_tuple[self.gesn_4_num_combobox.currentIndex()]
 		
-		if self.gesn_5_num_combbox.currentText() in none_list:
+		if self.gesn_5_num_combobox.currentText() in none_list:
 			gesn_5_num = None
 		else:
-			gesn_5_num = self.gesn5_tuple[0][self.gesn_5_num_combbox.currentIndex()]
+			gesn_5_num = self.gesn5_tuple[0][self.gesn_5_num_combobox.currentIndex()]
 
 		note1 = None if self.note1_edit_plane.toPlainText() in none_list else self.note1_edit_plane.toPlainText()
 		

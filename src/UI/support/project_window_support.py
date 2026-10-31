@@ -34,19 +34,33 @@ from Templates.About import (
 
 class Project_Info_Edit_Dialog(QDialog):
 	""" Окно редактирования данных проекта """
-	def __init__(self, parent, chiefs, construction_site, code, verifier_name, description):
+	def __init__(
+		self,
+		parent,
+		chiefs,
+		construction_site,
+		shorted_name,
+		code,
+		verifier_name,
+		description
+	):
 		super().__init__(parent)
 		self.setWindowTitle('Редактирование информации о проекте')
 		self.setModal(True)
 
 		edit_layout = QVBoxLayout(self)
 
-		self._construction_site_edit_line = QPlainTextEdit(construction_site)
-		self._construction_site_edit_line.setLineWrapMode(QPlainTextEdit.LineWrapMode.WidgetWidth)
-		self._construction_site_edit_line.setMaximumHeight(100)
-		self._construction_site_edit_line.setMinimumWidth(600)
+		self.construction_site_edit_line = QPlainTextEdit(construction_site)
+		self.construction_site_edit_line.setLineWrapMode(QPlainTextEdit.LineWrapMode.WidgetWidth)
+		self.construction_site_edit_line.setMaximumHeight(100)
+		self.construction_site_edit_line.setMinimumWidth(600)
 		edit_layout.addWidget(QLabel('Наименование объекта:'))
-		edit_layout.addWidget(self._construction_site_edit_line)
+		edit_layout.addWidget(self.construction_site_edit_line)
+
+		self.shorted_name_linde_edit = QLineEdit(shorted_name)
+		self.shorted_name_linde_edit.setPlaceholderText('Отображается в названнии окна')
+		edit_layout.addWidget(QLabel('Короткое наименование:'))
+		edit_layout.addWidget(self.shorted_name_linde_edit or '')
 
 		self._code_edit_line = QLineEdit(code)
 		edit_layout.addWidget(QLabel('Шифр: '))
@@ -78,9 +92,11 @@ class Project_Info_Edit_Dialog(QDialog):
 		edit_layout.addWidget(project_info_edit_buttons)
 
 	def get_data(self):
+		shorted_name = self.shorted_name_linde_edit.text()
 		output = {
-			'ConstructionSite': self._construction_site_edit_line.toPlainText(),
+			'ConstructionSite': self.construction_site_edit_line.toPlainText(),
 			'Code': self._code_edit_line.text(),
+			'ShortedName': shorted_name if shorted_name else None,
 			'VerifierName': self._verifier_edit_combobox.currentText(),
 			'Description': self.description_edit_plain.toPlainText()
 		}

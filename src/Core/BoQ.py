@@ -44,7 +44,7 @@ class BoQ_manager:
 		self.is_modified = False			# Маркер изменения данных
 
 		# Атрибуты ведомости
-		self.construction_site: str = self.project.project_data.get('ConstructionSite', '') if project else ''
+		self.construction_site: str = self.project.construction_site if project else ''
 		self.object_name: str = ''			# Наименование раздела ВОР
 		self.num: str = ''					# Номер раздела ВОР
 		self.local_estimate = ''			# № Локальной сметы

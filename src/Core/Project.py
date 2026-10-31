@@ -142,6 +142,7 @@ class Project:
 		# ------------------------------ атрибуты проекта -------------------------------
 
 		self.construction_site: str = ''				# Наименование объекта
+		self.shorted_name: str | None = None			# Короткое имя для окна
 		self.verifier: dict = {							# Заверитель
 			'Name': None,								# Имя
 			'Position': None							# Позиция
@@ -150,7 +151,6 @@ class Project:
 		self.description: str = ''						# Дополнительное описание
 
 		# Базовые параметры проекта
-		self.project_data: dict = None 					# Словарь настройки проекта	TODO вынести в отдельный атрибут
 		self.units: dict = None 						# Словарь с еденицами измерения и их параметрами
 		self.work_modes: dict = None 					# Словарь с настройкой режимов работы среды
 		self.posts: list = []	 						# Список с должностями исполнителей
@@ -183,8 +183,6 @@ class Project:
 		import Templates.ProjectTemplate as Template
 
 		# Настройки проекта
-		self.project_data = Template.PROJECT_DATA_TEMPLATE
-
 		self.construction_site: str = Template.PROJECT_DATA_TEMPLATE.get('ConstructionSite', '')
 		self.verifier: dict = Template.PROJECT_DATA_TEMPLATE.get('Verifier', dict())
 		self.code: str = Template.PROJECT_DATA_TEMPLATE.get('Code', '')
@@ -212,12 +210,13 @@ class Project:
 
 		with open(self.settings_file_path, "r", encoding="utf-8") as f:
 			settings_data = json.load(f)
-			self.project_data = settings_data.get('project_data', Template.PROJECT_DATA_TEMPLATE) # загрузка данных проекта
 
 			self.construction_site: str = settings_data.get(
 				'ConstructionSite',
 				Template.PROJECT_DATA_TEMPLATE.get('ConstructionSite', '')
 			)
+
+			self.shorted_name: str = settings_data.get('shorted_name')
 
 			self.verifier: dict = settings_data.get(
 				'Verifier',
@@ -234,15 +233,20 @@ class Project:
 				Template.PROJECT_DATA_TEMPLATE.get('Description', '')
 			)
 
-			self.units = settings_data.get('units_settings', Template.UNITS_TEMPLATE) # загрузка настроек едениц измерений
-			self.work_modes = settings_data.get('work_modes_settings', Template.WORK_MODES_TEMPLATE) # загрузка настроек проекта
-			self.posts = settings_data.get('posts_lib', list(Template.POSTS_TEMPLATE)) # загрузка возможных должностей
-			self.performers = settings_data.get('performers_lib', list(Template.PERFORMERS_TEMPLATE)) # загрузка списка исполнителей
+			# загрузка настроек едениц измерений
+			self.units = settings_data.get('units_settings', Template.UNITS_TEMPLATE) 
+			# загрузка настроек проекта
+			self.work_modes = settings_data.get('work_modes_settings', Template.WORK_MODES_TEMPLATE) 
+			# загрузка возможных должностей
+			self.posts = settings_data.get('posts_lib', list(Template.POSTS_TEMPLATE))
+			# загрузка списка исполнителей
+			self.performers = settings_data.get('performers_lib', list(Template.PERFORMERS_TEMPLATE)) 
 			if isinstance(self.performers, list):
 				self.performers.sort()
 			else:
 				self.performers = []
-			self.chiefs = settings_data.get('chiefs_lib', list(Template.CHIEFS)) # загрузка списка ГИПов
+			# загрузка списка ГИПов
+			self.chiefs = settings_data.get('chiefs_lib', list(Template.CHIEFS)) 
 			if isinstance(self.chiefs, list):
 				self.chiefs.sort()
 			else:
@@ -251,7 +255,6 @@ class Project:
 
 	def start_project_settings(self):
 		'''Функция получения настроек проекта из файла настроек или из шаблона'''
-
 		if os.path.exists(self.settings_file_path):
 			self._get_load_data() # загрузка данных из файла настроек проекта
 		else:
@@ -262,6 +265,7 @@ class Project:
 		""" Сохраняет параметры и настройки проекта """
 		export_elements = {
 			'ConstructionSite': self.construction_site,
+			'shorted_name': self.shorted_name,
 			'Verifier': self.verifier,
 			'Code': self.code,
 			'Description': self.description,
@@ -380,28 +384,6 @@ class Project:
 		manager = BoQ_manager(self, file_BoQ.path)
 		return manager
 
-	# =========================== Работа с атрибутами проекта ===========================
-	def select_unit(self):
-		'''Назначение ключа еденицы измерения для поиска'''
-		i=0
-		key_list = []
-		for key, value in self.units.items():
-			i += 1
-			key_list.append(key)
-		unit_id = requesting_value(int,'Выберите еденицу измерения')-1
-		return key_list[unit_id]
-
-	# ------------------------------- Изменение атрибутов -------------------------------
-	def set_project_name(self):
-		ConstructionSite = input('Введите новое название проекта: ')
-		self.project_data['ConstructionSite'] = ConstructionSite
-		code = input('Укажите новый шифр объекта: ')
-		self.project_data['Code'] = code
-
-	
-	def set_verifier(self):
-		verifier = input('Введите имя ответственного за проект ГИПа: ')
-		self.project_data['Verifier'] = verifier
 
 	# =========================== Работа с библиотекой ссылок ===========================
 	def set_library(self):
