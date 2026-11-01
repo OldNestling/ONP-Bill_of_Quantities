@@ -750,7 +750,7 @@ class File_BoQ:
 
 
 	@property
-	def status_lock(self) -> tuple:
+	def status_lock(self) -> tuple[bool, str | None]:
 		locked_files = self._get_locked_files()
 		filename = self.path.stem
 		for data in locked_files:

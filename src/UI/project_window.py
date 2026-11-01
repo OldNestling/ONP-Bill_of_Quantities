@@ -42,8 +42,9 @@ from .resources.icons import Icons
 
 from .support.project_window_support import (
 	BoQ_Dialog, BoQs_TableWidget, BoQLogs_TableWidget, 
-	Export_Dialog, Project_Info_Edit_Dialog, HelpDialog
+	Project_Info_Edit_Dialog, HelpDialog
 )
+from .support.export_dialog import ExportFormatDialog, ExportManager
 
 
 class Project_Window(QWidget):
@@ -1022,139 +1023,5 @@ class MainProjectTab(QWidget):
 
 
 	def export_selected_BoQs(self):
-		"""Экспорт выбранных разделов в XML/GGE/PDF"""
-		if self.project is None:
-			QMessageBox.warning(self, "Экспорт", "Проект не загружен.")
-			return
-
-		selected_rows = set(self.project_BoQs_table.selectedIndexes())
-		if not selected_rows:
-			QMessageBox.warning(self, "Экспорт", "Сначала выберите ведомости в таблице.")
-			return
-
-		rows = {index.row() for index in selected_rows}
-		selected_files = [self.project_BoQs_table.files[row] for row in rows]
-
-		# 1. Проверка блокировок
-		available_files = []
-		locked_files = []
-		for file_BoQ in selected_files:
-			try:
-				status, user = file_BoQ.status_lock
-				if status:
-					locked_files.append((file_BoQ.path.name, user))
-				else:
-					available_files.append(file_BoQ)
-			except KeyError:
-				locked_files.append((file_BoQ.path.name, "не определён"))
-
-		if locked_files:
-			msg = "Следующие ведомости заблокированы и не могут быть экспортированы:\n"
-			for name, user in locked_files:
-				msg += f"- {name} (пользователь: {user})\n"
-			QMessageBox.warning(self, "Экспорт", msg)
-			if not available_files:
-				return
-
-		# 2. Предварительная валидация и сбор файлов, готовых к экспорту
-		export_list = []  # (file_BoQ, manager) или просто file_BoQ
-		problems_map = {}  # file_name -> список проблем
-
-		for file_BoQ in available_files:
-			# Загружаем менеджер (без блокировки, только чтение)
-			try:
-				manager = self.project.open_BoQ_for_export(file_BoQ)
-			except Exception as e:
-				QMessageBox.warning(self, "Экспорт", f"{file_BoQ.path.name}: не удалось загрузить - {e}")
-				continue
-
-			# Проверка валидности
-			data = manager.data_validation
-			invalid_quantities = data.get('invalid_quantities')
-			incorrect_positions = data.get('incorrect_positions')
-			error_link_positions = data.get('error_link_positions')
-			nonlink_positions = data.get('nonlink_positions')
-
-			if invalid_quantities:
-				QMessageBox.warning(self, "Экспорт", f"{file_BoQ.path.name}: невалидные значения объёмов. Экспорт отменён.")
-				continue
-
-			problems = []
-			if incorrect_positions:
-				problems.append('не все позиции имеют статус готовности')
-			if nonlink_positions:
-				problems.append('есть позиции с пустыми ссылками (будет создана заглушка)')
-			if error_link_positions:
-				problems.append('некоторые ссылки некорректны (результат может привести к ошибке)')
-
-			if problems:
-				problems_map[file_BoQ.path.name] = problems
-				reply = Requestion.ask(
-					self,
-					'Предупреждение',
-					f"В разделе «{file_BoQ.path.name}» есть проблемы:\n" + "\n".join(problems) + "\nПродолжить экспорт?",
-					with_cancel = False
-				)
-				if reply == QMessageBox.StandardButton.No:
-					continue
-
-			export_list.append((file_BoQ, manager))
-
-		if not export_list:
-			QMessageBox.information(self, "Экспорт", "Нет разделов для экспорта.")
-			return
-
-		# 3. Выбор формата экспорта
-		exp_dialog = Export_Dialog(self)
-		if exp_dialog.exec() != QDialog.DialogCode.Accepted:
-			return
-		form: tuple[str, None|int, int] = exp_dialog.get_data()
-		extension, form_type, subsec = form  
-
-		# 4. Прогресс-диалог (теперь без прерываний)
-		progress = QProgressDialog("Экспорт разделов...", "Отмена", 0, len(export_list), self)
-		progress.setWindowModality(Qt.WindowModality.WindowModal)
-		progress.setMinimumDuration(0)
-		progress.setValue(0)
-
-		success_count = 0
-		errors = []
-		convertor = Convertor(self.project)
-
-		for idx, (file_BoQ, manager) in enumerate(export_list):
-			if progress.wasCanceled():
-				break
-			progress.setLabelText(f"Экспорт: {file_BoQ.path.name}")
-			progress.setValue(idx)
-			QApplication.processEvents()  # обновляем UI
-
-			try:
-				if extension in ('.gge', '.xml'):
-					convertor.create_xml_3p01(manager, extension, subsec)
-					success_count += 1
-				else:
-					convertor.export_to_pdf(manager, form_type, subsec)
-					success_count += 1
-			except Exception as e:
-				errors.append(f"{file_BoQ.path.name}: ошибка экспорта - {e}")
-
-		progress.setValue(len(export_list))
-		progress.close()
-
-		# Итоговое сообщение
-		msg = f"Экспорт завершён.\nУспешно: {success_count} из {len(export_list)}"
-		if errors:
-			msg += "\n\nОшибки:\n" + "\n".join(errors[:10])
-			if len(errors) > 10:
-				msg += f"\n... и ещё {len(errors)-10} ошибок"
-			QMessageBox.warning(self, "Экспорт", msg)
-		else:
-			QMessageBox.information(self, "Экспорт", msg)
-
-		if success_count:
-			match form[0]:
-				case '.gge' | '.xml':
-					self.project.open_xml_folder()
-				case '.pdf':
-					self.project.open_pdf_folder()
-		
+		"""Экспорт выбранных разделов в (делегируется ExportManager)."""
+		ExportManager(self).run()

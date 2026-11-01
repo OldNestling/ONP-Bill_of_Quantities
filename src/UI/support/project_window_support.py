@@ -14,15 +14,17 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+from pathlib import Path
 from PyQt6.QtWidgets import (
 	QApplication, QWidget, QLabel, QPushButton, QDialog, 
 	QDialogButtonBox, QVBoxLayout, QHBoxLayout, QLineEdit,
 	QPlainTextEdit, QMessageBox, QTableWidget, QTableWidgetItem, 
-	QHeaderView, QComboBox, QCompleter, QMenu, QSpinBox, QStyledItemDelegate,
-	QStyleOptionViewItem, QStyle
+	QHeaderView, QComboBox, QCompleter, QMenu, QStyledItemDelegate,
+	QStyleOptionViewItem, QStyle, QDialog, QVBoxLayout, QGroupBox,
+	QLabel, QFrame, QTextBrowser
 	)
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QColor
+from PyQt6.QtGui import QColor, QPixmap
 
 from Core.Project import File_BoQ
 from Core.Utilities import text_after, text_before
@@ -31,6 +33,11 @@ from ..ui_utilities import MultilineTextDelegate, create_ok_cancel_buttons
 from Templates.About import (
 	ABOUT, COPYRIGHT, GITHUB, PROGRAM_NAME, PROGRAM_VERSION, PARTICIPANTS
 )
+
+from ..ui_utilities import create_separator
+from ..resources.icons import Icons
+
+
 
 class Project_Info_Edit_Dialog(QDialog):
 	""" Окно редактирования данных проекта """
@@ -74,7 +81,6 @@ class Project_Info_Edit_Dialog(QDialog):
 		edit_layout.addWidget(QLabel('ГИП: '))
 		edit_layout.addWidget(self._verifier_edit_combobox)
 		
-
 		self.description_edit_plain = QPlainTextEdit(description)
 		self.description_edit_plain.setLineWrapMode(QPlainTextEdit.LineWrapMode.WidgetWidth)
 		self.description_edit_plain.setMinimumWidth(600)
@@ -107,8 +113,8 @@ class Project_Info_Edit_Dialog(QDialog):
 class ColorTextDelegate(QStyledItemDelegate):
 	"""
 	Красит текст ячейки в QColor, лежащий в Qt.ItemDataRole.UserRole.
-    Игнорирует QSS-правила QTableWidget::item { color: ... }.
-    Если в UserRole не QColor — работает как обычный делегат.
+	Игнорирует QSS-правила QTableWidget::item { color: ... }.
+	Если в UserRole не QColor — работает как обычный делегат.
 	"""
 	def paint(self, painter, option, index):
 		color = index.data(Qt.ItemDataRole.UserRole)
@@ -140,6 +146,8 @@ class ColorTextDelegate(QStyledItemDelegate):
 			text
 		)
 		painter.restore()
+
+
 
 class BoQs_TableWidget(QTableWidget):
 	"""
@@ -208,6 +216,7 @@ class BoQs_TableWidget(QTableWidget):
 			self.setItem(row, 7, QTableWidgetItem(obj.local_estimate))
 			self.setItem(row, 8, QTableWidgetItem(obj.path.name))
 
+ 
 	def on_table_context_menu(self, pos):
 		# Получаем позицию и индекс ячейки
 		index = self.indexAt(pos)
@@ -246,6 +255,8 @@ class BoQs_TableWidget(QTableWidget):
 		# Показываем меню в позиции курсора
 		menu.exec(self.viewport().mapToGlobal(pos))		
 
+
+
 class BoQLogs_TableWidget(QTableWidget):
 	"""
 	Таблица для отображения реестра изменений текущего выделенного раздела.
@@ -261,6 +272,7 @@ class BoQLogs_TableWidget(QTableWidget):
 		self.verticalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
 		self.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
 		self.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+
 
 	def update_table(self, log_list):
 		self.setRowCount(len(log_list))
@@ -340,7 +352,6 @@ class BoQ_Dialog(QDialog):
 		self._num_edit_line.textChanged.connect(self._set_flag_isObjectNum)
 		left_layout.addWidget(QLabel('Номер ведомости:'))
 		left_layout.addWidget(self._num_edit_line)
-
 
 		# Комбобоксы с автодополнением
 		performers_list = performers
@@ -479,6 +490,7 @@ class BoQ_Dialog(QDialog):
 		self.logs_table.setItem(row, 0, QTableWidgetItem(self.project.now.strftime("%d.%m.%Y")))
 		self.logs_table.setItem(row, 1, QTableWidgetItem(''))
 
+
 	def remove_log_row(self):
 		current_row = self.logs_table.currentRow()
 		if current_row >= 0:
@@ -529,209 +541,131 @@ class BoQ_Dialog(QDialog):
 		}
 		return output if not self._template else self._template
 
-class Export_Dialog(QDialog):
-	def __init__(self, parent=None):
-		super().__init__(parent)
-		self.setWindowTitle("Экспорт ведомости")
-		self.setModal(True)
-
-		layout = QVBoxLayout(self)
-
-		layout.addWidget(QLabel("Выберите формат экспорта:"))
-
-		self.format_combobox = QComboBox()
-		self.format_combobox.addItems(("XML", "GGE", "PDF по форме 1", "PDF по форме 2"))
-		layout.addWidget(self.format_combobox)
-
-		self.subsection_num = QSpinBox()
-		self.subsection_num.setMinimum(0)
-		self.subsection_num.setMaximumWidth(60)
-		self.subsection_num.setValue(4)
-
-		subsec_line = QHBoxLayout()
-		subsec_line.addWidget(QLabel('Номер подраздела СД: '))
-		subsec_line.addWidget(self.subsection_num)
-
-		layout.addLayout(subsec_line)
-
-		btn_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
-		btn_box.accepted.connect(self.accept)
-		btn_box.rejected.connect(self.reject)
-		layout.addWidget(btn_box)
-
-	def get_data(self):
-		"""Возвращает расширение файла: .xml или .gge"""
-		subsec = self.subsection_num.value()
-		match self.format_combobox.currentText():
-			case  'GGE':
-				return ('.gge', None, subsec)
-			case 'XML':
-				return ('.xml', None, subsec)
-			case 'PDF по форме 1':
-				return ('.pdf', 0, subsec)
-			case 'PDF по форме 2':
-				return ('.pdf', 1, subsec)
-
-
-
-# Copyright © 2026 OldNestling
-# License: GPLv3 (GNU General Public License Version 3)
-
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <https://www.gnu.org/licenses/>.
-
-from pathlib import Path
-
-from PyQt6.QtWidgets import (
-    QDialog, QVBoxLayout, QGroupBox, QLabel, QFrame, QTextBrowser
-)
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QColor, QPixmap
-
-from Templates.About import (
-    ABOUT, COPYRIGHT, GITHUB, PROGRAM_NAME, PROGRAM_VERSION, PARTICIPANTS
-)
-from ..ui_utilities import create_separator
-from ..resources.icons import Icons
 
 
 class HelpDialog(QDialog):
-    """Диалог справки: информация о программе, контакты, реквизиты."""
+	"""Диалог справки: информация о программе, контакты, реквизиты."""
+	def __init__(self, parent=None):
+		super().__init__(parent)
+		self.setWindowTitle("Справка")
+		self.setModal(True)
+		self.setWindowIcon(Icons.recolor_icon(Icons.help, QColor("#000000")))
+		self._setup_ui()
 
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setWindowTitle("Справка")
-        self.setModal(True)
-        self.setWindowIcon(Icons.recolor_icon(Icons.help, QColor("#000000")))
-        self._setup_ui()
+
+	def _setup_ui(self):
+		main_layout = QVBoxLayout(self)
+		main_layout.addWidget(self._build_about_group())
+		main_layout.addWidget(self._build_info_group())
+		main_layout.addStretch()
+
+		# Центрируем диалог относительно главного окна
+		self.setMinimumWidth(500)
+		self.setMinimumHeight(550)
+		self.adjustSize()
+
+	# -------------------------------- Группа "О программе" -----------------------------
+	def _build_about_group(self) -> QGroupBox:
+		group = QGroupBox("О программе")
+		layout = QVBoxLayout()
+
+		title_label = QLabel(f"<h2>{PROGRAM_NAME}</h2>")
+		title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+		layout.addWidget(title_label)
+
+		version_label = QLabel(f"<b>Версия:</b> {PROGRAM_VERSION}")
+		version_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+		layout.addWidget(version_label)
+
+		copyright_label = QLabel(f"<i>{COPYRIGHT} (GPLv3)</i>")
+		copyright_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+		layout.addWidget(copyright_label)
+
+		layout.addWidget(create_separator(QFrame.Shape.HLine))
+
+		about_text = QTextBrowser()
+		about_text.setOpenExternalLinks(True)
+		about_text.setHtml(f"<p>{ABOUT.replace(chr(10), '<br>')}</p>")
+		about_text.setMaximumHeight(120)
+		about_text.setMinimumHeight(60)
+		layout.addWidget(about_text)
+		layout.addStretch()
+
+		group.setLayout(layout)
+		return group
+
+	# ------------------------ Группа "Справка и контакты" -------------------------------
+	def _build_info_group(self) -> QGroupBox:
+		group = QGroupBox("Справка и контакты")
+		layout = QVBoxLayout()
+
+		layout.addWidget(self._build_tutorial_label())
+		layout.addWidget(self._build_contact_label())
+
+		participants = QLabel(PARTICIPANTS)
+		participants.setWordWrap(True)
+		layout.addWidget(participants)
+
+		layout.addWidget(create_separator(QFrame.Shape.HLine))
+
+		thanks_label = QLabel(
+			"<i>Программа создана за спасибо.<br>"
+			"Более весомая благодарность стимулирет разработчика "
+			"поддерживать продукт :)</i>"
+		)
+		thanks_label.setWordWrap(True)
+		thanks_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+		layout.addWidget(thanks_label)
+
+		layout.addWidget(self._build_qr_label())
+
+		group.setLayout(layout)
+		return group
 
 
-    def _setup_ui(self):
-        main_layout = QVBoxLayout(self)
-        main_layout.addWidget(self._build_about_group())
-        main_layout.addWidget(self._build_info_group())
-        main_layout.addStretch()
+	def _build_tutorial_label(self) -> QLabel:
+		label = QLabel()
+		label.setOpenExternalLinks(True)
+		label.setText(
+			f'<b>Справочная информация: </b>'
+			f'<a href="{GITHUB}" style="color: #3B82F6; '
+			f'text-decoration: none;">{GITHUB}</a>'
+		)
+		label.setWordWrap(True)
+		return label
 
-        # Центрируем диалог относительно главного окна
-        self.setMinimumWidth(500)
-        self.setMinimumHeight(550)
-        self.adjustSize()
 
-    # ------------------------------------------------------------------ #
-    #                        Группа "О программе"                        #
-    # ------------------------------------------------------------------ #
-    def _build_about_group(self) -> QGroupBox:
-        group = QGroupBox("О программе")
-        layout = QVBoxLayout()
+	def _build_contact_label(self) -> QLabel:
+		label = QLabel(
+			f'<b>Связь с разработчиком: </b>'
+			f'<a href="mailto:oldnestling@yandex.ru" style="color: #3B82F6; '
+			f'text-decoration: none;">oldnestling@yandex.ru</a>'
+			f'<br><b>Счёт для благодарности: </b>'
+			f'<a href="https://www.tinkoff.ru/rm/r_aOqwUwfbRm.lZNlrKjSLm/oMI8k46003" '
+			f'style="color: #3B82F6; text-decoration: none;">'
+			f'4081 7810 6000 9641 9718</a>'
+		)
+		label.setOpenExternalLinks(True)
+		label.setWordWrap(True)
+		return label
 
-        title_label = QLabel(f"<h2>{PROGRAM_NAME}</h2>")
-        title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(title_label)
 
-        version_label = QLabel(f"<b>Версия:</b> {PROGRAM_VERSION}")
-        version_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(version_label)
+	def _build_qr_label(self) -> QLabel:
+		qr_path = Path(Icons.resource_path("UI/icons/donate_qr.jpg"))
+		pixmap = QPixmap(str(qr_path))
+		pixmap = pixmap.scaled(
+			200, 200,
+			Qt.AspectRatioMode.KeepAspectRatio,
+			Qt.TransformationMode.SmoothTransformation,
+		)
+		label = QLabel()
+		label.setPixmap(pixmap)
+		label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+		return label
 
-        copyright_label = QLabel(f"<i>{COPYRIGHT} (GPLv3)</i>")
-        copyright_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(copyright_label)
-
-        layout.addWidget(create_separator(QFrame.Shape.HLine))
-
-        about_text = QTextBrowser()
-        about_text.setOpenExternalLinks(True)
-        about_text.setHtml(f"<p>{ABOUT.replace(chr(10), '<br>')}</p>")
-        about_text.setMaximumHeight(120)
-        about_text.setMinimumHeight(60)
-        layout.addWidget(about_text)
-        layout.addStretch()
-
-        group.setLayout(layout)
-        return group
-
-    # ------------------------------------------------------------------ #
-    #                    Группа "Справка и контакты"                     #
-    # ------------------------------------------------------------------ #
-    def _build_info_group(self) -> QGroupBox:
-        group = QGroupBox("Справка и контакты")
-        layout = QVBoxLayout()
-
-        layout.addWidget(self._build_tutorial_label())
-        layout.addWidget(self._build_contact_label())
-
-        participants = QLabel(PARTICIPANTS)
-        participants.setWordWrap(True)
-        layout.addWidget(participants)
-
-        layout.addWidget(create_separator(QFrame.Shape.HLine))
-
-        thanks_label = QLabel(
-            "<i>Программа создана за спасибо.<br>"
-            "Более весомая благодарность стимулирет разработчика "
-            "поддерживать продукт :)</i>"
-        )
-        thanks_label.setWordWrap(True)
-        thanks_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(thanks_label)
-
-        layout.addWidget(self._build_qr_label())
-
-        group.setLayout(layout)
-        return group
-
-    def _build_tutorial_label(self) -> QLabel:
-        label = QLabel()
-        label.setOpenExternalLinks(True)
-        label.setText(
-            f'<b>Справочная информация: </b>'
-            f'<a href="{GITHUB}" style="color: #3B82F6; '
-            f'text-decoration: none;">{GITHUB}</a>'
-        )
-        label.setWordWrap(True)
-        return label
-
-    def _build_contact_label(self) -> QLabel:
-        label = QLabel(
-            f'<b>Связь с разработчиком: </b>'
-            f'<a href="mailto:oldnestling@yandex.ru" style="color: #3B82F6; '
-            f'text-decoration: none;">oldnestling@yandex.ru</a>'
-            f'<br><b>Счёт для благодарности: </b>'
-            f'<a href="https://www.tinkoff.ru/rm/r_aOqwUwfbRm.lZNlrKjSLm/oMI8k46003" '
-            f'style="color: #3B82F6; text-decoration: none;">'
-            f'4081 7810 6000 9641 9718</a>'
-        )
-        label.setOpenExternalLinks(True)
-        label.setWordWrap(True)
-        return label
-
-    def _build_qr_label(self) -> QLabel:
-        qr_path = Path(Icons.resource_path("UI/icons/donate_qr.jpg"))
-        pixmap = QPixmap(str(qr_path))
-        pixmap = pixmap.scaled(
-            200, 200,
-            Qt.AspectRatioMode.KeepAspectRatio,
-            Qt.TransformationMode.SmoothTransformation,
-        )
-        label = QLabel()
-        label.setPixmap(pixmap)
-        label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        return label
-
-    # ------------------------------------------------------------------ #
-    #                       Конструктор 		                         #
-    # ------------------------------------------------------------------ #
-    @classmethod
-    def show_help(cls, parent=None):
-        """Создаёт и показывает диалог. Возвращает результат `exec()`."""
-        dialog = cls(parent)
-        return dialog.exec()
+	# ---------------------------------- Конструктор ------------------------------------
+	@classmethod
+	def show_help(cls, parent=None):
+		"""Создаёт и показывает диалог. Возвращает результат `exec()`."""
+		dialog = cls(parent)
+		return dialog.exec()

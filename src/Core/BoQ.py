@@ -457,7 +457,7 @@ class BoQ_manager:
 			return (index_section, index_work, new_resource_index)
 	
 	@property
-	def data_validation(self):
+	def data_validation(self) -> dict[str, list]:
 		""" Проверяет структуру данных на соответствие схеме xml и готовность к экспорту"""
 		invalid_quantities = []	# Format addresses
 		incorrect_positions = []

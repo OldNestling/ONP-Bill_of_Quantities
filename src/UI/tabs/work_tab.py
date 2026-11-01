@@ -30,7 +30,9 @@ from ..support.work_tab_sidebar import SideBar_Right
 from ..support.work_tab_view import BoQ_View
 from ..support.work_tab_lib_actions import Earth_Work_Dialog, User_Libs_Dialog
 from ..ui_utilities import create_ok_cancel_buttons, Requestion
-from ..support.project_window_support import Export_Dialog
+from ..support.export_dialog import ExportFormatDialog
+
+
 
 class BoQ_Tab(QWidget):
 	""" Представление вкладки работы с открытыми файлами ВОР """
@@ -46,7 +48,6 @@ class BoQ_Tab(QWidget):
 		self.setup_ui()
 
 	# ---------------------------------- Интерфейс -----------------------------------
-
 	def setup_ui(self):
 		""" Собирает интерфейс вкладки """
 		layout = QVBoxLayout(self)
@@ -108,6 +109,7 @@ class BoQ_Tab(QWidget):
 		h_splitter.setStretchFactor(1, 0)	 # правая сохраняет предпочтительный размер
 
 		layout.addWidget(h_splitter)
+
 
 	def setup_toolbar(self):
 		toolbar = QToolBar("Основная панель")
@@ -245,8 +247,8 @@ class BoQ_Tab(QWidget):
 		expande_all_action = QAction(Icons.expande, 'Развернуть всё', self)
 		expande_all_action.setShortcut('Ctrl+Alt+H')
 		expande_all_action.setToolTip(f"Развернуть всё ({expande_all_action.shortcut().toString()})")
-		expande_all_action.triggered.connect(lambda: self.switch_collapse_expand(True)
-)
+		expande_all_action.triggered.connect(lambda: self.switch_collapse_expand(True))
+
 		toolbar.addAction(expande_all_action)
 		compress_action = QAction(Icons.compress, 'Свернуть всё', self)
 		compress_action.setShortcut('Ctrl+H')
@@ -294,6 +296,7 @@ class BoQ_Tab(QWidget):
 		self.fix_toolbar_icons(toolbar)
 		return toolbar	
 
+
 	def fix_toolbar_icons(self, toolbar):
 		extension_button = toolbar.findChild(QToolButton, "qt_toolbar_ext_button")
 		if extension_button:
@@ -308,15 +311,18 @@ class BoQ_Tab(QWidget):
 				menu.aboutToShow.connect(self._on_extension_menu_about_to_show)
 				menu.aboutToHide.connect(self._on_extension_menu_about_to_hide)
 
+
 	def _on_extension_menu_about_to_show(self):
 		menu = self.sender()
 		if menu and not self._recoloring:
 			self._recolor_menu_icons(menu, to_black=True)
 
+
 	def _on_extension_menu_about_to_hide(self):
 		menu = self.sender()
 		if menu and not self._recoloring:
 			self._recolor_menu_icons(menu, to_black=False)
+
 
 	def _recolor_menu_icons(self, menu: QMenu, to_black: bool):
 		"""Перекрашивает иконки действий в меню в чёрный (to_black=True) или восстанавливает исходные (False)."""
@@ -343,13 +349,13 @@ class BoQ_Tab(QWidget):
 			self._recoloring = False
 
 	# ========================= Базовая методы вкладки =========================
-
 	def set_project(self, project):
 		self.project = project
 		if hasattr(self, 'data_editor'):
 			self.data_editor.set_project(project)
 		if hasattr(self, 'right_sidebar'):
 			self.right_sidebar.set_project(project)
+
 
 	def add_BoQ_subtab(self, file_manager: BoQ_manager):
 		file_path = str(file_manager.file.resolve())  # абсолютный путь для надёжности
@@ -375,6 +381,7 @@ class BoQ_Tab(QWidget):
 				if tab_widget.tabText(i) == "Ведомости":
 					tab_widget.setCurrentIndex(i)          # переключиться
 					break
+
 
 	def close_boq_tab(self, index):
 		widget = self.boq_views_container.widget(index)
@@ -443,6 +450,7 @@ class BoQ_Tab(QWidget):
 						return True
 			return False	
 
+
 	def close_all_tabs(self, ask_for_save=True, parent_dialog=None) -> bool:
 		"""
 		Закрывает все открытые вкладки.
@@ -477,6 +485,7 @@ class BoQ_Tab(QWidget):
 			self._close_all_tabs_without_dialogs()
 		return True
 
+
 	def _close_all_tabs_without_dialogs(self):
 		"""Закрывает все вкладки без запросов, снимая блокировки."""
 		for i in reversed(range(self.boq_views_container.count())):
@@ -489,6 +498,7 @@ class BoQ_Tab(QWidget):
 					del self.opened_files[file_path]
 			self.boq_views_container.removeTab(i)
 		self.opened_files.clear()
+
 
 	def _save_as_dialog(self, manager: BoQ_manager, parent) -> bool:
 		"""Диалог сохранения для read_mode файла."""
@@ -515,6 +525,7 @@ class BoQ_Tab(QWidget):
 			manager.save_file(save_as=new_name)
 			return True
 		return False
+
 
 	def force_close_all(self):
 		"""Принудительное закрытие всех вкладок без запросов (используется при отказе от сохранения)."""
@@ -566,7 +577,6 @@ class BoQ_Tab(QWidget):
 			self.right_sidebar.clear()
 			self.data_editor.clear()
 
-
 	# =========================== Работа с данными ===========================
 	def current_boq_view(self):
 		"""Возвращает активную вкладку с BoQ_View или None."""
@@ -574,6 +584,7 @@ class BoQ_Tab(QWidget):
 		if isinstance(widget, BoQ_View):
 			return widget
 		return None
+
 
 	def current_selection(self):
 		"""Возвращает кортеж (model, indexes) для текущего выделения.
@@ -586,7 +597,8 @@ class BoQ_Tab(QWidget):
 			return view.model, []
 		indexes = selection_model.selectedRows()  # или selectedIndexes(), зависит от задачи
 		return view.model, indexes	
-	
+
+
 	def get_insert_address_from_current(self):
 		"""Возвращает кортеж (section_idx, work_idx, resource_idx) для вставки
 		относительно текущего выделения или текущей ячейки."""
@@ -615,20 +627,24 @@ class BoQ_Tab(QWidget):
 			self.search_bar.show()
 			self.search_bar.line_edit.setFocus()
 
+
 	def on_search_requested(self, text, case_sensitive, all_columns):
 		view = self.current_boq_view()
 		if view:
 			view.perform_search(text, case_sensitive, all_columns)
+
 
 	def on_search_next(self):
 		view = self.current_boq_view()
 		if view:
 			view.search_next()
 
+
 	def on_search_prev(self):
 		view = self.current_boq_view()
 		if view:
 			view.search_prev()
+
 
 	def navigate_to_address(self, address):
 		"""Принимает кортеж (section_idx, work_idx, resource_idx) и переходит к позиции."""
@@ -659,7 +675,6 @@ class BoQ_Tab(QWidget):
 
 	# -------------------------------- Слоты ----------------------------------
 	# ----------- Вспомогательное ----------
-
 	def _show_color_menu(self, is_background=True):
 		"""Показывает меню с палитрой цветов и кнопкой сброса."""
 		menu = QMenu(self)
@@ -715,11 +730,13 @@ class BoQ_Tab(QWidget):
 		# Показываем меню в позиции курсора
 		menu.exec(QCursor.pos())
 
+
 	def _pick_custom_color(self, is_background):
 		"""Открывает QColorDialog для выбора произвольного цвета."""
 		color = QColorDialog.getColor(options=QColorDialog.ColorDialogOption.DontUseNativeDialog)
 		if color.isValid():
 			self._apply_color(color.name(), is_background)
+
 
 	def _apply_color(self, hex_color, is_background):
 		"""Применяет цвет ко всем выделенным ячейкам в допустимых столбцах."""
@@ -749,6 +766,7 @@ class BoQ_Tab(QWidget):
 
 		view.manager.is_modified = True
 		view.view.viewport().update()
+
 
 	def _reset_color(self, is_background):
 		"""Сбрасывает цвет для выделенных ячеек."""
@@ -788,13 +806,15 @@ class BoQ_Tab(QWidget):
 			self._save_as_dialog(view.manager, self)
 		else:
 			view.manager.save_file()
-	
+
+
 	def _save_as(self):
 		view = self.current_boq_view()
 		if not view:
 			return
 		self._save_as_dialog(view.manager, self)
 
+ 
 	def reopen_file(self):
 		view = self.current_boq_view()
 		if not view:
@@ -829,7 +849,8 @@ class BoQ_Tab(QWidget):
 			model.endResetModel()
 			archive_model.endResetModel()
 			view.view.expandAll()
-	
+
+
 	def close_tab(self):
 		index = self.boq_views_container.currentIndex()
 		self.close_boq_tab(index)
@@ -877,6 +898,7 @@ class BoQ_Tab(QWidget):
 			model.layoutChanged.emit()
 			view.view.expandAll()
 
+
 	def paste_selected(self):
 		view = self.current_boq_view()
 		if not view:
@@ -900,7 +922,6 @@ class BoQ_Tab(QWidget):
 			model.layoutChanged.emit()
 			#view.view.expandAll()	
 		
-
 	# ------------- Добавление -------------
 	def add_section(self):
 		view = self.current_boq_view()
@@ -1006,7 +1027,6 @@ class BoQ_Tab(QWidget):
 		view.archive_view.expandAll()
 
 	# ------------- Генерация позиций -------------	
-
 	def create_earth_work(self):
 		""" Вызывает диалоговое окно для создания земляных работ """
 		if not self.project.soils_manager.library:
@@ -1050,6 +1070,8 @@ class BoQ_Tab(QWidget):
 
 			model.endResetModel()
 			view.view.expandAll()
+
+
 	def create_from_user_lib(self):
 		"""
 		Вызывает диалоговое окно для создания позиций на основании пользовательских библиотек
@@ -1133,9 +1155,11 @@ class BoQ_Tab(QWidget):
 	def show_background_color_menu(self):
 		self._show_color_menu(is_background=True)
 
+
 	def show_text_color_menu(self):
 		self._show_color_menu(is_background=False)
-	
+
+
 	def clear_formatting(self):
 		"""Сбрасывает и фон, и цвет текста для выделенных ячеек."""
 		view = self.current_boq_view()
@@ -1205,7 +1229,7 @@ class BoQ_Tab(QWidget):
 			)
 			if reply != QMessageBox.StandardButton.Yes:
 				return
-		exp_dialog = Export_Dialog(self)
+		exp_dialog = ExportFormatDialog(self)
 		if exp_dialog.exec() == QDialog.DialogCode.Accepted:
 			format, form, subsec = exp_dialog.get_data()
 			try:
