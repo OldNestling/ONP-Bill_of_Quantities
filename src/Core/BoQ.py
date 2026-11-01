@@ -18,7 +18,7 @@ import json, copy, math
 from pathlib import Path
 
 from Core.Documentation import Book
-from Core.Utilities import get_user_log
+from Core.Utilities import get_user_log, convert_value
 from Core.Soils import Soil
 from .BoQ_elements import Section, Work, Resource, Link, PositionLine
 from .UserLibs import Group, MainElement, SubElement
@@ -70,9 +70,11 @@ class BoQ_manager:
 		self.load_file(file)
 		self._is_loaded = True
 	
+
 	@property
 	def is_loaded(self):
 		return self._is_loaded
+
 
 	def __str__(self):
 		text_1 = f'{self.num}: «{self.object_name}» от {self.date}'
@@ -114,7 +116,6 @@ class BoQ_manager:
 		return ';\n'.join(books)
 	
 	# ==================================== Методы =======================================
-
 	def cleanup(self, del_project = True):
 		"""
 		Разрывает циклические ссылки между manager и всеми вложенными объектами.
@@ -138,7 +139,6 @@ class BoQ_manager:
 		self.position_mode = self.project.work_modes['position_mode']
 
 	# --------------------------------- Работа с файлом ---------------------------------
-
 	def save_file(self, save_as: str | None = None) -> bool:
 		"""Сохраняет данные в файл. Если """
 		if not self.project:
@@ -236,6 +236,7 @@ class BoQ_manager:
 		}
 		return result
 
+
 	def deserialization(self, data: dict | None = None, data_scheme = 1):
 		if data is None or self.project is None:
 			return
@@ -266,6 +267,7 @@ class BoQ_manager:
 				)
 			)
 		self._sort_archive()
+
 
 	def unlock(self):
 		"""	Удаляет файл блокировки	"""
@@ -304,7 +306,8 @@ class BoQ_manager:
 		#	for file_data in files.values():
 		#		if file
 		return files
-	
+
+
 	def set_links_file_id(self, files = None):
 		""" Назначает ссылкам на документы параметр file_id во время xml/gge экспорта"""
 		files = self.get_links_files() if files is None else files
@@ -314,7 +317,6 @@ class BoQ_manager:
 			link.file_id = id
 
 	# ----------------------- Взаимодействие с объектами структуры -------------------------
-		
 	def get_object(self, indexes: tuple, is_get_links = False) -> object:
 		"""
 		Ищет определённую позицию (работу или ресурс) или атрибут ссылок по координатам и возвращает объект
@@ -339,6 +341,7 @@ class BoQ_manager:
 			resource = work.resources[resource_index]
 			return resource.links if is_get_links else resource
 	
+
 	def calculate_pos_nums(self):
 		""" Создаёт порядковые номера для позиций """
 		if not self.sections:
@@ -359,7 +362,8 @@ class BoQ_manager:
 						resource: Resource
 						resource.num = pos_num
 				pos_num += 1
-	
+
+
 	def recalculate_resources_nums(self, work):
 		""" Пересчитывает порядковый номер ресурсов"""
 		work: Work
@@ -370,7 +374,8 @@ class BoQ_manager:
 				resource.num = f'{num}.{i}'
 		else:
 			self.calculate_pos_nums()
-	
+
+
 	def move_obj(self, 	direction: int, indexes: tuple) -> tuple:
 		"""
 		Передвигает объект в списке и возвращает кортеж новых индексов
@@ -399,7 +404,8 @@ class BoQ_manager:
 			if direct == -1 and element_index == 0:
 				return False	# Случай перемещения вверх последнего элемента игнорируется
 			return True
-		
+
+
 		def __move_element(collection: list, element_index: int, direct: int) -> int:
 			""" 
 			Перемещает в списке выбранный элемент
@@ -455,7 +461,8 @@ class BoQ_manager:
 			self.recalculate_resources_nums(work)
 			self.is_modified = True
 			return (index_section, index_work, new_resource_index)
-	
+
+
 	@property
 	def data_validation(self) -> dict[str, list]:
 		""" Проверяет структуру данных на соответствие схеме xml и готовность к экспорту"""
@@ -466,8 +473,8 @@ class BoQ_manager:
 		for section in self.sections:
 			section: Section
 			for work in section.works:
-				work: Work
-				if not work.quantity or work.quantity in ('#ОШИБКА', '#ПУСТО'):
+				value = convert_value(work.quantity)	# преобразуем в число для проверки != 0
+				if value in ('#ОШИБКА', '#ПУСТО') or (isinstance(value, str) or not value):
 					invalid_quantities.append(work.format_address)
 				if not work.status:
 					incorrect_positions.append(work.format_address)
@@ -476,8 +483,8 @@ class BoQ_manager:
 				if 'None' in work.planned_links:
 					error_link_positions.append(work.format_address)
 				for resource in work.resources:
-					resource: Resource
-					if not resource.quantity or resource.quantity in ('#ОШИБКА', '#ПУСТО'):
+					value = convert_value(resource.quantity)
+					if value in ('#ОШИБКА', '#ПУСТО') or (isinstance(value, str) or not value):
 						invalid_quantities.append(resource.format_address)
 					if not resource.status:
 						incorrect_positions.append(resource.format_address)
@@ -492,7 +499,8 @@ class BoQ_manager:
 			'nonlink_positions': nonlink_positions
 		}
 		return data
-	
+
+
 	def check_changes(self):
 		""" Проверяет изменение в позициях и сбрасывает статус "осметчено" """
 		is_changed = False
@@ -517,7 +525,6 @@ class BoQ_manager:
 		if is_changed:
 			self.is_modified = True
 
-
 	# ------------------------------- Зависимости ----------------------------------------
 	def __clean_init_dependencies(self):
 		""" Воссоздаёт зависимости между позициями. Применять только при пустых множествах """
@@ -529,6 +536,7 @@ class BoQ_manager:
 				for resource in work.resources:
 					resource: Resource
 					resource.add_self_to_dependents() 
+
 
 	def restore_dependencies(self):
 		""" Перестраивает взаимосвязи между позициями """
@@ -547,7 +555,6 @@ class BoQ_manager:
 		self.__clean_init_dependencies()
 
 	# --------------------------------- Адреса -------------------------------------------
-
 	def restore_addresses_in_collection(
 			self, 
 			collection: Section | Work | Resource  = None, 
@@ -577,10 +584,7 @@ class BoQ_manager:
 				section: Section
 				section.restore_addresses()
 	
-
-
 	# ------------------------------------- Создание -------------------------------------
-
 	def add_section(self, index: int | None = None) -> list[int, int, None]:
 		"""
 		Добавляет новый объект типа Section в конец списка или перед определённой разделом
@@ -626,6 +630,7 @@ class BoQ_manager:
 			self.calculate_pos_nums()
 			self.is_modified = True
 		return address
+
 
 	def add_resource(
 			self, 
@@ -686,7 +691,8 @@ class BoQ_manager:
 		else:
 			obj.links.insert(index, link)
 		return True
-	
+
+
 	def convert_work_to_resource(self, indexes: list) -> bool:
 		""" Преобразует указанную основную позицю в ресурс для работы выше """
 		if indexes[1] == 0:
@@ -882,6 +888,7 @@ class BoQ_manager:
 		self.restore_addresses_in_collection(section, new_address[1])
 		self.calculate_pos_nums()
 
+
 	def add_drilling_piles(self, data: dict, indexes: tuple):
 		""" 
 		Добавляет позиции устройства буронабивных свай для режима "drilling_piles"
@@ -952,6 +959,7 @@ class BoQ_manager:
 
 		self.add_filled_object(work)
 		self.is_modified = True
+
 
 	def add_user_lib_elements(self, data: dict, indexes: tuple):
 		"""
@@ -1043,13 +1051,12 @@ class BoQ_manager:
 			new_resource.raw_comment = f'=@{sub_element.alias_note2}'
 			work.dependents.add(new_resource)
 
-
 	# ------------------------------------ Удаление --------------------------------------
-
 	def clear_all(self):
 		self.sections.clear()
 		self.links = set()
-	
+
+
 	def clear_works(self, index) -> bool:
 		if not self.sections:
 			return False
@@ -1060,7 +1067,8 @@ class BoQ_manager:
 		section.prepare_to_works_remove()
 		section.works.clear()
 		return True
-	
+
+
 	def clear_resources(self, index_section, index_work) -> bool:
 		if not self.sections:
 			return False
@@ -1074,7 +1082,8 @@ class BoQ_manager:
 			resource.prepare_to_remove()
 		work.resources.clear()
 		return True
-	
+
+
 	def clear_links(self, indexes: tuple) -> bool:
 		"""
 		Удаляет все объекты-ссылки у указанной позиции
@@ -1248,6 +1257,7 @@ class BoQ_manager:
 		self.is_modified = True
 		return True
 
+
 	def _sort_archive(self):
 		"""
 		Сортирует элементы архива. Так как их ожидается не много, не должно быть ресурсоёмким
@@ -1269,7 +1279,6 @@ class BoQ_manager:
 					resource.address = [idxs, idxw, idxr]
 
 	# ---------------------------------- Буфер обмена -----------------------------------
-
 	def copy_obj(self, indexes: tuple, is_get_links = False) -> bool:
 		"""
 		копирует в буфер обмена проекта выбранные данные (только еденичный объект или его атрибут)
@@ -1281,6 +1290,7 @@ class BoQ_manager:
 			return False
 		self.project.clipboard = (copy.deepcopy(obj), indexes, type(obj))
 		return True
+
 
 	def cut_obj(self, indexes: tuple, is_get_links = False) -> bool:
 		"""
@@ -1346,7 +1356,8 @@ class BoQ_manager:
 		self.project.clipboard = (obj, old_address, type(obj))
 		self.is_modified = True
 		return True
-	
+
+
 	def paste_object(self, indexes: tuple, is_links = False) -> bool:
 		"""
 		Вставляет из буфера обмена проекта ранее скопированные (вырезанные) данные 
@@ -1445,8 +1456,6 @@ class BoQ_manager:
 		return False
 
 	# -------------------------------- Вспомогательное ------------------------------------
-
-
 	def _check_access_to_obj(self, indexes: tuple, in_archive = False) -> bool:
 		"""
 		Проверяет корректность обращения к объекту в основной коллекции или в архиве
@@ -1482,7 +1491,8 @@ class BoQ_manager:
 				return False
 		else:
 			return False
-	
+
+
 	def __reset_links_set(self):
 		""" Пересобирает множество с ссылками после массового удаления ссылок """
 		self.links.clear()

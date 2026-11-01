@@ -44,6 +44,7 @@ class ExportFormatDialog(QDialog):
 
 		layout.addWidget(QLabel("Выберите формат экспорта:"))
 
+		# --- Выбор формата ---
 		self.format_combobox = QComboBox()
 		self.format_combobox.addItems((
 			"XML",
@@ -51,8 +52,19 @@ class ExportFormatDialog(QDialog):
 			"PDF по форме 1",
 			"PDF по форме 2"
 		))
+		self.format_combobox.currentIndexChanged.connect(self._on_format_changed)
 		layout.addWidget(self.format_combobox)
 
+		# --- Режим иерархии без ресурсов ---
+		check_box_row = QHBoxLayout()
+		check_box_row.addWidget(QLabel('Отменить подчинение позиций: '))
+		self.without_resources_checkbox = QCheckBox()
+		self.without_resources_checkbox.setChecked(False)
+		check_box_row.addWidget(self.without_resources_checkbox)
+		layout.addLayout(check_box_row)
+
+
+		# --- Номер раздела ---
 		self.subsection_num = QSpinBox()
 		self.subsection_num.setMinimum(0)
 		self.subsection_num.setMaximumWidth(60)
@@ -61,27 +73,49 @@ class ExportFormatDialog(QDialog):
 		subsec_line = QHBoxLayout()
 		subsec_line.addWidget(QLabel('Номер подраздела СД: '))
 		subsec_line.addWidget(self.subsection_num)
-
 		layout.addLayout(subsec_line)
 
-		btn_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
-		btn_box.accepted.connect(self.accept)
-		btn_box.rejected.connect(self.reject)
+		# --- Кнопки ---
+		btn_box = create_ok_cancel_buttons(self, False, 'Экспортироваь')
 		layout.addWidget(btn_box)
 
 
-	def get_data(self):
-		"""Возвращает расширение файла: .xml или .gge"""
+	def _on_format_changed(self):
+		""" Обрабатывает выбор формата в комбобоксе """
+		index = self.format_combobox.currentIndex()
+		if index in (0, 1):	# XML | GGE
+			self.without_resources_checkbox.setEnabled(True)
+		else:	# PDF
+			self.without_resources_checkbox.setEnabled(False)
+			self.without_resources_checkbox.setChecked(False)
+
+
+	def get_data(self) -> dict:
+		""" Возвращает инструкцию для экспорта """
 		subsec = self.subsection_num.value()
-		match self.format_combobox.currentText():
-			case  'GGE':
-				return ('.gge', None, subsec)
-			case 'XML':
-				return ('.xml', None, subsec)
+		
+		instruction = {
+			'extension': '.gge',
+			'pdf_format': None,
+			'subsec': subsec,
+			'without_resources': self.without_resources_checkbox.isChecked()
+		}
+		
+		format = self.format_combobox.currentText()
+		match format:
+			case  'GGE' | 'XML':
+				if format == 'XML':
+					instruction['extension'] = '.xml'
+				return instruction
+
 			case 'PDF по форме 1':
-				return ('.pdf', 0, subsec)
+				instruction["pdf_format"] = 0
+			
 			case 'PDF по форме 2':
-				return ('.pdf', 1, subsec)
+				instruction["pdf_format"] = 1
+
+		instruction['extension'] = '.pdf'
+		return instruction
 
 
 
@@ -90,11 +124,11 @@ class BoQExportSummaryDialog(QDialog):
 
 	COLUMNS = (
 		"Наименование файла",
-		"Позиции осмечены",
-		"Значения валидны",
-		"Все ссылки корректны",
-		"Нет пустых ссылок",
-		"Экспортировать",
+		"Позиции\nосмечены",
+		"Значения\nвалидны",
+		"Все ссылки\nкорректны",
+		"Нет пустых\nссылок",
+		"Экспорт",
 	)
 
 	def __init__(
@@ -131,7 +165,8 @@ class BoQExportSummaryDialog(QDialog):
 		self.table.setColumnCount(len(self.COLUMNS))
 		self.table.setHorizontalHeaderLabels(self.COLUMNS)
 		self.table.setRowCount(len(candidates))
-		self.table.setSelectionMode(QAbstractItemView.SelectionMode.NoSelection)
+		self.table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+		self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
 		self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
 		self.table.verticalHeader().setVisible(False)
 
@@ -332,8 +367,11 @@ class ExportManager:
 		return dialog.get_data()
 
 
-	def _execute(self, export_list: list[tuple[File_BoQ, object]], form: tuple) -> None:
-		extension, form_type, subsec = form
+	def _execute(self, export_list: list[tuple[File_BoQ, object]], instruction: dict) -> None:
+		extension = instruction.get('extension', '.gge')
+		pdf_format = instruction.get('pdf_format')
+		subsec = instruction.get('subsec', 4)
+		without_resources = instruction.get('without_resources', False)
 
 		progress = QProgressDialog(
 			"Экспорт разделов...", "Отмена", 0, len(export_list), self.main_tab
@@ -355,9 +393,9 @@ class ExportManager:
 
 			try:
 				if extension in ('.gge', '.xml'):
-					convertor.create_xml_3p01(manager, extension, subsec)
+					convertor.create_xml_3p01(manager, extension, subsec, without_resources)
 				else:
-					convertor.export_to_pdf(manager, form_type, subsec)
+					convertor.export_to_pdf(manager, pdf_format, subsec)
 				success += 1
 			except Exception as e:
 				errors.append(f"{file_BoQ.path.name}: ошибка экспорта — {e}")

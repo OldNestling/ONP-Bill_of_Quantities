@@ -1230,18 +1230,24 @@ class BoQ_Tab(QWidget):
 			if reply != QMessageBox.StandardButton.Yes:
 				return
 		exp_dialog = ExportFormatDialog(self)
+		
 		if exp_dialog.exec() == QDialog.DialogCode.Accepted:
-			format, form, subsec = exp_dialog.get_data()
+			instruction = exp_dialog.get_data()
+			extension = instruction.get('extension', '.gge')
+			pdf_format = instruction.get('pdf_format')
+			subsec = instruction.get('subsec', 4)
+			without_resources = instruction.get('without_resources', False)
+			
 			try:
 				convertor = Convertor(manager.project)
-				if format in ('.xml', '.gge'):
-					convertor.create_xml_3p01(manager, format, subsection= subsec)
+				if extension in ('.xml', '.gge'):
+					convertor.create_xml_3p01(manager, extension, subsec, without_resources)
 					open_func = self.project.open_xml_folder
 				else:
-					convertor.export_to_pdf(manager, form, subsec)
+					convertor.export_to_pdf(manager, pdf_format, subsec)
 					open_func = self.project.open_pdf_folder
 				folder = {'.xml': 'XML', '.gge': 'XML', '.pdf': 'PDF'}	
-				QMessageBox.information(self, 'Экспорт', f'Файл экспортирован в папку {folder.get(format, '#ОШИБКА')}')
+				QMessageBox.information(self, 'Экспорт', f'Файл экспортирован в папку {folder.get(extension, '#ОШИБКА')}')
 				open_func()
 			except Exception as e:
 				QMessageBox.warning(self, 'Ошибка', f'Не удалость экспортировать файл:\n{e}')

@@ -35,6 +35,8 @@ from Core.Utilities import text_after, clearing_string, convert_value
 
 from Templates.About import PROGRAM_NAME, PROGRAM_VERSION
 
+
+
 class Convertor:
 
 	# Имя фиктивного файла для работ без ссылок
@@ -42,23 +44,36 @@ class Convertor:
 	DUMMY_PAGE_NUMBER = "1"
 	DUMMY_DESCRIPTION = "Нет ссылки"
 
+
 	def __init__(self, project):
 		self.project: Project = project
 		self.xml_dir = self.project.base_dir / 'XML'
 		self.UNITS_LIB: dict | None = None	# Словарь с еденицами измерения
+
 	
-	def create_xml_3p01(self, manager: BoQ_manager, file_extension = '.gge', subsection = 4) -> bool:
+	def create_xml_3p01(
+		self,
+		manager: BoQ_manager,
+		file_extension = '.gge',
+		subsection = 4,
+		without_resources = False
+	) -> bool:
 		""" Создаёт файл данных по XML-схеме 
 		### Args:
 			:manager: менеджер данных ВОР
 			:file_extension: расширение результирующего файла xml|gge. По сути не важно, но госключ примет только xml
 			:subsection: номер подраздела сметной документации
+			:without_resources: отключение иерархично структуры работа-ресурс
 		"""
 		project = self.project
 		if not project.library:
 			project.set_library()
 		manager.set_links_file_id()
 
+		# вручную отключаем нумерацию с подпунктами, если выбрана иерархия без ресурсов
+		if without_resources:
+			manager.position_mode = False
+			manager.calculate_pos_nums()
 
 		# 1. Создаём корневой элемент с пространством имён
 		root = ET.Element('Construction', {
@@ -134,6 +149,7 @@ class Convertor:
 			ET.SubElement(link_tag, 'PageNumber').text = pages
 			ET.SubElement(link_tag, 'PageDescription').text = str(link)
 
+
 		def __create_dummy_links(links_tag):
 			""" Создаёт ссылку-заглушку для соответствия схеме """
 			nonlocal is_dummy_links, files, all_files
@@ -150,6 +166,7 @@ class Convertor:
 			ET.SubElement(link_tag, 'FileID').text = str(all_files[0]['FileID'])
 			ET.SubElement(link_tag, 'PageNumber').text = str(self.DUMMY_PAGE_NUMBER)
 			ET.SubElement(link_tag, 'PageDescription').text = self.DUMMY_DESCRIPTION
+
 
 		def __create_position_element(element_tag: ET.Element, element: Work | Resource):
 			""" Заполняет XLM-элемент  данными основной или ресурсообразующей позиции """
@@ -181,25 +198,22 @@ class Convertor:
 			ET.SubElement(element_tag, 'Comment').text = element.comment
 
 		for i, section in enumerate(manager.sections, 1):
-			section: Section
 			section_tag = ET.SubElement(sections_tag, 'Section')
 			ET.SubElement(section_tag, 'Num').text = str(i)
 			ET.SubElement(section_tag, 'Name').text = section.raw_name
 
 			works_tag = ET.SubElement(section_tag, 'Works')
 			for work in section.works:
-				work: Work
-
 				work_tag = ET.SubElement(works_tag, 'Work')
 				__create_position_element(work_tag, work)
 
-				if work.resources:
-					resources_tag = ET.SubElement(work_tag, 'Resources')
-					for resource in work.resources:
-						resource: Resource
-
+				for resource in work.resources:
+					if without_resources:	# все ресурсы в одном уровне с работами
+						resource_tag = ET.SubElement(works_tag, 'Work')
+					else:
+						resources_tag = ET.SubElement(work_tag, 'Resources')
 						resource_tag = ET.SubElement(resources_tag, 'Resource')
-						__create_position_element(resource_tag, resource)
+					__create_position_element(resource_tag, resource)
 
 		tree = ET.ElementTree(root)
 		try:
@@ -228,7 +242,8 @@ class Convertor:
 		output = folder / filename
 		tree.write(output.with_suffix(file_extension), encoding='utf-8', xml_declaration=True)
 		return True
-	
+
+
 	def import_from_xml_3p01(self, xml_path: Path):
 		"""
 		Создаёт JSON по схеме проекта из XML-файла формата QuantityTakeoff-3_01.
@@ -263,6 +278,7 @@ class Convertor:
 				if label == unit:
 					return key
 			return unit
+
 
 		tree = ET.parse(xml_path)
 		root = tree.getroot()
@@ -367,6 +383,7 @@ class Convertor:
 		except Exception as e:
 			print(f'[DEBAG: import_from_xml_3p01] Ошибка импорта: {e}')
 
+
 	def import_from_excel(self, filepath: Path, sheet_names: list[str] = None) -> int:
 		"""
 		Импорт данных из Excel-файла ведомости (формат, аналогичный excel2xml.py).
@@ -390,6 +407,7 @@ class Convertor:
 					return title if title else "Раздел без названия"
 			return None
 
+
 		def parse_work_number(value):
 			"""Извлекает целочисленный номер работы из ячейки A."""
 			if value is None:
@@ -404,6 +422,7 @@ class Convertor:
 			except ValueError:
 				return None
 
+
 		def normalize_page_numbers(value):
 			"""Преобразует номера страниц в строку с пробелами, например '1 2 3'."""
 			if value is None:
@@ -413,6 +432,7 @@ class Convertor:
 			if numbers:
 				return ' '.join(str(int(num)) for num in numbers if int(num) > 0)
 			return None
+
 
 		def find_unit_key(unit_text):
 			"""Преобразует текстовую единицу измерения в ключ из словаря units."""
@@ -446,6 +466,7 @@ class Convertor:
 				if label == unit_text:
 					return key
 			return unit_text  # fallback
+
 
 		def clean_string(val):
 			"""Возвращает очищенную строку или пустую строку."""
@@ -650,7 +671,8 @@ class Convertor:
 
 		wb.close()
 		return processed
-	
+
+
 	def export_to_pdf(self, manager: BoQ_manager, mode = 0, subsection = 4) -> bool:
 		"""
 		Экспорт ведомости в PDF.
@@ -680,6 +702,7 @@ class BookmarkParagraph(Paragraph):
 		self.bookmark_title = bookmark_title
 		self.already_bookmarked = False
 
+
 	def draw(self):
 		# Добавляем закладку при первом рисовании
 		if not self.already_bookmarked:
@@ -695,6 +718,7 @@ class BookmarkParagraph(Paragraph):
 			)
 			self.already_bookmarked = True
 		super().draw()
+
 
 
 class PDFGenerator:
@@ -721,9 +745,11 @@ class PDFGenerator:
 		except:
 			self.font_name = 'Helvetica'
 
+
 	def mm_to_pts(self, mm_value: float) -> float:
 		"""Перевод миллиметров в пункты (1 мм = 2.83465 pt)."""
 		return mm_value * 2.83465
+
 
 	def _build_styles(self):
 		"""Создание стилей для документа."""
@@ -810,6 +836,7 @@ class PDFGenerator:
 			'section': section_style
 		}
 
+
 	def _prepare_table_data(self, styles):
 		"""
 		Подготовка данных для таблицы в виде списка строк.
@@ -857,6 +884,7 @@ class PDFGenerator:
 					table_data.append(resource_row)
 
 		return table_data, row_keep_together
+
 	
 	def _make_work_row(self, work: Work, styles):
 		"""Создает строку таблицы для работы."""
@@ -876,6 +904,7 @@ class PDFGenerator:
 		# Комментарий
 		comment = Paragraph(work.comment or "", styles['table_cell_left'])
 		return [num, name, unit, quantity, formula, link_para, comment]
+
 
 	def _make_resource_row(self, resource: Resource, styles):
 		"""Создает строку таблицы для ресурса с отступом в наименовании."""
@@ -960,6 +989,7 @@ class PDFGenerator:
 
 		return flowables
 
+
 	def _build_signatures_flowables(self, styles):
 		"""Создаёт flowables для подписей после таблицы."""
 		flowables = []
@@ -989,6 +1019,7 @@ class PDFGenerator:
 		flowables.append(Paragraph(transript, styles['italic']))
 
 		return flowables
+
 
 	def _build_compact_header_and_signatures(self, styles):
 		"""Альтернативное оформление шапки и подписей в виде единой таблицы."""
@@ -1045,12 +1076,14 @@ class PDFGenerator:
 		flowables.append(Spacer(1, 10*mm))
 		return flowables
 
+
 	def add_page_number(self, canvas, doc):
 		canvas.saveState()
 		page_num = canvas.getPageNumber()
 		canvas.setFont(self.font_name, 9)
 		canvas.drawRightString(doc.width + doc.leftMargin - 10, doc.bottomMargin - 5, f"Лист {page_num}")
 		canvas.restoreState()
+
 
 	def generate(self, output_path: Path):
 		"""Основной метод генерации PDF."""
@@ -1115,13 +1148,15 @@ class PDFGenerator:
 		doc.build(story, onFirstPage=self.add_page_number, onLaterPages=self.add_page_number)
 
 
+
 class ShemaError(Exception):
 	def __init__(self, filename, type = None, vers = None):
 		super().__init__()
 		self.filename = filename
 		self.type = type
 		self.version = vers
-	
+
+
 	def info(self):
 		if not self.type or not self.version:
 			return f'Файл {self.filename} не соответствует схеме'
