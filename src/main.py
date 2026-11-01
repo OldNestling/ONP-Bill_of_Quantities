@@ -27,16 +27,24 @@
 # Помимо этого, проект послужил процессу обучения программированию на Python для автора.
 # Проект находится в стадии активной разработки, код может требовать рефакторинга.
 
-import sys, traceback
+import sys, traceback, os
 
 from Templates.styles import get_css
 from UI.project_window import Project_Window
 from Core.Utilities import resource_path
 
-
 from PyQt6.QtWidgets import QApplication, QMessageBox
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QPalette, QColor, QIcon, QFont, QFontDatabase
+
+SYSTEM_PLATFORM = sys.platform
+
+# Исправляем ошибку	18:52:55.052, возникшую на linux: 
+# Settings schema 'org.gnome.settings-daemon.plugins.xsettings' 
+# does not contain a key named 'antialiasing'
+# [1]    10594 IOT instruction (core dumped)  python3.14 main.py
+if SYSTEM_PLATFORM.startswith('linux'):
+	os.environ["QT_QPA_PLATFORM"] = "xcb"
 
 # ---------- Глобальная ссылка на окно (для обработчика) ----------
 _main_window = None
@@ -55,6 +63,7 @@ def show_critical_error(error_msg):
 	msg.setDetailedText(error_msg)
 	msg.setStandardButtons(QMessageBox.StandardButton.Ok)
 	msg.exec()
+
 
 def global_exception_handler(exc_type, exc_value, exc_tb):
 	"""Обработчик для sys.excepthook."""
@@ -76,7 +85,6 @@ def global_exception_handler(exc_type, exc_value, exc_tb):
 # Устанавливаем глобальный перехватчик для исключений вне событий Qt
 sys.excepthook = global_exception_handler
 
-
 # ---------- Класс приложения для перехвата исключений в слотах ----------
 class CustomApplication(QApplication):
 	def notify(self, receiver, event):
@@ -88,12 +96,12 @@ class CustomApplication(QApplication):
 			global_exception_handler(exc_type, exc_value, exc_tb)
 			return False   # говорим Qt, что событие не обработано
 
+
 def main():
 	app = CustomApplication(sys.argv)
 
-	system_platform = sys.platform
 	# --- Загрузка встроенного шрифта ---
-	if system_platform.startswith('linux'):
+	if SYSTEM_PLATFORM.startswith('linux'):
 		font_path = resource_path('UI/resources/fonts/MPLUSRounded1c-Regular.ttf')
 		font_id = QFontDatabase.addApplicationFont(font_path)
 
@@ -114,7 +122,7 @@ def main():
 	app.setPalette(light_palette)	
 
 	
-	app.setStyleSheet(get_css(system_platform.startswith('linux')))
+	app.setStyleSheet(get_css(SYSTEM_PLATFORM.startswith('linux')))
 
 	icon = QIcon(resource_path(r'UI\resources\icons\icon_main.ico'))
 	app.setWindowIcon(icon)

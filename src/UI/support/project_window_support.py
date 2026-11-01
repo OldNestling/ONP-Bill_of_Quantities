@@ -651,7 +651,7 @@ class HelpDialog(QDialog):
 
 
 	def _build_qr_label(self) -> QLabel:
-		qr_path = Path(Icons.resource_path("UI/icons/donate_qr.jpg"))
+		qr_path = Path(Icons.resource_path("UI/resources/icons/donate_qr.jpg"))
 		pixmap = QPixmap(str(qr_path))
 		pixmap = pixmap.scaled(
 			200, 200,

@@ -19,9 +19,9 @@ from openpyxl import load_workbook
 
 from PyQt6.QtWidgets import (
 	QApplication, QWidget, QLabel, QPushButton, QFileDialog, QDialog, 
-	QDialogButtonBox, QVBoxLayout, QHBoxLayout, QGroupBox,
-	QMessageBox, QListWidget, QAbstractItemView, QTabWidget, QFrame, 
-	QProgressDialog, QInputDialog, QTextBrowser
+	QDialogButtonBox, QVBoxLayout, QHBoxLayout, QGroupBox, QMessageBox,
+	QListWidget, QAbstractItemView, QTabWidget, QFrame, QInputDialog,
+	QTextBrowser
 	)
 from PyQt6.QtCore import Qt, QSize, QTimer, QEvent, QUrl
 from PyQt6.QtGui import QColor, QDesktopServices

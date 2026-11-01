@@ -34,7 +34,7 @@ exe = EXE(
     upx=False,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=False,                            # на Linux не имеет эффекта, оставлено для совместимости
-    icon='src/UI/resources/icons/icon_main.ico',  # на Linux игнорируется
-    version='version_info.txt',               # только для Windows — на Linux не работает
+    console=False,                                  # на Linux не имеет эффекта, оставлено для совместимости
+    icon='src/UI/resources/icons/icon_main.ico',    # на Linux игнорируется
+    version='version_info.txt',                     # только для Windows — на Linux не работает
 )
