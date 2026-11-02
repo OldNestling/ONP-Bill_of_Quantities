@@ -17,6 +17,10 @@
 import json, copy, math
 from pathlib import Path
 
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+	from .Project import File_BoQ
+
 from Core.Documentation import Book
 from Core.Utilities import get_user_log, convert_value
 from Core.Soils import Soil
@@ -32,7 +36,7 @@ class BoQ_manager:
 	
 	#### Args:
 		- :project: единый объект с данными, настройками и библиотеками проекта
-		- :file: ссылка на открываемый файл
+		- :file: объект управления файлом
 	"""
 
 	def __init__(self, project = None, file = None, read_mode = False):
@@ -40,7 +44,7 @@ class BoQ_manager:
 		self.project = project		# единый объект с данными, настройками и библиотеками проекта
 		self.position_mode = self.project.work_modes['position_mode'] if project else False
 		self.read_mode = read_mode			# Режим чтения
-		self.file: Path = file				# Объект для доступа к файлу
+		self.file: File_BoQ = file				# Объект для доступа к файлу
 		self.is_modified = False			# Маркер изменения данных
 
 		# Атрибуты ведомости
@@ -146,28 +150,36 @@ class BoQ_manager:
 		if not self.is_modified and save_as is None: # Изменений не было -> сохранять не зачем
 			return False
 		
-		old_path = self.file        # запоминаем старый путь
-		save_path = self.file		# Пусть сохранения
+		old_path = self.file.path        # запоминаем старый путь
+		save_path = self.file.path		# Пусть сохранения
 
 		if self.read_mode and save_as is None:
 			return False			# Нельзя перезаписать файл в режиме чтения
+		
 		if save_as:
-			save_path =  self.file.parent / f'{save_as}.json'	# новый путь
-			self.file = save_path
+			self.unlock()	# удаляем lock-file для старого имени файла
+			save_path =  self.file.path.parent / f'{save_as}.json'	# новый путь
+			self.file.path = save_path
+
 		data = self.serialization()
 		data['data_scheme']=3
 		if not data:
-			if save_as: self.file = old_path # откатываем путь к файлу
+			if save_as:
+				self.file.path = old_path	# откатываем путь к файлу
+				self.file.lock()			# восстанавливаем блокировку
 			return False
 		try:
 			with open(save_path, "w", encoding="utf-8") as f:
 				json.dump(data, f, indent=4, ensure_ascii=False)
-				print(f'Файл {save_path.name} сохранён')
-				self.is_modified = False   # Сбрасываем флаг после успешного сохранения
-				return True
+				self.is_modified = False	# Сбрасываем флаг после успешного сохранения
+			self.file.lock()				# блокируем новый файл
+			return True
 		except Exception as e:
 			print(f'{"-"*40}\nПроизошла ошибка при сохранении:\n{e}')
-			if save_as: self.file = old_path # откатываем путь к файлу
+			if save_as:
+				self.unlock()	# удаляем lock-file для неудавшейся попытки
+				self.file = old_path # откатываем путь к файлу
+				self.file.lock()
 			return False
 			
 
@@ -270,10 +282,8 @@ class BoQ_manager:
 
 
 	def unlock(self):
-		"""	Удаляет файл блокировки	"""
-		username = get_user_log('get_name')
-		filename: Path = self.file.parent / f'{self.file.stem}__{username}.lock'
-		if filename.exists(): filename.unlink()
+		"""	Удаляет файл блокировки с помощью класса `File_BoQ` """
+		self.file.unlock()
 	
 	# --------------------------------- Работа с файлами -----------------------------------
 	def get_links_files(self) -> dict[str, dict]:

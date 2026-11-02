@@ -366,13 +366,13 @@ class Project:
 			if not init_lock:
 				# file.lock() сам по себе  вызывает FileNotFoundError, FileIsBusy
 				return
-			return BoQ_manager(self, file.path, False)
-		except IndexError:									# Передоётся в GUI для обновления списка
+			return BoQ_manager(self, file, False)
+		except IndexError:						# Передаётся в GUI для обновления списка
 			raise IndexError
 		except FileNotFoundError:						# Передоётся в GUI для сообщения
-			raise FileNotFoundError('Text')
+			raise FileNotFoundError('Файл отсутствует')
 		except FileIsBusy:
-			return BoQ_manager(self, file.path, True)		# Открытие в режиме чтения
+			return BoQ_manager(self, file, True)		# Открытие в режиме чтения
 
 
 	def open_BoQ_for_export(self, file_BoQ):
@@ -381,7 +381,7 @@ class Project:
 		Используется для экспорта.
 		"""
 		from Core.BoQ import BoQ_manager  # локальный импорт
-		manager = BoQ_manager(self, file_BoQ.path)
+		manager = BoQ_manager(self, file_BoQ)
 		return manager
 
 
@@ -657,12 +657,13 @@ class Project:
 
 		# библиотеки из менеджеров данных
 		managers = (self.soils_manager, self.sources_manager,
+		
 			self.libraries_manager, self.machinery_manager)
 
 		for i, key in enumerate(LIB_KEYS[4:]):
 			if __get_instruction(key) is False: #не долежит импорту
 				continue
-			manager = managers[i]
+			manager = managers[i].path
 			__import_lib_data(key, manager)
 		# -----//-----
 		
@@ -692,6 +693,14 @@ class File_BoQ:
 		self._exists = self.path.exists()
 		if self._exists:
 			self._load_metadata(locked_files)
+
+
+	def __str__(self):
+		return str(self.path)
+
+
+	def __fspath__(self):
+		return str(self.path)
 
 		
 	def _load_metadata(self, locked_files):

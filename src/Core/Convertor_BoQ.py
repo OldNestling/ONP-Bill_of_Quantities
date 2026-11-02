@@ -220,11 +220,11 @@ class Convertor:
 			ET.indent(tree, space='	')
 		except AttributeError:
 			pass
-		folder = manager.file.parent.parent / 'XML'
+		folder = manager.file.path.parent.parent / 'XML'
 		folder.mkdir(parents=True, exist_ok=True)
 
 		# получаем имя ориганльного файла без номеров в префиксе
-		shortname = manager.file.stem
+		shortname = manager.file.path.stem
 		if shortname:
 			filename_parts = shortname.split('_')
 			if filename_parts and not isinstance(convert_value(filename_parts[0]), str):
@@ -683,9 +683,12 @@ class Convertor:
 		"""
 		try:
 			generator = PDFGenerator(manager, self.project, mode)
-			folder = manager.file.parent.parent / 'PDF'
+			folder = manager.file.path.parent.parent / 'PDF'
 			folder.mkdir(parents=True, exist_ok=True)
-			filename = f'Раздел ПД №9 СМ подраздел ПД №{subsection} {manager.num if manager.num else manager.file.stem}'
+			filename = (
+				f'Раздел ПД №9 СМ подраздел ПД №{subsection} '
+				f'{manager.num if manager.num else manager.file.path.stem}'
+			)
 			output = folder / filename
 			generator.generate(output.with_suffix('.pdf'))
 			return True

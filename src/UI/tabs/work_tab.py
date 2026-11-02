@@ -358,12 +358,12 @@ class BoQ_Tab(QWidget):
 
 
 	def add_BoQ_subtab(self, file_manager: BoQ_manager):
-		file_path = str(file_manager.file.resolve())  # абсолютный путь для надёжности
+		file_path = str(file_manager.file.path.resolve())  # абсолютный путь для надёжности
 		if file_path in self.opened_files:
 			index = self.opened_files[file_path]
 			self.boq_views_container.setCurrentIndex(index)
 			return
-		tab_name = file_manager.file.stem
+		tab_name = file_manager.file.path.stem
 		view = BoQ_View(self, self.project, file_manager)
 		# Подключаем сигнал выбора ячейки
 		view.view.selectionModel().currentChanged.connect(self.on_boq_selection_changed)
@@ -391,10 +391,14 @@ class BoQ_Tab(QWidget):
 		# Проверяем, была ли эта вкладка активной
 		was_current = (self.boq_views_container.currentIndex() == index)
 		if widget.manager.is_modified:
+			text = (
+				f'Раздел "{widget.manager.file.path.stem}" был изменён.'
+				'Сохранить перед закрытием?'
+			)
 			reply = Requestion.ask(
 				self,
 				'Несохранённые изменения',
-				f'Раздел "{widget.manager.file.stem}" был изменён. Сохранить перед закрытием?',
+				text
 			)
 			if reply == QMessageBox.StandardButton.Cancel:
 				return
@@ -414,7 +418,7 @@ class BoQ_Tab(QWidget):
 			widget.manager.unlock()
 
 		# Удаляем из словаря
-		file_path = str(widget.manager.file.resolve())
+		file_path = str(widget.manager.file.path.resolve())
 		if file_path in self.opened_files:
 			del self.opened_files[file_path]
 
@@ -465,10 +469,14 @@ class BoQ_Tab(QWidget):
 			for i in range(self.boq_views_container.count()):
 				widget = self.boq_views_container.widget(i)
 				if isinstance(widget, BoQ_View) and widget.manager.is_modified:
+					text = (
+						f'Раздел "{widget.manager.file.path.stem}" был изменён.'
+						'Сохранить перед закрытием?',
+					)
 					reply = Requestion.ask(
 						parent_dialog,
 						'Несохранённые изменения',
-						f'Раздел "{widget.manager.file.stem}" был изменён. Сохранить перед закрытием?',
+						text
 					)
 					if reply == QMessageBox.StandardButton.Cancel:
 						return False  # отмена закрытия
@@ -493,7 +501,7 @@ class BoQ_Tab(QWidget):
 			if isinstance(widget, BoQ_View):
 				if not widget.manager.read_mode:
 					widget.manager.unlock()
-				file_path = str(widget.manager.file.resolve())
+				file_path = str(widget.manager.file.path.resolve())
 				if file_path in self.opened_files:
 					del self.opened_files[file_path]
 			self.boq_views_container.removeTab(i)
@@ -507,13 +515,13 @@ class BoQ_Tab(QWidget):
 			parent,
 			"Сохранить как",
 			"Введите имя нового файла (без расширения):",
-			text=manager.file.stem + "_копия"
+			text=manager.file.path.stem + "_копия"
 		)
 		if ok and new_name:
 			if not new_name.strip():
 				QMessageBox.warning(parent, "Ошибка", "Имя файла не может быть пустым.")
 				return False
-			new_path = manager.file.parent / f"{new_name}.json"
+			new_path = manager.file.path.parent / f"{new_name}.json"
 			if new_path.exists():
 				reply = Requestion.ask(
 					parent,
