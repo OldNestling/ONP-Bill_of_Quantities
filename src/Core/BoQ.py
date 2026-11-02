@@ -1188,10 +1188,15 @@ class BoQ_manager:
 
 		if not solution:
 			return False
+
+		# заранее удаляем ссылки из менеджера, чтобы они не остались висеть
+		obj: Section | PositionLine = self.get_object(indexes)
+		obj.remove_links_from_manager()	
+
+		# дальше работаем с копией, помещаемой в архив
+		obj = copy.deepcopy(obj)
 		
-		obj = copy.deepcopy(self.get_object(indexes))
-		
-		index_section, index_work, index_resource = indexes
+		index_section, index_work, _ = indexes
 
 		if isinstance(obj, Section):						# Раздел в архив
 			obj.make_static(f'Р{index_section+1}')
@@ -1262,6 +1267,7 @@ class BoQ_manager:
 				fictional_section.works.append(fictional_work)
 
 				self.archive.append(fictional_section)
+
 		self._sort_archive()
 		self.remove_obj(indexes)
 		self.is_modified = True

@@ -137,6 +137,7 @@ class Section:
 			work: Work
 			work.add_self_to_dependents()
 
+
 	def remove_works_from_dependents(self):
 		for work in self.works:
 			work: Work
@@ -149,8 +150,8 @@ class Section:
 		for work in self.works:
 			work: Work
 			work.remove_links_from_manager()
-			work.remove_resources_links_from_manager()
 	
+
 	def add_links_to_manager(self):
 		""" Добавляет все имеющиеся ссылки в позициях во множество в менеджере """
 		for work in self.works:
@@ -166,6 +167,7 @@ class Section:
 		for work in self.works:
 			work: Work
 			work.prepare_to_remove()
+
 	
 	def make_static(self, format_address):
 		""" Преобразует все позиции в статичные элементы для переноса их в архив """
