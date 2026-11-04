@@ -30,7 +30,7 @@ from Core.Project import Project, File_BoQ, FileIsBusy
 from Core.Convertor_BoQ import Convertor, ShemaError
 from Templates.About import PROGRAM_NAME
 
-from .ui_utilities import create_separator, Requestion, UpdateChecker
+from .ui_utilities import create_separator, Request, UpdateChecker
 from .tabs.settings_tab import SettingsTab 
 from .tabs.soils_tab import Soils_Tab 
 from .tabs.source_tab import Sources_Tab
@@ -172,7 +172,7 @@ class Project_Window(QWidget):
 		if hasattr(self, 'BoQs_tab') and self.BoQs_tab is not None:
 			if self.BoQs_tab.boq_views_container.count() > 0:
 				if self.BoQs_tab.has_unsaved_changes():
-					reply = Requestion.ask(
+					reply = Request.ask(
 						self,
 						'Несохранённые изменения',
 						'В открытых разделах есть несохранённые изменения. Сохранить перед выходом?',
@@ -231,7 +231,7 @@ class Project_Window(QWidget):
 		if hasattr(self, 'BoQs_tab') and self.BoQs_tab is not None:
 			if self.BoQs_tab.boq_views_container.count() > 0:
 				if self.BoQs_tab.has_unsaved_changes():
-					reply = Requestion.ask(
+					reply = Request.ask(
 						self,
 						"Несохранённые изменения",
 						"В открытых разделах есть несохранённые изменения. Сохранить перед выходом?"
@@ -424,7 +424,7 @@ class Project_Window(QWidget):
 			print('... нет обновлений')
 			return
 
-		reply = Requestion.ask(
+		reply = Request.ask(
 			self,
 			'Доступно обновление',
 			f'Доступна новая версия программы: <b>{tag}</b><br><br>'\
@@ -802,7 +802,7 @@ class MainProjectTab(QWidget):
 	def delete_selected_BoQ(self):
 		access, file_BoQ = self.preliminary_BoQ_check('Удаление раздела')
 		if access:
-			reply = Requestion.ask(
+			reply = Request.ask(
 				self,
 				'Подтверждение удаления',
 				f'Вы действительно хотите удалить раздел «{file_BoQ.path.name}»?'
@@ -894,7 +894,7 @@ class MainProjectTab(QWidget):
 		file_BoQ: File_BoQ = self.project_BoQs_table.files[current_row]
 		info1 = 'Это может привести к взаимной перезаписи файлов разными пользователями.'
 		info2 = 'Используйте эту функцию только если уверены, что никто другой с этим файлом не работает'
-		reply = Requestion.ask(
+		reply = Request.ask(
 			self,
 			'Разблокировка',
 			f'Вы уверены, что  хотите снять блокировку для «{file_BoQ.path.name}»?\n{info1}\n{info2}'

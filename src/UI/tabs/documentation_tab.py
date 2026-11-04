@@ -26,7 +26,7 @@ from PyQt6.QtGui import (
 )
 from Core.Documentation import DOCs_Manager, Document, Book
 from ..ui_utilities import (
-	WordWrapDelegate, IntDelegate, create_ok_cancel_buttons, Requestion, create_separator
+	WordWrapDelegate, IntDelegate, create_ok_cancel_buttons, Request, create_separator
 )
 from ..resources.icons import Icons
 from ..support.treeview import SmoothTreeView
@@ -307,7 +307,7 @@ class Documentation_Tab(QWidget):
 		docs = [t for t in items_to_delete if t[1] == 'doc']
 
 		if books:
-			reply = Requestion.ask(
+			reply = Request.ask(
 				self,
 				'Удаление томов',
 				f'Вы действительно хотите удалить {len(books)} том(ов)?\n'
@@ -318,7 +318,7 @@ class Documentation_Tab(QWidget):
 			if reply != QMessageBox.StandardButton.Yes:
 				return
 		if docs and not books:
-			reply = Requestion.ask(
+			reply = Request.ask(
 				self,
 				'Удаление документов',
 				f'ы действительно хотите удалить {len(docs)} документ(ов)?\n'
@@ -437,7 +437,7 @@ class Documentation_Tab(QWidget):
 		if not index.isValid():
 			QMessageBox.warning(self, "Сброс тегов", "Выберите том, в который хотите сбросить теги.")
 			return
-		reply = Requestion.ask(
+		reply = Request.ask(
 			self,
 			'Сброс тегов',
 			'Вы действительно хотите сбросить все теги в томе?\n'

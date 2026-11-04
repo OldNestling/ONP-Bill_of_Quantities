@@ -16,7 +16,8 @@
 
 from PyQt6.QtWidgets import (
 	QWidget, QLabel, QPushButton, QDialog, QVBoxLayout, QToolBar, QMessageBox,
-	QMenu, QSplitter, QTabWidget, QWidgetAction, QGridLayout, QColorDialog, QToolButton
+	QMenu, QSplitter, QTabWidget, QWidgetAction, QGridLayout, QColorDialog,
+	QToolButton, QInputDialog
 	)
 from PyQt6.QtGui import QAction, QColor, QCursor
 from PyQt6.QtCore import Qt, QSize, QModelIndex
@@ -29,7 +30,7 @@ from ..support.work_tab_support import DataEditorWidget, SearchBar
 from ..support.work_tab_sidebar import SideBar_Right
 from ..support.work_tab_view import BoQ_View
 from ..support.work_tab_lib_actions import Earth_Work_Dialog, User_Libs_Dialog
-from ..ui_utilities import create_ok_cancel_buttons, Requestion
+from ..ui_utilities import create_ok_cancel_buttons, Request
 from ..support.export_dialog import ExportFormatDialog
 
 
@@ -244,12 +245,12 @@ class BoQ_Tab(QWidget):
 		toolbar.addSeparator()		  # ---
 
 		# --- Группа "Вид" ---
-		expande_all_action = QAction(Icons.expande, 'Развернуть всё', self)
-		expande_all_action.setShortcut('Ctrl+Alt+H')
-		expande_all_action.setToolTip(f"Развернуть всё ({expande_all_action.shortcut().toString()})")
-		expande_all_action.triggered.connect(lambda: self.switch_collapse_expand(True))
+		expand_all_action = QAction(Icons.expand, 'Развернуть всё', self)
+		expand_all_action.setShortcut('Ctrl+Alt+H')
+		expand_all_action.setToolTip(f"Развернуть всё ({expand_all_action.shortcut().toString()})")
+		expand_all_action.triggered.connect(lambda: self.switch_collapse_expand(True))
 
-		toolbar.addAction(expande_all_action)
+		toolbar.addAction(expand_all_action)
 		compress_action = QAction(Icons.compress, 'Свернуть всё', self)
 		compress_action.setShortcut('Ctrl+H')
 		compress_action.setToolTip(f"Свернуть всё ({compress_action.shortcut().toString()})")
@@ -395,7 +396,7 @@ class BoQ_Tab(QWidget):
 				f'Раздел "{widget.manager.file.path.stem}" был изменён.'
 				'Сохранить перед закрытием?'
 			)
-			reply = Requestion.ask(
+			reply = Request.ask(
 				self,
 				'Несохранённые изменения',
 				text
@@ -473,7 +474,7 @@ class BoQ_Tab(QWidget):
 						f'Раздел "{widget.manager.file.path.stem}" был изменён.'
 						'Сохранить перед закрытием?',
 					)
-					reply = Requestion.ask(
+					reply = Request.ask(
 						parent_dialog,
 						'Несохранённые изменения',
 						text
@@ -508,9 +509,24 @@ class BoQ_Tab(QWidget):
 		self.opened_files.clear()
 
 
+	def _update_tab_after_save_as(self, manager: BoQ_manager, old_path: str):
+		"""Обновляет название вкладки и словарь opened_files после 'Сохранить как'."""
+		new_path = str(manager.file.path.resolve())
+		for i in range(self.boq_views_container.count()):
+			widget = self.boq_views_container.widget(i)
+			if isinstance(widget, BoQ_View) and widget.manager is manager:
+				# Обновляем подпись вкладки
+				self.boq_views_container.setTabText(i, manager.file.path.stem)
+				# Перевешиваем ключ в opened_files на актуальный путь
+				if old_path != new_path:
+					self.opened_files.pop(old_path, None)
+					self.opened_files[new_path] = i
+				break
+			
+
 	def _save_as_dialog(self, manager: BoQ_manager, parent) -> bool:
 		"""Диалог сохранения для read_mode файла."""
-		from PyQt6.QtWidgets import QInputDialog
+		old_path = str(manager.file.path.resolve())
 		new_name, ok = QInputDialog.getText(
 			parent,
 			"Сохранить как",
@@ -523,7 +539,7 @@ class BoQ_Tab(QWidget):
 				return False
 			new_path = manager.file.path.parent / f"{new_name}.json"
 			if new_path.exists():
-				reply = Requestion.ask(
+				reply = Request.ask(
 					parent,
 					'Файл существует',
 					f'Файл {new_name}.json уже существует. Перезаписать?',
@@ -531,6 +547,8 @@ class BoQ_Tab(QWidget):
 				if reply != QMessageBox.StandardButton.Yes:
 					return False
 			manager.save_file(save_as=new_name)
+			# Синхронизируем UI-состояние вкладки с новым путём
+			self._update_tab_after_save_as(manager, old_path)
 			return True
 		return False
 
@@ -991,7 +1009,7 @@ class BoQ_Tab(QWidget):
 		# Проверяем, что выделена ровно одна позиция (не несколько ячеек)
 		selection = view.view.selectionModel()
 		if selection and len(selection.selectedIndexes()) > 1:
-			reply = Requestion.ask(
+			reply = Request.ask(
 				self,
 				'Несколько позиций',
 				'Выделено несколько ячеек. Перенести в архив можно только одну позицию.\n'
@@ -1229,7 +1247,7 @@ class BoQ_Tab(QWidget):
 				problems.append('Есть позиции с пустыми ссылкамию. Будет создана заглушка')
 			if error_link_positions:
 				problems.append('Некоторые ссылки не корректы. Результат может привести к ошибке')
-			reply = Requestion.ask(
+			reply = Request.ask(
 				self,
 				'Предупреждение',
 				f'В ведомости есть следующие проблемы:\n{"\n".join(problems)}\nПродолжить?',

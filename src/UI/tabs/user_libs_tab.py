@@ -27,7 +27,7 @@ from PyQt6.QtGui import (
 
 from Core.UserLibs import Library, Group, MainElement, SubElement
 from Core.Project import Project
-from ..ui_utilities import create_separator, Requestion
+from ..ui_utilities import create_separator, Request
 from ..resources.icons import Icons
 from ..support.treeview import SmoothTreeView
 
@@ -436,7 +436,7 @@ class User_Libs_Tab(QWidget):
 			print(f'[DEBUG: not lib]')
 			return
 		
-		reply = Requestion.ask(
+		reply = Request.ask(
 			self,
 			'Удаление библиотеки',
 			f'Вы уверены, что хотите удалить библиотеку "{lib.name}"?',
@@ -525,7 +525,7 @@ class User_Libs_Tab(QWidget):
 			lib = self.lib_selector.currentData()
 			if not lib:
 				return
-			reply = Requestion.ask(
+			reply = Request.ask(
 				self,
 				'Удаление элемента',
 				'Вы уверены, что хотите удалить выбранный элемент?',

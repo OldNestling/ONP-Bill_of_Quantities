@@ -24,7 +24,7 @@ from PyQt6.QtGui import QColor
 from Core.Soils import Soil, Gesn1, Gesn4, Gesn5, Soils_Manager
 from Core.Utilities import text_after, text_before, convert_value
 from ..ui_utilities import (
-	TableWithNotes, create_ok_cancel_buttons, Switch, Requestion, create_separator
+	TableWithNotes, create_ok_cancel_buttons, Switch, Request, create_separator
 )
 from ..resources.icons import Icons
 
@@ -740,7 +740,7 @@ class ProjectSoilsWidget(QWidget):
 	def remove_soil(self):
 		""" Удаляет выбранный ИГЭ """
 		soil_num = self.preliminary_soil_check('Удаление ИГЭ')
-		reply = Requestion.ask(
+		reply = Request.ask(
 			self,
 			'Подтверждение удаления ИГЭ',
 			f'Вы действительно хотите удалить {soil_num}?',
@@ -930,7 +930,7 @@ class Gesn1Widget(QWidget):
 
 
 	def saving_change(self):
-		reply = Requestion.ask(
+		reply = Request.ask(
 			self,
 			'Подтверждение изменений',
 			'Вы действительно хотите применить изменения к данным по ГЭСН 1?',
@@ -1252,7 +1252,7 @@ class Gesn5Widget(QWidget):
 
 
 	def saving_change(self):
-		reply = Requestion.ask(
+		reply = Request.ask(
 			self,
 			'Подтверждение изменений',
 			'Вы действительно хотите применить изменения к данным по ГЭСН 5?',

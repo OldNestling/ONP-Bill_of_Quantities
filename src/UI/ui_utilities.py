@@ -460,10 +460,10 @@ class IntDelegate(QStyledItemDelegate):
 
 
 
-class Requestion(QMessageBox):
+class Request(QMessageBox):
 	"""
 	Класс для отображения вопросов с кнопками на русском языке.
-	Наследует QMessageBox и предоставляет готовые кнопки Да, Нет, Отмена.
+	Наследует QMessageBox и предоставляет готовые кнопки Да, Нет, Отмена.Requisition
 	"""
 
 	def __init__(
@@ -521,7 +521,7 @@ class Requestion(QMessageBox):
 		Статический метод для быстрого вызова диалога.
 		Возвращает значение QMessageBox.StandardButton (Yes, No или Cancel).
 		"""
-		box = Requestion(parent, title, text, yes_text, no_text, cancel_text, with_cancel)
+		box = Request(parent, title, text, yes_text, no_text, cancel_text, with_cancel)
 		return box.exec()  # exec() возвращает нажатую стандартную кнопку
 	
 
