@@ -65,7 +65,7 @@ class Project_Info_Edit_Dialog(QDialog):
 		edit_layout.addWidget(self.construction_site_edit_line)
 
 		self.shorted_name_linde_edit = QLineEdit(shorted_name)
-		self.shorted_name_linde_edit.setPlaceholderText('Отображается в названнии окна')
+		self.shorted_name_linde_edit.setPlaceholderText('Отображается в названии окна')
 		edit_layout.addWidget(QLabel('Короткое наименование:'))
 		edit_layout.addWidget(self.shorted_name_linde_edit or '')
 
@@ -442,7 +442,7 @@ class BoQ_Dialog(QDialog):
 			edit_layout.setStretchFactor(left_container, 1)
 			edit_layout.setStretchFactor(right_container, 2)
 
-	# ------------------------- Методы обновления наименовния -------------------------
+	# ------------------------- Методы обновления наименования -------------------------
 	def _clear_prohibited_symbols_from_filename(self) -> str | None:
 		""" Стирает символы, недопустимые в имени файла """
 		PROHIBITED_SYMBOLS = {'/','\\', '*', '?', '"', '<', '>', '|'}
@@ -560,8 +560,8 @@ class HelpDialog(QDialog):
 		main_layout.addStretch()
 
 		# Центрируем диалог относительно главного окна
-		self.setMinimumWidth(500)
-		self.setMinimumHeight(550)
+		self.setMinimumWidth(650)
+		self.setMinimumHeight(750)
 		self.adjustSize()
 
 	# -------------------------------- Группа "О программе" -----------------------------
@@ -610,7 +610,7 @@ class HelpDialog(QDialog):
 
 		thanks_label = QLabel(
 			"<i>Программа создана за спасибо.<br>"
-			"Более весомая благодарность стимулирет разработчика "
+			"Более весомая благодарность стимулирует разработчика "
 			"поддерживать продукт :)</i>"
 		)
 		thanks_label.setWordWrap(True)
@@ -640,10 +640,13 @@ class HelpDialog(QDialog):
 			f'<b>Связь с разработчиком: </b>'
 			f'<a href="mailto:oldnestling@yandex.ru" style="color: #3B82F6; '
 			f'text-decoration: none;">oldnestling@yandex.ru</a>'
-			f'<br><b>Счёт для благодарности: </b>'
+			f'<br><b>Telegram-канал: </b>'
+			f'<a href="https://t.me/old_nestling_projects" style="color: #3B82F6; '
+			f'text-decoration: none;">Old Nestling\'s Projects</a>'
+			f'<br><b>Номер карты для благодарности: </b>'
 			f'<a href="https://www.tinkoff.ru/rm/r_aOqwUwfbRm.lZNlrKjSLm/oMI8k46003" '
 			f'style="color: #3B82F6; text-decoration: none;">'
-			f'4081 7810 6000 9641 9718</a>'
+			f'2200 7004 2212 0336</a>'
 		)
 		label.setOpenExternalLinks(True)
 		label.setWordWrap(True)
@@ -651,7 +654,7 @@ class HelpDialog(QDialog):
 
 
 	def _build_qr_label(self) -> QLabel:
-		qr_path = Path(Icons.resource_path("UI/resources/icons/donate_qr.jpg"))
+		qr_path = Path(Icons.resource_path("UI/resources/donate_qr.png"))
 		pixmap = QPixmap(str(qr_path))
 		pixmap = pixmap.scaled(
 			200, 200,

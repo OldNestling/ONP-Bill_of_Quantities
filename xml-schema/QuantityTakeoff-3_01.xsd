@@ -1,0 +1,475 @@
+<?xml version="1.0" encoding="UTF-8"?><xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" attributeFormDefault="unqualified"
+  elementFormDefault="qualified" version="3.01" vc:minVersion="1.1"
+  xmlns:vc="http://www.w3.org/2007/XMLSchema-versioning">
+
+  <xs:simpleType name="TAccessLevel">
+    <xs:annotation>
+      <xs:documentation><text>Классификация информации по грифу ограничения доступа.</text></xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="общедоступная информация"/>
+      <xs:enumeration value="для служебного пользования"/>
+      <xs:enumeration value="коммерческая тайна"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:complexType name="TFileFormat">
+    <xs:annotation>
+      <xs:documentation><text>Комплексный тип для описания типа и версии передаваемого файла.</text></xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="Type">
+        <xs:annotation>
+          <xs:documentation><text>Тип передаваемого файла.</text></xs:documentation>
+        </xs:annotation>
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:enumeration value="Ведомость объемов работ"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+      <xs:element name="Version" default="3.01">
+        <xs:annotation>
+          <xs:documentation>Номер версии схемы.</xs:documentation>
+        </xs:annotation>
+        <xs:simpleType>
+          <xs:restriction base="xs:decimal">
+            <xs:fractionDigits value="2"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:simpleType name="TGuid">
+    <xs:annotation>
+      <xs:documentation>Глобальный уникальный идентификатор файла.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:pattern value="\{[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}\}"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:complexType name="TMeta">
+    <xs:annotation>
+      <xs:documentation><text>Информация о программном комплексе и версии формата.</text></xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="Soft">
+        <xs:annotation>
+          <xs:documentation>Наименование программного продукта.</xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="Name" type="xs:string">
+              <xs:annotation>
+                <xs:documentation>Наименование программного комплекса.</xs:documentation>
+              </xs:annotation>
+            </xs:element>
+            <xs:element name="Version" type="xs:string">
+              <xs:annotation>
+                <xs:documentation>Версия программного комплекса.</xs:documentation>
+              </xs:annotation>
+            </xs:element>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="File" type="TFileFormat">
+        <xs:annotation>
+          <xs:documentation>Тип и версия передаваемого файла.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="TFile">
+    <xs:annotation>
+      <xs:documentation>Описание для файлов обоснований.</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="ID" type="xs:positiveInteger" minOccurs="1">
+        <xs:annotation>
+          <xs:documentation>Уникальный идентификатор файла для ссылок (id).</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="FileName" type="xs:string" minOccurs="1">
+        <xs:annotation>
+          <xs:documentation><text>Название файла (только название с расширением).</text></xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="TLink">
+    <xs:annotation>
+      <xs:documentation>Описание связи позиции с обосновывающими документами.</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="FileID" type="xs:positiveInteger" minOccurs="1">
+        <xs:annotation>
+          <xs:documentation><text>Уникальный идентификатор файла.</text> </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:choice minOccurs="1" maxOccurs="1">
+        <xs:sequence>
+          <xs:element name="PageNumber" minOccurs="1">
+            <xs:annotation>
+              <xs:documentation>Номера страниц обосновывающего документа, разделенных пробелом.</xs:documentation>
+            </xs:annotation>
+            <xs:simpleType>
+              <xs:list itemType="xs:positiveInteger"/>
+            </xs:simpleType>
+          </xs:element>
+          <xs:element minOccurs="1" name="PageDescription" type="xs:string">
+            <xs:annotation>
+              <xs:documentation>Текст ссылки на элементы проекта (модели), название элементов (графа 6).</xs:documentation>
+            </xs:annotation>
+          </xs:element>
+        </xs:sequence>
+        <xs:choice>
+
+
+          <xs:sequence>
+            <xs:element name="ifcGuid">
+              <xs:annotation>
+                <xs:documentation>Список уникальных ifc идентификаторов элементов в файле, разделенных пробелом. Заполняется, если файл на проверку пришёл в формате ifc. Ссылки на объекты делаются через ifc гуиды.</xs:documentation>
+              </xs:annotation>
+              <xs:simpleType>
+                <xs:list itemType="xs:string"/>
+              </xs:simpleType>
+            </xs:element>
+            <xs:element minOccurs="1" name="ifcDescription" type="xs:string">
+              <xs:annotation>
+                <xs:documentation>Текст ссылки на элементы проекта (модели), название элементов (графа 6).</xs:documentation>
+              </xs:annotation>
+            </xs:element>
+          </xs:sequence>
+          <xs:sequence maxOccurs="unbounded">
+            <xs:sequence>
+              <xs:element name="propertyName" type="xs:string">
+                <xs:annotation>
+                  <xs:documentation>Название свойства элемента в ifc файле. Заполняется если файл на проверку пришёл в формате ifc и ссылки на объект делаются через свойства ifc объектов.</xs:documentation>
+                </xs:annotation>
+              </xs:element>
+              <xs:element minOccurs="1" name="propertyDescription" type="xs:string">
+                <xs:annotation>
+                  <xs:documentation>Текст ссылки на элементы проекта (модели), название элементов (графа 6).</xs:documentation>
+                </xs:annotation>
+              </xs:element>
+            </xs:sequence>
+            <xs:element name="propertyValue" type="xs:string">
+              <xs:annotation>
+                <xs:documentation>Значение свойства propertyName элемента в ifc файле. Заполняется если файл на проверку пришёл в формате ifc и ссылки на объект делаются через свойства ifc объектов.</xs:documentation>
+              </xs:annotation>
+            </xs:element>
+          </xs:sequence>
+        </xs:choice>
+      </xs:choice>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="TDate">
+    <xs:annotation>
+      <xs:documentation>Дата составления документа.</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="Year" type="xs:unsignedShort">
+        <xs:annotation>
+          <xs:documentation>Год.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="Month" type="xs:unsignedShort">
+        <xs:annotation>
+          <xs:documentation>Месяц.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="Day" type="xs:unsignedShort">
+        <xs:annotation>
+          <xs:documentation>День.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="TSection">
+    <xs:annotation>
+      <xs:documentation>Раздел ведомости объемов работ (ВОР).</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="FreeString" maxOccurs="1" type="xs:string" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>Строка, содержащая справочную информацию в свободной форме.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="Num" type="xs:positiveInteger" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation><text>Номер раздела.</text> </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="Name" type="xs:string" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation><text>Название раздела.</text></xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="Works" minOccurs="1">
+        <xs:annotation>
+          <xs:documentation>Строки таблицы.</xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+          <xs:choice maxOccurs="unbounded">
+
+
+            <xs:element maxOccurs="unbounded" minOccurs="1" name="Work" type="TWork">
+              <xs:annotation>
+                <xs:documentation>Строка таблицы.</xs:documentation>
+              </xs:annotation>
+            </xs:element>
+          </xs:choice>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+
+  </xs:complexType>
+
+  <xs:complexType name="TSignatures">
+    <xs:annotation>
+      <xs:documentation><text>Комплексный тип для передачи данных об ответственных лицах.</text>
+</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="Name" type="xs:string">
+        <xs:annotation>
+          <xs:documentation><text>ФИО.</text>
+</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="Position" minOccurs="1" type="xs:string">
+        <xs:annotation>
+          <xs:documentation><text>Должность.</text>
+</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+
+
+
+  <xs:complexType name="TItem">
+    <xs:annotation>
+      <xs:documentation><text>Комплексный тип для позиции (строки) ведомости объемов работ (ВОР).</text>
+   </xs:documentation>
+    </xs:annotation>
+
+    <xs:sequence>
+      <xs:element name="FreeString" maxOccurs="unbounded" type="xs:string" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>Строка, содержащая справочную информацию в свободной форме.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="Num" type="xs:positiveInteger" minOccurs="1" maxOccurs="1">
+        <xs:annotation>
+          <xs:documentation>Порядковый номер позиции.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+
+      <xs:element name="Type" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>Тип позиции: материал, оборудование, работа, машина, перевозка грузов, прочее.</xs:documentation>
+        </xs:annotation>
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:enumeration value="материал"/>
+            <xs:enumeration value="оборудование"/>
+            <xs:enumeration value="работа"/>
+            <xs:enumeration value="машина"/>
+            <xs:enumeration value="перевозка"/>
+            <xs:enumeration value="прочее"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+      <xs:element name="Name" type="xs:string" minOccurs="1" maxOccurs="1">
+        <xs:annotation>
+          <xs:documentation>Наименование  работ (затрат, ресурсов).
+Указывается вид работ или вид расходуемого материала, предусмотренный проектными решениями (например, производство земляных работ, забивка свай и др.). </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="Unit" type="xs:string" maxOccurs="1" minOccurs="1">
+        <xs:annotation>
+          <xs:documentation>Единица измерения для позиции.
+Указывается сокращенное наименование единицы измерения, принятой B соответствии с Общероссийским классификатором единиц измерения ОК 015-94 (MK 002-97) (1 м2, 1 M, 1 шт, 1 T, 1 кг, месяцы, машино/час и др.). </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="Quantity" type="xs:decimal">
+        <xs:annotation>
+          <xs:documentation>Объем работ.
+Указывается объем работ или объем расходуемого материала, предусмотренный проектными решениями.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="QuantityFormula" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>Формула расчета объемов работ и расхода строительных ресурсов (материалов).</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="Links" minOccurs="1">
+        <xs:annotation>
+          <xs:documentation>Ссылки на чертежи, спецификации в проектной документации (файлы со справочными материалами, чертежами или ЦИМ).</xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="Link" maxOccurs="unbounded" minOccurs="1" type="TLink"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="Comment" type="xs:string" maxOccurs="1" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>Дополнительная информация.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+
+
+
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="TWork">
+    <xs:annotation>
+      <xs:documentation>Комплексный тип для строки работ в ведомости объемов работ (ВОР).</xs:documentation>
+    </xs:annotation>
+    <xs:complexContent>
+      <xs:extension base="TItem">
+        <xs:sequence minOccurs="0">
+          <xs:element name="Resources" minOccurs="0">
+            <xs:annotation>
+              <xs:documentation>Ценообразующие ресурсы, соответствующие позиции работы.</xs:documentation>
+            </xs:annotation>
+            <xs:complexType>
+              <xs:sequence minOccurs="0">
+                <xs:element name="Resource" maxOccurs="unbounded" minOccurs="0" type="TItem">
+                  <xs:annotation>
+                    <xs:documentation>Ценообразующий ресурс, соответствующий позиции работы.</xs:documentation>
+                  </xs:annotation>
+                </xs:element>
+              </xs:sequence>
+            </xs:complexType>
+          </xs:element>
+        </xs:sequence>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+
+  <xs:element name="Construction">
+    <xs:annotation>
+      <xs:documentation>Ведомость объемов работ для последующего определения стоимости строительства объекта капитального строительства (реконструкции, капитального ремонта) в составе стройки. Элемент обязан содержать атрибуты, указывающие на применяемый xsd-шаблон описания сметы:
+xmlns:xsi = "http://www.w3.org/2001/XMLSchema-instance";
+xsi:noNamespaceSchemaLocation = "QuantityTakeoff-3_01.xsd".
+Электронные документы, представляемые для проведения государственной экспертизы проектной документации и (или) результатов инженерных изысканий и проверки достоверности определения сметной стоимости строительства, реконструкции, капитального ремонта, должны иметь расширение файла .gge.</xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="Meta" type="TMeta">
+          <xs:annotation>
+            <xs:documentation>Информация о программном продукте и версии формата.</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element minOccurs="0" name="AccessLevel" type="TAccessLevel">
+          <xs:annotation>
+            <xs:documentation>Информация о уровне доступа. Возможные варианты заполнения - "общедоступная информация", "для служебного пользования" или "коммерческая тайна".</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+
+        <xs:element name="ConstructionSite" type="xs:string">
+          <xs:annotation>
+            <xs:documentation>Наименование стройки, к которой относится объект капитального строительства (реконструкции, капитального ремонта).</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+
+
+        <xs:element name="ObjectName" type="xs:string">
+          <xs:annotation>
+            <xs:documentation>Наименование объекта строительства.</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element name="Num" type="xs:string" minOccurs="0">
+          <xs:annotation>
+            <xs:documentation>Номер ведомости объемов работ.
+Номер документа должен совпадать с номером комплекта чертежей.  </xs:documentation>
+          </xs:annotation>
+        </xs:element>
+
+
+        <xs:element name="Reason" type="xs:string">
+          <xs:annotation>
+            <xs:documentation>Основание - наименование раздела (подраздела) проектной документации.</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+
+
+
+        <xs:element name="Date" type="TDate" minOccurs="1">
+          <xs:annotation>
+            <xs:documentation>Дата составления документов.</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+
+        <xs:element name="ExportDateTime" type="xs:dateTime" minOccurs="1">
+          <xs:annotation>
+            <xs:documentation>Дата и время выгрузки документа из программного продукта (сметной программы) с учетом часового пояса в формате ISO 8601 (ГГГГ-ММ-ДД ЧЧ:ММ:СС).</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+
+        <xs:element name="Signatures">
+          <xs:annotation>
+            <xs:documentation><text>Подписи и ФИО уполномоченных лиц.</text>
+<links>Методика определения сметной стоимости строительства, реконструкции, капитального ремонта, сноса объектов капитального строительства, работ по сохранению объектов культурного наследия (памятников истории и культуры) народов Российской Федерации на территории Российской Федерации, утвержденная приказом Министерства строительства и жилищно-коммунального хозяйства Российской Федерации от 4 августа 2020 г. № 421/пр. (с изменениями от 7 июля 2022 г. № 557/пр, от 30 января 2024 г. № 55/пр); Методика определения сметной стоимости строительства или реконструкции объектов капитального строительства, расположенных за пределами территории Российской Федерации, утвержденная приказом Министерства строительства и жилищно-коммунального хозяйства Российской Федерации от 15 июня 2020 г. № 317/пр (с изменениями от 25 августа 2022 г. № 698/пр, от 22 декабря 2023 г. № 968/пр).</links></xs:documentation>
+          </xs:annotation>
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="Composer" type="TSignatures" minOccurs="1" maxOccurs="1">
+                <xs:annotation>
+                  <xs:documentation>Подпись составляющего (ФИО).</xs:documentation>
+                </xs:annotation>
+              </xs:element>
+
+              <xs:element name="Verifier" type="TSignatures" minOccurs="1" maxOccurs="1">
+                <xs:annotation>
+                  <xs:documentation>Подпись проверяющего (ФИО).</xs:documentation>
+                </xs:annotation>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="Files" minOccurs="1">
+          <xs:annotation>
+            <xs:documentation>Файлы обоснований, которые передаются на экспертизу и на которые будут ссылки из данного документа. Расширения файлов представлены в приказе Минстроя Российской Федерации от 12 мая 2017 г. № 783/пр.</xs:documentation>
+          </xs:annotation>
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="File" maxOccurs="unbounded" minOccurs="1" type="TFile"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="Sections" minOccurs="1" maxOccurs="1">
+          <xs:annotation>
+            <xs:documentation>Основная таблица ведомости объемов работ.</xs:documentation>
+          </xs:annotation>
+          <xs:complexType>
+            <xs:choice maxOccurs="unbounded">
+
+
+
+              <xs:element name="Section" minOccurs="1" maxOccurs="unbounded" type="TSection">
+                <xs:annotation>
+                  <xs:documentation>Блоки (секции/разделы) таблицы.</xs:documentation>
+                </xs:annotation>
+              </xs:element>
+            </xs:choice>
+          </xs:complexType>
+        </xs:element>
+
+
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>
