@@ -15,10 +15,12 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 import xml.etree.ElementTree as ET
+import jsonschema
+from jsonschema import ValidationError
 from datetime import datetime, timezone
 from pathlib import Path
 from openpyxl import load_workbook
-import json, re
+import json, re, shutil
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.units import mm
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -34,6 +36,7 @@ from Core.Project import Project
 from Core.Utilities import text_after, clearing_string, convert_value
 
 from Templates.About import PROGRAM_NAME, PROGRAM_VERSION
+from Templates.json_schemas import JSON_SCHEMA_3
 
 
 
@@ -47,8 +50,9 @@ class Convertor:
 
 	def __init__(self, project):
 		self.project: Project = project
+		self.manager: BoQ_manager = None
 		self.xml_dir = self.project.base_dir / 'XML'
-		self.UNITS_LIB: dict | None = None	# Словарь с еденицами измерения
+		self.UNITS_LIB: dict | None = None	# Словарь с единицами измерения
 
 	
 	def create_xml_3p01(
@@ -66,8 +70,11 @@ class Convertor:
 			:without_resources: отключение иерархично структуры работа-ресурс
 		"""
 		project = self.project
+		self.manager = manager
+
 		if not project.library:
 			project.set_library()
+
 		manager.set_links_file_id()
 
 		# вручную отключаем нумерацию с подпунктами, если выбрана иерархия без ресурсов
@@ -220,11 +227,11 @@ class Convertor:
 			ET.indent(tree, space='	')
 		except AttributeError:
 			pass
-		folder = manager.file.path.parent.parent / 'XML'
+		folder = self.root_path / 'XML'
 		folder.mkdir(parents=True, exist_ok=True)
 
 		# получаем имя ориганльного файла без номеров в префиксе
-		shortname = manager.file.path.stem
+		shortname = self.full_path.stem
 		if shortname:
 			filename_parts = shortname.split('_')
 			if filename_parts and not isinstance(convert_value(filename_parts[0]), str):
@@ -289,9 +296,9 @@ class Convertor:
 		version = file.find('Version')
 
 		if file_type.text is None or version is None:
-			raise ShemaError(xml_path.name)
+			raise SchemaError(xml_path.name)
 		if file_type.text != 'Ведомость объемов работ' or version.text != '3.01':
-			raise ShemaError(xml_path.name, file_type.text, version.text)
+			raise SchemaError(xml_path.name, file_type.text, version.text)
 
 		# Данные о разделе
 		metadata = {}
@@ -681,13 +688,14 @@ class Convertor:
 		:return: True при успехе
 		:subsection: номер подраздела сметной документации
 		"""
+		self.manager = manager
 		try:
 			generator = PDFGenerator(manager, self.project, mode)
-			folder = manager.file.path.parent.parent / 'PDF'
+			folder = self.root_path / 'PDF'
 			folder.mkdir(parents=True, exist_ok=True)
 			filename = (
 				f'Раздел ПД №9 СМ подраздел ПД №{subsection} '
-				f'{manager.num if manager.num else manager.file.path.stem}'
+				f'{manager.num if manager.num else self.full_path.stem}'
 			)
 			output = folder / filename
 			generator.generate(output.with_suffix('.pdf'))
@@ -695,6 +703,20 @@ class Convertor:
 		except Exception as e:
 			print(f"Ошибка генерации PDF: {e}")
 			return False
+
+ 
+	@property
+	def full_path(self):
+		""" Передаёт путь к файлу """
+		if self.manager:
+			return self.manager.file.path
+
+
+	@property
+	def root_path(self):
+		""" Передаёт путь к корню проекта """
+		if self.project:
+			return self.project.base_dir
 
 
 
@@ -1152,7 +1174,7 @@ class PDFGenerator:
 
 
 
-class ShemaError(Exception):
+class SchemaError(Exception):
 	def __init__(self, filename, type = None, vers = None):
 		super().__init__()
 		self.filename = filename
@@ -1165,3 +1187,58 @@ class ShemaError(Exception):
 			return f'Файл {self.filename} не соответствует схеме'
 		else:
 			return f'Файл {self.filename} не соответствует схеме. [Тип схемы: {self.type}, Версия: {self.version}]'
+
+
+
+class ValidatorJSON:
+	""" Осуществляет процесс импорта фалов ВОР в формате json с валидацией данных """
+	SCHEMA = json.loads(JSON_SCHEMA_3)	# схема фалов ВОР для валидации
+	def __init__(self, project: Project):
+		self.project = project
+		self.output_folder = Path(self.project.project_BoQs_folder)
+
+
+	def _validate_file(self, file) -> tuple[bool, None | str]:
+		""" Проверяет 1 файл на минимальное соответствие схеме """
+		try:
+			with open(file, 'r', encoding="utf-8") as f:
+				data = json.load(f)
+				jsonschema.validate(instance=data, schema=self.SCHEMA)   # ValidationError при ошибке
+			return (True, None)
+		except ValidationError as e:
+			message = e.message
+			if l:= len(message) > 200:
+				message = message[:100] + '...' + message[l-100:]
+			return (False, message)
+
+
+	def import_file(self, file: Path) -> dict:
+		result = {'success': False, 'message': None}
+
+		try:
+			if not file.exists():
+				result['message'] =  'Файл отсутствует'
+				return result
+			# проверяем соответствие файла схеме
+			check, message = self._validate_file(file)
+			if not check:
+				result['message'] =  message
+				return result
+		except Exception as e:
+			result['message'] =  f'непредвиденная ошибка: {e}'
+			return result
+
+		#--- проверяем конечный каталог на совпадение с именем файла --- 
+		existing = {p.name for p in self.output_folder.glob('*.json')}
+		if file.name in existing:	# сохраняем с новым именем
+			date = self.project.now.strftime("%Y_%m_%d_%H%M")
+			name = f'{file.stem}_импорт_{date}.json'
+			target_path = self.project.project_BoQs_path / name
+			shutil.copy(file, target_path)
+		
+		else:	# сохраняем с исходным именем
+			target_path = self.project.project_BoQs_path / file.name
+			shutil.copy(file, target_path)
+		
+		result['success'] =  True
+		return result
