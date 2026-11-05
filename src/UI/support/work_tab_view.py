@@ -18,7 +18,7 @@ from PyQt6.QtWidgets import (
 	QWidget,QVBoxLayout, QMessageBox, QHeaderView, QMenu, QApplication, 
 	QSplitter, QAbstractItemView, QLineEdit, QTextEdit
 	)
-from PyQt6.QtGui import QAction, QColor, QTextCursor, QKeySequence
+from PyQt6.QtGui import QAction, QColor, QTextCursor
 from PyQt6.QtCore import Qt, QModelIndex, QEvent, QTimer
 
 from ..resources.icons import Icons

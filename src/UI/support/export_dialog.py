@@ -15,17 +15,16 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 from PyQt6.QtWidgets import (
-	QApplication, QWidget, QLabel, QDialog, QDialogButtonBox, QVBoxLayout,
-	QHBoxLayout, QMessageBox, QTableWidget, QTableWidgetItem, QHeaderView,
-	QComboBox, QSpinBox
-	)
+	QApplication, QWidget, QLabel, QDialog, QVBoxLayout, QHBoxLayout, QMessageBox,
+	QTableWidget, QTableWidgetItem, QHeaderView, QComboBox, QSpinBox
+)
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QColor
 
 from Core.Project import File_BoQ, BoQ_manager
 from Core.Convertor_BoQ import Convertor
 
-from ..ui_utilities import MultilineTextDelegate, create_ok_cancel_buttons
+from ..ui_utilities import create_ok_cancel_buttons
 from ..resources.icons import Icons
 
 from PyQt6.QtWidgets import (
@@ -374,7 +373,7 @@ class ExportManager:
 		without_resources = instruction.get('without_resources', False)
 
 		progress = QProgressDialog(
-			"Экспорт разделов...", "Отмена", 0, len(export_list), self.main_tab
+			"Экспорт файлов ВОР...", "Отмена", 0, len(export_list), self.main_tab
 		)
 		progress.setWindowModality(Qt.WindowModality.WindowModal)
 		progress.setMinimumDuration(0)

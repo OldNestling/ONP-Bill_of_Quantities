@@ -15,19 +15,16 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 from pathlib import Path
-from openpyxl import load_workbook
 
 from PyQt6.QtWidgets import (
 	QApplication, QWidget, QLabel, QPushButton, QFileDialog, QDialog, 
-	QDialogButtonBox, QVBoxLayout, QHBoxLayout, QGroupBox, QMessageBox,
-	QListWidget, QAbstractItemView, QTabWidget, QFrame, QInputDialog,
-	QTextBrowser
+	QVBoxLayout, QHBoxLayout, QGroupBox, QMessageBox, QListWidget,
+	QTabWidget, QFrame, QInputDialog, QTextBrowser
 	)
 from PyQt6.QtCore import Qt, QSize, QTimer, QEvent, QUrl
 from PyQt6.QtGui import QColor, QDesktopServices
 
 from Core.Project import Project, File_BoQ, FileIsBusy
-from Core.Convertor_BoQ import Convertor, ShemaError
 from Templates.About import PROGRAM_NAME
 
 from .ui_utilities import create_separator, Request, UpdateChecker
@@ -44,7 +41,8 @@ from .support.project_window_support import (
 	BoQ_Dialog, BoQs_TableWidget, BoQLogs_TableWidget, 
 	Project_Info_Edit_Dialog, HelpDialog
 )
-from .support.export_dialog import ExportFormatDialog, ExportManager
+from .support.export_dialog import ExportManager
+from .support.import_dialog import ImportManager
 
 
 class Project_Window(QWidget):
@@ -840,8 +838,13 @@ class MainProjectTab(QWidget):
 			self.load_project_data()
 	
 
-	def open_file_BoQ(self) -> bool:
-		"""Открывает все выбранные ведомости во вкладке 'Ведомости'."""
+	def open_file_BoQ(self, read_mode = False) -> bool:
+		"""
+		Открывает все выбранные ведомости во вкладке 'Ведомости'.
+		:param read_mode: если True — открыть принудительно в режиме чтения
+			(без захвата блокировки на запись).
+  		:return: True, если операция выполнена без критических ошибок.
+		"""
 		if self.project is None:
 			return False
 		
@@ -850,7 +853,10 @@ class MainProjectTab(QWidget):
 		for idx in self.project_BoQs_table.selectedIndexes():
 			selected_rows.add(idx.row())
 		if not selected_rows:
-			QMessageBox.warning(self, 'Открытие файлов', "Сначала выберите ведомости в таблице.")
+			QMessageBox.warning(
+				self, 'Открытие файлов',
+				"Сначала выберите ведомости в таблице."
+			)
 			return False
 		
 		all_files = self.project.project_BoQs
@@ -859,7 +865,12 @@ class MainProjectTab(QWidget):
 		# Сортируем для предсказуемого порядка
 		for row in sorted(selected_rows):
 			try:
-				file_manager = self.project.open_BoQ(row)
+				# Принудительно передаём read_mode в менеджер проекта
+				file_manager = self.project.open_BoQ(row, read_mode= read_mode)
+
+				if file_manager is None:
+					continue
+
 				if file_manager.read_mode:
 					name = self.project.BoQs[row].object_name
 					busy_files.append(name)
@@ -870,18 +881,17 @@ class MainProjectTab(QWidget):
 					return False
 			except FileNotFoundError:
 				QMessageBox.warning(self, 'Открытие файла', f"Файл ведомости не найден ({all_files[row].path.name}).")
-			#except Exception as e:
-			#	QMessageBox.warning(self, 'Открытие файла', f"Не удалось открыть ведомость ({all_files[row].path.name}): {e}")
 
 		if busy_files:
 			busy_files = [f'<li>{file}</li>' for file in busy_files]
-			output = f'<ul>{''.join(busy_files)}</ul>'
+			output = f'<ul>{"".join(busy_files)}</ul>'
 			QMessageBox.warning(
 				self, 'Открытие файла', 
 				f'<p>Файл(ы) открыт(ы) в режиме чтения:</p>{output}'
 			)
 
 		self.reload_BoQs_table()   # обновляем статусы блокировок
+		return True
 
 		
 	def unlock_BoQ(self):
@@ -906,120 +916,9 @@ class MainProjectTab(QWidget):
 
 
 	def import_files(self):
-		if not self.project:
-			return
-
-		# Диалог выбора файлов с расширенным фильтром
-		files, _ = QFileDialog.getOpenFileNames(
-			self,
-			"Выберите файлы для импорта (Excel или XML)",
-			"",
-			"Поддерживаемые форматы (*.xlsx *.xlsm *.xml *.gge);;Excel файлы (*.xlsx *.xlsm);;XML файлы (*.xml *.gge)"
-		)
-		if not files:
-			return
-
-		convertor = Convertor(self.project)
-		success_count = 0
-		total_items = 0
-
-		for file_path_str in files:
-			file_path = Path(file_path_str)
-			suffix = file_path.suffix.lower()
-
-			if suffix in ('.xml', '.gge'):
-				# Импорт из XML
-				try:
-					convertor.import_from_xml_3p01(file_path)
-					success_count += 1
-					self.log_message(f"Импорт из XML: {file_path.name} успешно завершён")
-				except ShemaError as e:
-					QMessageBox.warning(self, 'Импорт XML', e.info())
-				except Exception as e:
-					QMessageBox.warning(self, 'Импорт XML', f"Ошибка при импорте {file_path.name}:\n{e}")
-			elif suffix in ('.xlsx', '.xlsm'):
-				# Импорт из Excel
-				try:
-					# Проверяем, что файл можно открыть и получить листы
-					wb = load_workbook(file_path, data_only=True, read_only=True)
-					sheet_names = wb.sheetnames
-					wb.close()
-				except Exception as e:
-					QMessageBox.warning(self, 'Импорт Excel', f"Не удалось открыть файл {file_path.name}:\n{e}")
-					continue
-
-				if not sheet_names:
-					QMessageBox.warning(self, 'Импорт Excel', f"Файл {file_path.name} не содержит листов.")
-					continue
-
-				# Показываем диалог выбора листов
-				selected_sheets = self.show_sheet_selection_dialog(file_path.name, sheet_names)
-				if not selected_sheets:
-					continue  # пользователь отменил выбор
-
-				# Запускаем импорт выбранных листов
-				try:
-					processed = convertor.import_from_excel(file_path, sheet_names=selected_sheets)
-					if processed > 0:
-						success_count += 1
-						total_items += processed
-					else:
-						QMessageBox.warning(self, 'Импорт Excel', f"В файле {file_path.name} не найдено подходящих листов (A1='Документ').")
-				except Exception as e:
-					QMessageBox.warning(self, 'Импорт Excel', f"Ошибка при импорте {file_path.name}:\n{e}")
-			else:
-				QMessageBox.warning(self, 'Импорт', f"Неподдерживаемый формат файла: {suffix}")
-
-		# Обновляем таблицу разделов после всех импортов
+		""" Импорт поддерживаемых файлов ВОР """
+		ImportManager(self).run()
 		self.reload_BoQs_table()
-
-		# Итоговое сообщение
-		if success_count > 0:
-			if total_items:
-				QMessageBox.information(self, 'Импорт завершён',
-					f"Импортировано файлов: {success_count}\nВсего листов/разделов: {total_items}")
-			else:
-				QMessageBox.information(self, 'Импорт завершён',
-					f"Успешно импортировано файлов: {success_count}")
-		elif success_count == 0 and files:
-			QMessageBox.warning(self, 'Импорт', "Ни один файл не был импортирован.")
-
-
-	def show_sheet_selection_dialog(self, file_name, sheet_names):
-		"""
-		Отображает диалог с множественным выбором листов.
-		Возвращает список выбранных имён листов или None, если диалог отменён.
-		"""
-		dialog = QDialog(self)
-		dialog.setWindowTitle(f"Выбор листов для импорта: {file_name}")
-		dialog.setModal(True)
-		layout = QVBoxLayout(dialog)
-
-		label = QLabel("Выберите листы для конвертации (можно несколько):")
-		layout.addWidget(label)
-
-		list_widget = QListWidget()
-		list_widget.setSelectionMode(QAbstractItemView.SelectionMode.MultiSelection)
-		for name in sheet_names:
-			list_widget.addItem(name)
-		layout.addWidget(list_widget)
-
-		buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
-		buttons.accepted.connect(dialog.accept)
-		buttons.rejected.connect(dialog.reject)
-		layout.addWidget(buttons)
-
-		if dialog.exec() != QDialog.DialogCode.Accepted:
-			return None
-
-		selected = [item.text() for item in list_widget.selectedItems()]
-		return selected
-
-
-	def log_message(self, msg):
-		"""Выводит сообщение в лог (если есть виджет лога, иначе в консоль)."""
-		# В текущем интерфейсе нет виджета лога на главной вкладке, поэтому просто print
-		print(msg)
 
 
 	def export_selected_BoQs(self):

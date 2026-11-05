@@ -15,6 +15,9 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 import re
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+	from .Project import Project
 from .Utilities import clearing_string
 from .DataLib import DataLibraryManager
 
@@ -143,20 +146,23 @@ class Library:
 		self.name: str = name
 		self.alias_key: str = alias
 		self.groups: list[Group] = groups if groups else []
-	
+
+
 	def __str__(self):
 		return f'{self.name} ({self.alias_key})'
 
 	# ---------------------------- Редактирование БД ------------------------------------
 	def create_group(self):
 		self.groups.append(Group(parent= self))
-	
+
+
 	def remove_group(self, idx):
 		try:
 			del self.groups[idx]
 		except IndexError:
 			return
-	
+
+
 	def move_group(self, from_index: int, to_index: int) -> bool:
 		"""Перемещает группу внутри списка groups."""
 		if 0 <= from_index < len(self.groups) and 0 <= to_index < len(self.groups):
@@ -175,7 +181,8 @@ class Library:
 			'groups': groups
 		}
 		return data
-	
+
+
 	@classmethod
 	def deserialization(cls, data: dict | None = None):
 		if data is None:
@@ -202,14 +209,14 @@ class Group:
 		self.alias_key: str = alias
 		self.main_elements: list[MainElement] = main_el if main_el else []
 		self.parent: Library = parent
-	
+
+
 	@property
 	def alias(self):
 		""" Возвращает полный путь в библиотеке """
 		return f'{self.parent.alias_key}.{self.alias_key}'
 
 	# ---------------------------- Редактирование БД ------------------------------------
-
 	def create_main_element(self, name='', alias='', work_text='', resource_text='',
 							factor='', note1='', note2='') -> MainElement:
 		"""Создаёт и добавляет новый основной элемент в группу."""
@@ -220,12 +227,14 @@ class Group:
 		self.main_elements.append(elem)
 		return elem
 
+
 	def remove_main_element(self, index: int) -> bool:
 		"""Удаляет основной элемент по индексу."""
 		if 0 <= index < len(self.main_elements):
 			del self.main_elements[index]
 			return True
 		return False
+
 
 	def move_main_element(self, from_index: int, to_index: int) -> bool:
 		"""Перемещает основной элемент внутри списка works."""
@@ -244,7 +253,8 @@ class Group:
 		'main_elements': raw_main_elements
 		}
 		return data
-	
+
+
 	@classmethod
 	def deserialization(cls, data: dict | None = None, parent: Library = None):
 		if data is None:
@@ -265,169 +275,186 @@ class Group:
 	
 
 
-class MainElement:
-	"""
-	Основной объект библиотеки, с работой и 1 материалом
-		Args:
-		:name: Полное наименование объекта
-		:alias: Псевдоним для обращения в среде ВОР
-		:work_text: Описание позиции работы
-		:resource_text: Описание позиции ресурса
-		:factor: Множитель для получения потребного значения материала из исходного значения (объёма, площади) 
-		:note1: Примечание 1
-		:note2: Примечание 2
+# class MainElement:
+# 	"""
+# 	Основной объект библиотеки, с работой и 1 материалом
+# 		Args:
+# 		:name: Полное наименование объекта
+# 		:alias: Псевдоним для обращения в среде ВОР
+# 		:work_text: Описание позиции работы
+# 		:resource_text: Описание позиции ресурса
+# 		:factor: Множитель для получения потребного значения материала из исходного значения (объёма, площади) 
+# 		:note1: Примечание 1
+# 		:note2: Примечание 2
 	
-	"""
-	def __init__(
-		self,
-		name = '',
-		alias= '',
-		work_text = '',
-		resource_text = '',
-		factor = '',
-		note1 = '',
-		note2 = '',
-		parent = None,
-		sub_el = None
-	):
-		self.name: str = name					# Наименование позиции
-		self.alias_key: str = alias				# Псевдоним позиции
-		self.work_text: str = work_text			# Текст позиции работы
-		self.resource_text: str = resource_text	# Текст позиции ресурса
-		self._factor: str = factor				# Фактор расхода
-		self.raw_note1: str = note1				# Примечание 1					
-		self.raw_note2: str = note2				# Примечание 2
-		self.parent: Group = parent				# Объект-родитель ресурса
-		self.sub_elements: list[SubElement] = sub_el if sub_el else []	# Накопитель ресурсов
-	
-	@property
-	def factor(self):
-		return self._factor
-	
-	@factor.setter
-	def factor(self, value):
-		self._factor = clearing_string(value).replace('\n','')
+# 	"""
+# 	def __init__(
+# 		self,
+# 		name = '',
+# 		alias= '',
+# 		work_text = '',
+# 		resource_text = '',
+# 		factor = '',
+# 		note1 = '',
+# 		note2 = '',
+# 		parent = None,
+# 		sub_el = None
+# 	):
+# 		self.name: str = name					# Наименование позиции
+# 		self.alias_key: str = alias				# Псевдоним позиции
+# 		self.work_text: str = work_text			# Текст позиции работы
+# 		self.raw_work_unit: str = '-'			# Ед.изм. для позиции работы
+# 		self.resource_text: str = resource_text	# Текст позиции ресурса
+# 		self.raw_resource_unit: str = '-'		# Ед.изм. для позиции ресурса
+# 		self._factor: str = factor				# Фактор расхода
+# 		self.raw_note1: str = note1				# Примечание 1					
+# 		self.raw_note2: str = note2				# Примечание 2
+# 		self.parent: Group = parent				# Объект-родитель ресурса
+# 		self.sub_elements: list[SubElement] = sub_el if sub_el else []	# Накопитель ресурсов
 
-	def __process_note(self, note: str):
-		""" Заменяет ссылки на стобцы на текст """
-		if '@' not in note:
-			return note
+
+# 	@property
+# 	def factor(self):
+# 		return self._factor
+
+
+# 	@factor.setter
+# 	def factor(self, value):
+# 		self._factor = clearing_string(value).replace('\n','')
+
+
+# 	def __process_note(self, note: str):
+# 		""" Заменяет ссылки на стобцы на текст """
+# 		if '@' not in note:
+# 			return note
 		
-		text = note
+# 		text = note
 
-		work_text_replace = re.findall(r'@работа', text, re.IGNORECASE)
-		for wt in work_text_replace:
-			text = text.replace(wt, self.work_text)
+# 		work_text_replace = re.findall(r'@работа', text, re.IGNORECASE)
+# 		for wt in work_text_replace:
+# 			text = text.replace(wt, self.work_text)
 
-		resource_text_replace = re.findall(r'@ресурс', text, re.IGNORECASE)
-		for rt in resource_text_replace:
-			text = text.replace(rt, self.resource_text)
+# 		resource_text_replace = re.findall(r'@ресурс', text, re.IGNORECASE)
+# 		for rt in resource_text_replace:
+# 			text = text.replace(rt, self.resource_text)
 
-		factor_text_replace = re.findall(r'@раcход', text, re.IGNORECASE)
-		for ft in factor_text_replace:
-			text = text.replace(ft, self.factor)
-		return text
-
-	@property
-	def note1(self):
-		return self.__process_note(self.raw_note1)
-
-	@property
-	def note2(self):
-		return self.__process_note(self.raw_note2)
+# 		factor_text_replace = re.findall(r'@раcход', text, re.IGNORECASE)
+# 		for ft in factor_text_replace:
+# 			text = text.replace(ft, self.factor)
+# 		return text
 
 
-	# --------------------------------- Псевдонимы --------------------------------------
-	@property
-	def alias(self):
-		""" Возвращает полный путь в библиотеке """
-		return f'{self.parent.alias}.{self.alias_key}'
+# 	@property
+# 	def note1(self):
+# 		return self.__process_note(self.raw_note1)
+
+
+# 	@property
+# 	def note2(self):
+# 		return self.__process_note(self.raw_note2)
+
+# 	# --------------------------------- Псевдонимы --------------------------------------
+# 	@property
+# 	def alias(self):
+# 		""" Возвращает полный путь в библиотеке """
+# 		return f'{self.parent.alias}.{self.alias_key}'
+
+
+# 	@property
+# 	def alias_work(self):
+# 		return f'{self.alias}.Работа'
+
+
+# 	@property
+# 	def alias_resource(self):
+# 		return f'{self.alias}.Ресурс'
+
+
+# 	@property
+# 	def alias_factor(self):
+# 		return f'{self.alias}.Расход'
+
+
+# 	@property
+# 	def alias_note1(self):
+# 		return f'{self.alias}.Прим1'
+
+
+# 	@property
+# 	def alias_note2(self):
+# 		return f'{self.alias}.Прим2'
 	
-	@property
-	def alias_work(self):
-		return f'{self.alias}.Работа'
+# 	# ---------------------------- Редактирование БД ------------------------------------
+# 	def create_sub_element(self, name='', alias='', resource_text='',
+# 						factor='', note1='', note2='') -> SubElement:
+# 		"""Создаёт и добавляет новый подчинённый элемент."""
+# 		sub = SubElement(
+# 			name=name, alias=alias, resource_text=resource_text,
+# 			factor=factor, note1=note1, note2=note2, parent=self
+# 		)
+# 		self.sub_elements.append(sub)
+# 		return sub
 
-	@property
-	def alias_resource(self):
-		return f'{self.alias}.Ресурс'
-	
-	@property
-	def alias_factor(self):
-		return f'{self.alias}.Расход'
-	
-	@property
-	def alias_note1(self):
-		return f'{self.alias}.Прим1'
-	
-	@property
-	def alias_note2(self):
-		return f'{self.alias}.Прим2'
-	
-	# ---------------------------- Редактирование БД ------------------------------------
 
-	def create_sub_element(self, name='', alias='', resource_text='',
-						factor='', note1='', note2='') -> SubElement:
-		"""Создаёт и добавляет новый подчинённый элемент."""
-		sub = SubElement(
-			name=name, alias=alias, resource_text=resource_text,
-			factor=factor, note1=note1, note2=note2, parent=self
-		)
-		self.sub_elements.append(sub)
-		return sub
+# 	def remove_sub_element(self, index: int) -> bool:
+# 		"""Удаляет подчинённый элемент по индексу."""
+# 		if 0 <= index < len(self.sub_elements):
+# 			del self.sub_elements[index]
+# 			return True
+# 		return False
 
-	def remove_sub_element(self, index: int) -> bool:
-		"""Удаляет подчинённый элемент по индексу."""
-		if 0 <= index < len(self.sub_elements):
-			del self.sub_elements[index]
-			return True
-		return False
 
-	def move_sub_element(self, from_index: int, to_index: int) -> bool:
-		"""Перемещает подчинённый элемент внутри списка resources."""
-		if 0 <= from_index < len(self.sub_elements) and 0 <= to_index < len(self.sub_elements):
-			self.sub_elements.insert(to_index, self.sub_elements.pop(from_index))
-			return True
-		return False
+# 	def move_sub_element(self, from_index: int, to_index: int) -> bool:
+# 		"""Перемещает подчинённый элемент внутри списка resources."""
+# 		if 0 <= from_index < len(self.sub_elements) and 0 <= to_index < len(self.sub_elements):
+# 			self.sub_elements.insert(to_index, self.sub_elements.pop(from_index))
+# 			return True
+# 		return False
 	
-	# ---------------------------- Загрузка / Сохранение --------------------------------
-	def serialization(self) -> dict:
-		"Преобразует объект в словарь для сохранения в JSON"
-		sub_elements = [res.serialization() for res in self.sub_elements]
-		data = {
-		'name': self.name,
-		'alias': self.alias_key,
-		'work_text': self.work_text,
-		'resource_text': self.resource_text,
-		'factor': self.factor,
-		'note1': self.raw_note1,				
-		'note2': self.raw_note2,
-		'sub_elements': sub_elements
-		}
-		return data
-	
-	@classmethod
-	def deserialization(cls, data: dict | None = None, parent: MainElement = None):
-		if data is None:
-			return cls(parent = parent)
+# 	# ---------------------------- Загрузка / Сохранение --------------------------------
+# 	def serialization(self) -> dict:
+# 		"Преобразует объект в словарь для сохранения в JSON"
+# 		sub_elements = [res.serialization() for res in self.sub_elements]
+# 		data = {
+# 		'name': self.name,
+# 		'alias': self.alias_key,
+# 		'work_text': self.work_text,
+# 		'work_unit': self.raw_work_unit,
+# 		'resource_text': self.resource_text,
+# 		'resource_unit': self.raw_resource_unit, 
+# 		'factor': self.factor,
+# 		'note1': self.raw_note1,				
+# 		'note2': self.raw_note2,
+# 		'sub_elements': sub_elements
+# 		}
+# 		return data
+
+
+# 	@classmethod
+# 	def deserialization(cls, data: dict | None = None, parent: MainElement = None):
+# 		if data is None:
+# 			return cls(parent = parent)
 		
 
-		obj = cls(
-			name = data.get('name', ''),
-			alias = data.get('alias', ''),
-			work_text = data.get('work_text', ''),
-			resource_text = data.get('resource_text', ''),
-			factor = data.get('factor', ''),
- 			note1 = data.get('note1', ''),
-			note2 = data.get('note2', ''),
-			parent = parent
-		)
+# 		obj = cls(
+# 			name = data.get('name', ''),
+# 			alias = data.get('alias', ''),
+# 			work_text = data.get('work_text', ''),
+# 			resource_text = data.get('resource_text', ''),
+# 			factor = data.get('factor', ''),
+#  			note1 = data.get('note1', ''),
+# 			note2 = data.get('note2', ''),
+# 			parent = parent
+# 		)
+# 		obj.raw_work_unit = data.get('work_unit', '-')
+# 		obj.raw_resource_unit = data.get('resource_unit ', '-')
+		
+# 		raw_resources = data.get('sub_elements', [])
 
-		raw_resources = data.get('sub_elements', [])
+# 		if raw_resources:
+# 			obj.sub_elements = [SubElement.deserialization(rs, obj) for rs in raw_resources]
 
-		if raw_resources:
-			obj.sub_elements = [SubElement.deserialization(rs, obj) for rs in raw_resources]
-
-		return obj
+# 		return obj
 
 
 
@@ -455,10 +482,12 @@ class SubElement:
 		self.name = name					# Наименование позиции
 		self.alias_key = alias				# Псевдоним позиции
 		self.resource_text = resource_text	# Текст позиции
+		self.raw_resource_unit: str = '-'	# Ед.изм. для позиции ресурса
 		self._factor = factor				# Фактор расхода
 		self.raw_note1 = note1				# Примечание 1					
 		self.raw_note2 = note2				# Примечание 2
 		self.parent = parent				# Объект-родитель ресурса
+
 
 	def __str__(self):
 		return f'{self.name}: {self.resource_text}'
@@ -475,46 +504,53 @@ class SubElement:
 		for rt in resource_text_replace:
 			text = text.replace(rt, self.resource_text)
 
-		factor_text_replace = re.findall(r'@раcход', text, re.IGNORECASE)
+		factor_text_replace = re.findall(r'@расход', text, re.IGNORECASE)
 		for ft in factor_text_replace:
 			text = text.replace(ft, self.factor)
 		return text
+
 
 	@property
 	def note1(self):
 		return self.__process_note(self.raw_note1)
 
+
 	@property
 	def note2(self):
 		return self.__process_note(self.raw_note2)
-
 
 	# --------------------------------- Псевдонимы --------------------------------------
 	@property
 	def factor(self):
 		return self._factor
-	
+
+
 	@factor.setter
 	def factor(self, value):
 		self._factor = clearing_string(value)
-	
+
+
 	@property
 	def alias(self):
 		""" Возвращает полный путь в библиотеке """
 		return f'{self.parent.alias}.{self.alias_key}'
-	
+
+
 	@property
 	def alias_resource(self):
 		return f'{self.alias}.Ресурс'
-	
+
+
 	@property
 	def alias_factor(self):
 		return f'{self.alias}.Расход'
-	
+
+
 	@property
 	def alias_note1(self):
 		return f'{self.alias}.Прим1'
-	
+
+
 	@property
 	def alias_note2(self):
 		return f'{self.alias}.Прим2'
@@ -526,12 +562,14 @@ class SubElement:
 		'name': self.name,
 		'alias': self.alias_key,
 		'resource_text': self.resource_text,
+		'resource_unit': self.raw_resource_unit, 
 		'factor': self.factor,
 		'note1': self.raw_note1,				
 		'note2': self.raw_note2,
 		}
 		return data
-	
+
+
 	@classmethod
 	def deserialization(cls, data: dict | None = None, parent: MainElement = None):
 		if data is None:
@@ -546,4 +584,137 @@ class SubElement:
 			note2 = data.get('note2', ''),
 			parent = parent
 		)
+		obj.raw_resource_unit = data.get('resource_unit', '-')
+		return obj
+
+
+
+class MainElement(SubElement):
+	"""  Основной объект библиотеки, с работой и 1 материалом """
+	def __init__(
+		self,
+		name = '',
+		alias = '',
+		work_text = '',
+		resource_text = '',
+		factor = '',
+		note1 = '',
+		note2 = '',
+		parent = None,
+		sub_el = None
+	):
+		"""
+		Основной объект библиотеки, с работой и 1 материалом
+		Args:
+			:name: Полное наименование объекта
+			:alias: Псевдоним для обращения в среде ВОР
+			:work_text: Описание позиции работы
+			:resource_text: Описание позиции ресурса
+			:factor: Множитель для получения потребного значения материала из исходного значения (объёма, площади) 
+			:note1: Примечание 1 (для работы)
+			:note2: Примечание 2 (для ресурса)
+		"""
+		super().__init__(name, alias, resource_text, factor, note1, note2, parent)
+		self.work_text: str = work_text			# Текст позиции работы
+		self.raw_work_unit: str = '-'			# Ед.изм. для позиции работы
+		self.parent: Group = parent				# Объект-родитель ресурса
+		# Накопитель ресурсов
+		self.sub_elements: list[SubElement] = sub_el if sub_el else []
+
+
+	def __process_note(self, note):
+		""" Заменяет ссылки на стобцы на текст """
+		if '@' not in note:
+			return note
+		
+		text = note
+
+		work_text_replace = re.findall(r'@работа', text, re.IGNORECASE)
+		for wt in work_text_replace:
+			text = text.replace(wt, self.work_text)
+
+		resource_text_replace = re.findall(r'@ресурс', text, re.IGNORECASE)
+		for rt in resource_text_replace:
+			text = text.replace(rt, self.resource_text)
+
+		factor_text_replace = re.findall(r'@расход', text, re.IGNORECASE)
+		for ft in factor_text_replace:
+			text = text.replace(ft, self.factor)
+		return text
+
+	@property
+	def note1(self):
+		return self.__process_note(self.raw_note1)
+
+	@property
+	def note2(self):
+		return self.__process_note(self.raw_note2)
+
+
+	@property
+	def alias_work(self):
+		return f'{self.alias}.Работа'
+	
+	# ---------------------------- Редактирование БД ------------------------------------
+	def create_sub_element(self, name='', alias='', resource_text='',
+						factor='', note1='', note2='') -> SubElement:
+		"""Создаёт и добавляет новый подчинённый элемент."""
+		sub = SubElement(
+			name=name, alias=alias, resource_text=resource_text,
+			factor=factor, note1=note1, note2=note2, parent=self
+		)
+		self.sub_elements.append(sub)
+		return sub
+
+
+	def remove_sub_element(self, index: int) -> bool:
+		"""Удаляет подчинённый элемент по индексу."""
+		if 0 <= index < len(self.sub_elements):
+			del self.sub_elements[index]
+			return True
+		return False
+
+
+	def move_sub_element(self, from_index: int, to_index: int) -> bool:
+		"""Перемещает подчинённый элемент внутри списка resources."""
+		if 0 <= from_index < len(self.sub_elements) and 0 <= to_index < len(self.sub_elements):
+			self.sub_elements.insert(to_index, self.sub_elements.pop(from_index))
+			return True
+		return False
+	
+	# ---------------------------- Загрузка / Сохранение --------------------------------
+	def serialization(self):
+		data = super().serialization()
+		data['work_text'] = self.work_text
+		data['work_unit'] = self.raw_work_unit
+		data['sub_elements'] = [res.serialization() for res in self.sub_elements]
+		return data
+
+
+	@classmethod
+	def deserialization(cls, data: dict | None = None, parent: Group = None):
+		if data is None:
+			return cls(parent = parent)
+
+		obj = cls(
+			name = data.get('name', ''),
+			alias = data.get('alias', ''),
+			work_text = data.get('work_text', ''),
+			resource_text = data.get('resource_text', ''),
+			factor = data.get('factor', ''),
+ 			note1 = data.get('note1', ''),
+			note2 = data.get('note2', ''),
+			parent = parent
+		)
+
+		obj.raw_work_unit = data.get('work_unit', '-')
+		obj.raw_resource_unit = data.get('resource_unit', '-')
+		
+		raw_resources = data.get('sub_elements', [])
+
+		if raw_resources:
+			obj.sub_elements = [
+				SubElement.deserialization(rs, obj) for rs in raw_resources
+			]
+
 		return obj

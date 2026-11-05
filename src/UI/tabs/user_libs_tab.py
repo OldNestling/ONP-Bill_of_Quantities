@@ -16,7 +16,7 @@
 
 from PyQt6.QtWidgets import (
 	QWidget, QVBoxLayout, QHBoxLayout, QStyledItemDelegate, QMenu, QApplication,
-	QPushButton, QTextEdit,	QStyle, QTreeView, QMessageBox,QComboBox, QLineEdit, 
+	QPushButton, QTextEdit,	QStyle, QMessageBox,QComboBox, QLineEdit, 
 	QLabel, QSplitter, QAbstractItemDelegate
 )
 from PyQt6.QtCore import Qt, QSize, QItemSelectionModel, QEvent
@@ -46,6 +46,7 @@ class User_Libs_Tab(QWidget):
 		self.non_set = {'',' ','-', None, 'None','...', '.'}
 		self.setup_ui()
 		self.update_ui()
+
 
 	def setup_ui(self):
 		self.main_layout = QHBoxLayout(self)
@@ -78,7 +79,6 @@ class User_Libs_Tab(QWidget):
 		self.control_panel.addWidget(self.lib_selector)	
 
 		# --- Элементы взаимодействия с библиотеками ---
-
 		libs_buttons = QHBoxLayout()
 		self.btn_add_lib = QPushButton('Создать\nбиблиотеку')
 		self.btn_add_lib.clicked.connect(self.add_lib)
@@ -165,7 +165,7 @@ class User_Libs_Tab(QWidget):
 		self.tree_view.setSelectionBehavior(SmoothTreeView.SelectionBehavior.SelectItems)
 		self.tree_view.setEditTriggers(SmoothTreeView.EditTrigger.DoubleClicked |
 										SmoothTreeView.EditTrigger.EditKeyPressed)
-		self.tree_view.setItemDelegate(UserLibsItemDelegate(self.tree_view))
+		self.tree_view.setItemDelegate(UserLibsItemDelegate(self.tree_view, self.project))
 		
 		# Настройка заголовков
 		header = self.tree_view.header()
@@ -177,7 +177,6 @@ class User_Libs_Tab(QWidget):
 
 		# Ширина столбцов
 		self.apply_column_widths()
-
 
 		header.setStretchLastSection(False)
 		
@@ -199,14 +198,25 @@ class User_Libs_Tab(QWidget):
 		self.set_manipulation_buttons_enabled(False)
 
 	# ------------------------------ Обновление UI ------------------------------------
-
 	def apply_column_widths(self):
 		"""Применяет заданные ширины столбцов."""
-		columns_width = {0: 150, 1: 200, 2: 100, 3: 250, 4: 250, 5: 100, 6: 200, 7: 200}
+		columns_width = {
+			0: 150,
+			1: 200,
+			2: 100,
+			3: 250,
+			4: 75,
+			5: 250,
+			6: 75,
+			7: 100,
+			8: 200,
+			9: 200
+		}
 		for col, width in columns_width.items():
 			self.tree_view.setColumnWidth(col, width)
 		# Чтобы последний столбец не растягивался, можно установить stretchLastSection(False)
 		self.tree_view.header().setStretchLastSection(False)
+
 
 	def set_manipulation_buttons_enabled(self, enabled):
 		"""Включает/отключает кнопки добавления/удаления/перемещения."""
@@ -219,11 +229,12 @@ class User_Libs_Tab(QWidget):
 			self.main_window.set_other_tabs_except_enabled(not enabled, self.tab_index)
 		self.btn_edit_libs.setIcon(Icons.unlock if enabled else Icons.lock)
 
+
 	def on_section_resized(self, logical_index, old_size, new_size):
 		# Принудительно пересчитываем геометрию всех строк
 		self.tree_view.scheduleDelayedItemsLayout()
 		self.tree_view.viewport().update()
-				
+
 
 	def update_ui(self):
 		"""Обновляет интерфейс: комбобокс и дерево."""
@@ -236,6 +247,7 @@ class User_Libs_Tab(QWidget):
 		self.apply_column_widths()
 		self.tree_view.scheduleDelayedItemsLayout()
 		self.tree_view.viewport().update()
+
 
 	def update_lib_selector(self):
 		"""Заполняет комбобокс списком библиотек."""
@@ -252,12 +264,14 @@ class User_Libs_Tab(QWidget):
 			else:	
 				self.lib_selector.setCurrentIndex(0)
 
+
 	def update_tree_view(self):
 		"""Пересоздаёт модель для текущей библиотеки."""
 		if self.manager and self.manager.library:
 			current_lib = self.lib_selector.currentData()
 			if current_lib:
 				self.model.set_lib(current_lib)
+				self.model.units = self.project.units
 			else:
 				self.model.library = None
 				self.model.populate_model()
@@ -275,16 +289,22 @@ class User_Libs_Tab(QWidget):
 			self.lib_name_edit.clear()
 			self.lib_alias_edit.clear()
 
+
 	def set_project(self, project: Project):
 			self.project = project
 			self.manager = self.project.libraries_manager if project else None
 			if self.manager.library:
 				self.model.set_lib(self.manager.library[0])
+				self.model.units = project.units
+			# обновляем делегат для получения ед.изм. из проекта
+			self.tree_view.setItemDelegate(UserLibsItemDelegate(self.tree_view, self.project))
 			self.update_ui()
+
 
 	def tab_selected(self):
 		self.update_status()
 		self.update_ui()
+
 
 	def _get_selected_item_path(self) -> tuple | None:
 		"""Возвращает кортеж (type, group_index, main_index, sub_index) или None."""
@@ -306,6 +326,7 @@ class User_Libs_Tab(QWidget):
 			return ('MainElement', parent.row(), item.row(), None)
 		else:
 			return ('SubElement', grand.row(), parent.row(), item.row())
+
 
 	def _select_tree_row_by_path(self, path):
 		"""Выделяет строку в дереве по пути (type, group_index, main_index, sub_index)."""
@@ -338,7 +359,6 @@ class User_Libs_Tab(QWidget):
 						self.tree_view.selectionModel().select(idx, QItemSelectionModel.SelectionFlag.ClearAndSelect)
 
 	# ---------------------------- Обработчики комбобокса ----------------------------
-
 	def on_lib_selected(self, index):
 		"""Срабатывает при выборе другой библиотеки."""
 		self.current_lib_index = index
@@ -370,7 +390,8 @@ class User_Libs_Tab(QWidget):
 		new_alias = self.lib_alias_edit.text().strip()
 		if new_alias and new_alias not in self.non_set:
 			lib.alias_key = new_alias
-	
+
+
 	def update_status(self):
 		""" Обновляет статус доступности """
 		if not self.project:
@@ -385,7 +406,6 @@ class User_Libs_Tab(QWidget):
 			self.status_label.setText(f'Занято пользователем\n{user}')
 
 	# --------------------------------- Слоты -------------------------------------------
-
 	def toggle_edit_mode(self):
 		"""Включает режим редактирования (блокировка)."""
 		if not self.manager:
@@ -401,14 +421,15 @@ class User_Libs_Tab(QWidget):
 		self.update_status()
 		if lock_res:
 			if self.model is not None:
-				self.model.togle_acces(True)
+				self.model.toggle_access(True)
 			self.set_manipulation_buttons_enabled(True)
 		else:
 			if self.model is not None:
-				self.model.togle_acces(False)
+				self.model.toggle_access(False)
 			self.set_manipulation_buttons_enabled(False)
 			QMessageBox.warning(self, 'Редактирование',
 									'Не удалось заблокировать файл для других пользователей')
+
 
 	def add_lib(self):
 		"""Создаёт новую библиотеку."""
@@ -423,7 +444,8 @@ class User_Libs_Tab(QWidget):
 		# Включаем редактирование для переименования
 		self.lib_name_edit.setFocus()
 		self.lib_name_edit.selectAll()
-	
+
+
 	def remove_lib(self):
 		"""Удаляет текущую библиотеку с подтверждением."""
 		if not self.manager:
@@ -452,6 +474,7 @@ class User_Libs_Tab(QWidget):
 					self.current_lib_index = None
 			self.manager.remove_lib(idx)
 			self.update_ui()
+
 
 	def add_group(self):
 		"""Создаёт новую группу в текущей библиотеке."""
@@ -488,6 +511,7 @@ class User_Libs_Tab(QWidget):
 		new_idx = len(group.main_elements) - 1
 		self._select_tree_row_by_path(('MainElement', group_idx, new_idx, None))
 
+
 	def add_subposition(self):
 		"""Добавляет подпозицию к текущему основному элементу."""
 		if not self.manager:
@@ -513,6 +537,7 @@ class User_Libs_Tab(QWidget):
 		self.update_ui()
 		new_idx = len(main_el.sub_elements) - 1
 		self._select_tree_row_by_path(('SubElement', group_idx, main_idx, new_idx))
+
 
 	def remove_position(self):
 			"""Удаляет выбранный элемент (группу, основную позицию или подпозицию)."""
@@ -550,6 +575,7 @@ class User_Libs_Tab(QWidget):
 							main_el.remove_sub_element(sub_idx)
 			self.update_ui()
 
+
 	def save_library(self):
 		""" Сохраняет данные пользовательских библиотек и снимает блокировку """
 		if not self.manager:
@@ -559,16 +585,18 @@ class User_Libs_Tab(QWidget):
 			QMessageBox.warning(self, 'Сохранение',
 									f'Не удалось сохранить данные')
 		self.set_manipulation_buttons_enabled(False)
-		self.model.togle_acces(False)
+		self.model.toggle_access(False)
 		self.manager.reload_lib()
 		self.update_ui()
-	
+
+
 	def reload_library(self):
 		""" Перезагружает данные из файла без сохранения """
 		self.set_manipulation_buttons_enabled(False)
-		self.model.togle_acces(False)
+		self.model.toggle_access(False)
 		self.manager.reload_lib()
 		self.update_ui()
+
 
 	def _move_obj(self, direction):
 		"""Перемещает выбранный объект на direction позиций (1 или -1)."""
@@ -603,13 +631,15 @@ class User_Libs_Tab(QWidget):
 				self.update_ui()
 				self._select_tree_row_by_path(('SubElement', group_idx, main_idx, new_index))
 
+
 	def move_up_obj(self):
 		self._move_obj(-1)
 
+
 	def move_down_obj(self):
 		self._move_obj(1)
-	# ----------------------------- Контекстное меню ------------------------------------
 
+	# ----------------------------- Контекстное меню ------------------------------------
 	def on_tree_context_menu(self, pos):
 		"""Обработчик контекстного меню для дерева."""
 		index = self.tree_view.indexAt(pos)
@@ -630,6 +660,7 @@ class User_Libs_Tab(QWidget):
 			action_copy_link.setEnabled(False)
 		menu.exec(self.tree_view.viewport().mapToGlobal(pos))
 
+
 	def _copy_to_clipboard(self, text):
 		clipboard = QApplication.clipboard()
 		clipboard.setText(text)
@@ -640,17 +671,32 @@ class User_Libs_Model(QStandardItemModel):
 	""" Модель данных с иерархической структурой """
 	HEADERS = [
 		'№',																#0
-		'Наименование группы/\nосновной позиции/\nдопонительной позиции',	#1
+		'Наименование группы/\nосновной позиции/\nдополнительной позиции',	#1
 		'Псевдоним',														#2
 		'Описание позиции\nработы',											#3
-		'Описание позиции\nресурса',										#4
-		'Расход\nресурса',													#5
-		'Примечание №1',													#6
-		'Примечание №2',													#7
+		'Ед.изм.\nработы',													#4
+		'Описание позиции\nресурса',										#5
+		'Ед.изм.\nресурса',													#6
+		'Расход\nресурса',													#7
+		'Примечание №1',													#8
+		'Примечание №2',													#9
 	]
+	
+	COL_NUM = 0
+	COL_NAME = 1
+	COL_ALIAS = 2
+	COL_WORK = 3
+	COL_WORK_UNIT = 4
+	COL_RESOURCE = 5
+	COL_RESOURCE_UNIT = 6
+	COL_FACTOR = 7
+	COL_NOTE1 = 8
+	COL_NOTE2 = 9
+	
 	def __init__(self, parent, library):
 		super().__init__(parent)
 		self.library: Library = library
+		self.units = {}
 		self.access = False
 
 		self.setColumnCount(len(self.HEADERS))
@@ -660,13 +706,25 @@ class User_Libs_Model(QStandardItemModel):
 		
 		self.dataChanged.connect(self.on_data_changed)
 
+
 	def set_lib(self, library: Library):
 		self.library = library
 		self.populate_model()
-	
-	def togle_acces(self, editable):
+
+
+	def get_unit_label(self, key):
+		"""
+		Выдаёт лейбл единицы измерения для объектов, не имеющих доступ к словарю проекта 
+		"""
+		label_data = self.units.get(key)
+		if label_data is None: return key
+		else: return label_data['label']
+
+
+	def toggle_access(self, editable):
 		""" Переключает доступность модели для редактирования """
 		self.access = editable
+
 
 	def flags(self, index):
 		default_flags = super().flags(index)
@@ -674,10 +732,12 @@ class User_Libs_Model(QStandardItemModel):
 			default_flags &= ~Qt.ItemFlag.ItemIsEditable
 		return default_flags
 
+
 	def setData(self, index, value, role=Qt.ItemDataRole.EditRole):
 		if not self.access:
 			return False
 		return super().setData(index, value, role)
+
 
 	def populate_model(self):
 		if not isinstance(self.library, Library):
@@ -695,33 +755,35 @@ class User_Libs_Model(QStandardItemModel):
 			self.appendRow(row_items)
 
 			# Для родительской строки: фон и отключение редактирования в столбцах 3..7
-			for col in range(3, 8):
+			for col in range(3, 10):
 				row_items[col].setFlags(
 					row_items[col].flags() & ~Qt.ItemFlag.ItemIsEditable
 				)
 			
-			for col in range(0, 8):
+			for col in range(0, 10):
 				row_items[col].setBackground(QColor('#5FADC0'))
 			
 			# Дочерние слои
 			for n, main_element in enumerate(group.main_elements, 1):
 				main_element: MainElement
 				main_element_items = [
-					QStandardItem(str(n)),						# 0
-					QStandardItem(main_element.name), 			# 1
-					QStandardItem(main_element.alias_key),		# 2
-					QStandardItem(main_element.work_text),		# 3
-					QStandardItem(main_element.resource_text),	# 4
-					QStandardItem(main_element.factor),			# 5
-					QStandardItem(main_element.note1),			# 6
-					QStandardItem(main_element.note2)			# 7
+					QStandardItem(str(n)),							# 0
+					QStandardItem(main_element.name), 				# 1
+					QStandardItem(main_element.alias_key),			# 2
+					QStandardItem(main_element.work_text),			# 3
+					QStandardItem(main_element.raw_work_unit),		# 4
+					QStandardItem(main_element.resource_text),		# 5
+					QStandardItem(main_element.raw_resource_unit),	# 6
+					QStandardItem(main_element.factor),				# 7
+					QStandardItem(main_element.note1),				# 8
+					QStandardItem(main_element.note2)				# 9
 				]
 				# Подсказки для обращения
 				main_element_items[3].setToolTip(main_element.alias_work)
-				main_element_items[4].setToolTip(main_element.alias_resource)
-				main_element_items[5].setToolTip(main_element.alias_factor)
-				main_element_items[6].setToolTip(main_element.alias_note1)
-				main_element_items[7].setToolTip(main_element.alias_note2)
+				main_element_items[5].setToolTip(main_element.alias_resource)
+				main_element_items[7].setToolTip(main_element.alias_factor)
+				main_element_items[8].setToolTip(main_element.alias_note1)
+				main_element_items[9].setToolTip(main_element.alias_note2)
 
 				row_items[0].appendRow(main_element_items)
 
@@ -732,22 +794,67 @@ class User_Libs_Model(QStandardItemModel):
 						QStandardItem(sub_el.name), 				# 1
 						QStandardItem(sub_el.alias_key),			# 2
 						QStandardItem(),							# 3
-						QStandardItem(sub_el.resource_text),		# 4
-						QStandardItem(sub_el.factor),				# 5
-						QStandardItem(sub_el.note1),				# 6
-						QStandardItem(sub_el.note2)					# 7
+						QStandardItem(),							# 4
+						QStandardItem(sub_el.resource_text),		# 5
+						QStandardItem(sub_el.raw_resource_unit),	# 6
+						QStandardItem(sub_el.factor),				# 7
+						QStandardItem(sub_el.note1),				# 8
+						QStandardItem(sub_el.note2)					# 9
 					]
 					sub_elements_items[3].setFlags(
 						row_items[3].flags() & ~Qt.ItemFlag.ItemIsEditable
 					)
 				# Подсказки для обращения
-					sub_elements_items[4].setToolTip(sub_el.alias_resource)
-					sub_elements_items[5].setToolTip(sub_el.alias_factor)
-					sub_elements_items[6].setToolTip(sub_el.alias_note1)
-					sub_elements_items[7].setToolTip(sub_el.alias_note2)
+					sub_elements_items[5].setToolTip(sub_el.alias_resource)
+					sub_elements_items[7].setToolTip(sub_el.alias_factor)
+					sub_elements_items[8].setToolTip(sub_el.alias_note1)
+					sub_elements_items[9].setToolTip(sub_el.alias_note2)
 
 					main_element_items[0].appendRow(sub_elements_items)
-	
+
+ 
+	def data(self, index, role = Qt.ItemDataRole.DisplayRole):
+		if not index.isValid():
+			return None
+		
+		col = index.column()
+		
+		comboboxes = (self.COL_WORK_UNIT, self.COL_RESOURCE_UNIT)
+		roles = (Qt.ItemDataRole.DisplayRole, Qt.ItemDataRole.EditRole)
+
+		if col not in comboboxes or role not in roles:
+			return super().data(index, role)
+		
+		item = self.itemFromIndex(index)
+		if item is None:
+			return super().data(index, role)
+		path = self._get_path_from_item(item)
+		obj = None
+
+		if path:
+			typ, gi, mi, si = path
+			try:
+				if typ == 'MainElement':
+					obj = self.library.groups[gi].main_elements[mi]
+				elif typ == 'SubElement':
+					obj = self.library.groups[gi].main_elements[mi].sub_elements[si]
+			except IndexError:
+				obj = None
+
+		if obj is not None:
+			if col == self.COL_WORK_UNIT:
+				if not isinstance(obj, MainElement):
+					return super().data(index, role)
+				key = obj.raw_work_unit
+			else:
+				key = obj.raw_resource_unit
+
+			if role == Qt.ItemDataRole.DisplayRole:
+				return self.get_unit_label(key)
+			return key  # EditRole — отдаём КЛЮЧ
+
+
+
 	def on_data_changed(self,  topLeft, bottomRight, roles):
 		if not self.library:
 			return
@@ -761,20 +868,25 @@ class User_Libs_Model(QStandardItemModel):
 				new_text: str
 			):
 			""" Сопоставляет столбец и атрибут переданного объекта """
-			if col == 1:
+			if col == self.COL_NAME:
 				obj.name = new_text
-			elif col == 2:
+			elif col == self.COL_ALIAS:
 				obj.alias_key = new_text
-			elif col == 3 and not isinstance(obj, Group):
+			elif col == self.COL_WORK and not isinstance(obj, Group):
 				if hasattr(obj, 'work_text'):
 					obj.work_text = new_text
-			elif col == 4 and not isinstance(obj, Group):
+			elif col == self.COL_WORK_UNIT and not isinstance(obj, Group):
+				if hasattr(obj, 'work_text'):
+					obj.raw_work_unit = new_text
+			elif col == self.COL_RESOURCE and not isinstance(obj, Group):
 				obj.resource_text = new_text
-			elif col == 5 and not isinstance(obj, Group):
+			elif col == self.COL_RESOURCE_UNIT and not isinstance(obj, Group):
+				obj.raw_resource_unit = new_text
+			elif col == self.COL_FACTOR and not isinstance(obj, Group):
 				obj.factor = new_text
-			elif col == 6 and not isinstance(obj, Group):
+			elif col == self.COL_NOTE1 and not isinstance(obj, Group):
 				obj.raw_note1 = new_text
-			elif col == 7 and not isinstance(obj, Group):
+			elif col == self.COL_NOTE2 and not isinstance(obj, Group):
 				obj.raw_note2 = new_text
 
 		for row in range(topLeft.row(), bottomRight.row()+1):
@@ -785,7 +897,9 @@ class User_Libs_Model(QStandardItemModel):
 				item = self.itemFromIndex(index)
 				if not item:
 					continue
-				new_text = item.text()
+				
+				new_text = item.data(Qt.ItemDataRole.EditRole)
+
 				path = self._get_path_from_item(item)
 				if not path:
 					continue
@@ -804,8 +918,9 @@ class User_Libs_Model(QStandardItemModel):
 						main_element: MainElement = group.main_elements[main_element_index]
 						sub_element: SubElement = main_element.sub_elements[sub_element_index]
 						__compare_column(sub_element, col, new_text)	
-				if col == 2:
+				if col == self.COL_ALIAS:
 					self._update_tooltips(group_index)			
+
 
 	def _get_path_from_item(self, item):
 		if item is None:
@@ -819,7 +934,8 @@ class User_Libs_Model(QStandardItemModel):
 				return ('MainElement', parent.row(), item.row(), None)
 			else:
 				return ('SubElement', grand.row(), parent.row(), item.row())
-			
+
+
 	def _update_tooltips(self, group_index):
 		""" Обновить tooltips для всех элементов указанной группы """
 		group_item = self.item(group_index, 0)
@@ -835,27 +951,31 @@ class User_Libs_Model(QStandardItemModel):
 				sub_item = main_element_item.child(s, 0)
 				if sub_item: self._set_element_tooltips(sub_item, sub_el)
 
+
 	def _set_element_tooltips(self, item: QStandardItem, element: MainElement):
 		""" Установить tooltips для всех столбцов строки основного элемента """
 		parent = item.parent()
 		row = item.row()
-		for col in range(3, 8):
+		columns = (
+			self.COL_WORK, self.COL_RESOURCE, self.COL_FACTOR, self.COL_NOTE1, self.COL_NOTE2
+		)
+		for col in columns:
 			col_item = parent.child(row, col)
 			if not col_item:
 				continue
 			tip = '#ОШИБКА'
-			if col == 3:
-				if isinstance(element, SubElement):
-					tip = ""
-				else:
+			if col == self.COL_WORK:
+				if isinstance(element, MainElement):
 					tip = element.alias_work
-			elif col == 4:
+				else:
+					tip = ""
+			elif col == self.COL_RESOURCE:
 				tip = element.alias_resource
-			elif col == 5:
+			elif col == self.COL_FACTOR:
 				tip = element.alias_factor
-			elif col == 6:
+			elif col == self.COL_NOTE1:
 				tip = element.alias_note1
-			elif col == 7:
+			elif col == self.COL_NOTE2:
 				tip = element.alias_note2
 
 			col_item.setToolTip(tip)
@@ -870,15 +990,26 @@ class UserLibsItemDelegate(QStyledItemDelegate):
 	  - Редактирование через QTextEdit (многострочный ввод).
 	  - Жирный шрифт для групп (столбец 1).
 	  - Выравнивание по центру для столбца 0 (№).
+	  - Селекторы единиц измерения для работы и ресурса
 	"""
-	def __init__(self, parent=None):
+
+	COL_NUM = 0
+	COL_NAME = 1
+	COL_ALIAS = 2
+	COL_WORK = 3
+	COL_WORK_UNIT = 4
+	COL_RESOURCE = 5
+	COL_RESOURCE_UNIT = 6
+	COL_FACTOR = 7
+	COL_NOTE1 = 8
+	COL_NOTE2 = 9
+
+	def __init__(self, parent=None, project: Project = None):
 		super().__init__(parent)
 		self.margin = 4
+		self.units = project.units if project else None
 
-	# ----------------------------------------------------------------------
-	# Отрисовка и размер
-	# ----------------------------------------------------------------------
-
+	# ------------------------------- Отрисовка и размер --------------------------------
 	def paint(self, painter, option, index):
 		if not index.isValid():
 			return
@@ -907,7 +1038,7 @@ class UserLibsItemDelegate(QStyledItemDelegate):
 		doc = QTextDocument()
 		# Шрифт: жирный для групп в столбце 1 (наименование)
 		font = option.font
-		if index.column() == 1 and not index.parent().isValid():
+		if index.column() == self.COL_NAME and not index.parent().isValid():
 			font.setBold(True)
 		doc.setDefaultFont(font)
 
@@ -931,8 +1062,13 @@ class UserLibsItemDelegate(QStyledItemDelegate):
 		fmt.setForeground(color)
 		cursor.mergeCharFormat(fmt)
 
-		# Выравнивание по центру для столбца 0 (№)
-		if index.column() in (0, 2, 5):
+		# Выравнивание по центру
+		columns = (
+			self.COL_NUM, self.COL_ALIAS,
+			self.COL_WORK_UNIT, self.COL_RESOURCE_UNIT,
+			self.COL_FACTOR
+		)
+		if index.column() in columns:
 			block_fmt = QTextBlockFormat()
 			block_fmt.setAlignment(Qt.AlignmentFlag.AlignCenter)
 			cursor = QTextCursor(doc)
@@ -948,6 +1084,7 @@ class UserLibsItemDelegate(QStyledItemDelegate):
 		painter.setPen(QColor("#d0d0d0"))
 		painter.drawRect(option.rect)
 
+
 	def sizeHint(self, option, index):
 		if not index.isValid():
 			return QSize()
@@ -957,7 +1094,7 @@ class UserLibsItemDelegate(QStyledItemDelegate):
 
 		doc = QTextDocument()
 		font = option.font
-		if index.column() == 1 and not index.parent().isValid():
+		if index.column() == self.COL_NAME and not index.parent().isValid():
 			font.setBold(True)
 		doc.setDefaultFont(font)
 		doc.setPlainText(text)
@@ -981,17 +1118,21 @@ class UserLibsItemDelegate(QStyledItemDelegate):
 		size.setHeight(size.height() + 2)
 		return size
 
-	# ----------------------------------------------------------------------
-	# Редактирование
-	# ----------------------------------------------------------------------
-
+	# ----------------------------- Редактирование --------------------------------------
 	def createEditor(self, parent, option, index):
 		# Столбец 0 не редактируется
-		if index.column() == 0:
+		col = index.column()
+		if col == self.COL_NUM:
 			return None
 		# Проверяем флаги модели
 		if not (index.flags() & Qt.ItemFlag.ItemIsEditable):
 			return None
+
+		if col in (self.COL_WORK_UNIT, self.COL_RESOURCE_UNIT):
+			editor = QComboBox(parent)
+			for key, data in self.units.items():
+				editor.addItem(data['label'], key)
+			return editor
 
 		editor = QTextEdit(parent)
 		editor.setLineWrapMode(QTextEdit.LineWrapMode.WidgetWidth)
@@ -999,21 +1140,33 @@ class UserLibsItemDelegate(QStyledItemDelegate):
 		editor.installEventFilter(self)
 		return editor
 
+
 	def setEditorData(self, editor, index):
 		value = index.data(Qt.ItemDataRole.EditRole)
-		editor.setPlainText(str(value) if value is not None else "")
+		if isinstance(editor, QComboBox):
+			idx = editor.findData(value)
+			editor.setCurrentIndex(idx if idx >= 0 else 0)
+		else:
+			editor.setPlainText(str(value) if value is not None else "")
+
 
 	def setModelData(self, editor, model, index):
-		text = editor.toPlainText()
-		model.setData(index, text, Qt.ItemDataRole.EditRole)
+		if isinstance(editor, QComboBox):
+			key = editor.currentData()
+			model.setData(index, key, Qt.ItemDataRole.EditRole)
+		else:
+			text = editor.toPlainText()
+			model.setData(index, text, Qt.ItemDataRole.EditRole)
 		# Принудительно обновляем геометрию строк
 		tree_view = self.parent()
 		if tree_view and isinstance(tree_view, SmoothTreeView):
 			tree_view.scheduleDelayedItemsLayout()
 			tree_view.viewport().update()
 
+
 	def updateEditorGeometry(self, editor, option, index):
 		editor.setGeometry(option.rect)
+
 
 	def eventFilter(self, obj, event):
 		if isinstance(obj, QTextEdit) and event.type() == QEvent.Type.KeyPress:

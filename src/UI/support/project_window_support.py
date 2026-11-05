@@ -15,6 +15,10 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 from pathlib import Path
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+	from ..project_window import MainProjectTab 
+
 from PyQt6.QtWidgets import (
 	QApplication, QWidget, QLabel, QPushButton, QDialog, 
 	QDialogButtonBox, QVBoxLayout, QHBoxLayout, QLineEdit,
@@ -155,7 +159,7 @@ class BoQs_TableWidget(QTableWidget):
 	"""
 	def __init__(self, parent=None, main_tab=None):
 		super().__init__(parent)
-		self.main_tab = main_tab
+		self.main_tab: MainProjectTab = main_tab
 		self.setColumnCount(9)
 		self.setHorizontalHeaderLabels([
 			"Номер ВОР", "Наименование", "Статус",
@@ -232,6 +236,9 @@ class BoQs_TableWidget(QTableWidget):
 		# Действия, которые всегда доступны (если есть выделение)
 		action_open = menu.addAction("Открыть")
 		action_open.triggered.connect(self.main_tab.open_file_BoQ)
+
+		action_read_mode_open = menu.addAction('Открыть в режиме чтения')
+		action_read_mode_open.triggered.connect(lambda: self.main_tab.open_file_BoQ(read_mode=True))
 
 		action_edit = menu.addAction("Редактировать")
 		action_edit.triggered.connect(self.main_tab.edit_selected_BoQ)

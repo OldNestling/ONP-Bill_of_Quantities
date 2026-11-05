@@ -17,7 +17,7 @@
 import json, shutil, os, time
 from pathlib import Path
 from datetime import datetime
-from .Utilities import text_after, requesting_value, get_user_log, open_folder
+from .Utilities import get_user_log, open_folder
 from .DataLib import DataLibraryManager
 from .Soils import Soils_Manager
 from .Sources import Sources_Manager
@@ -33,10 +33,6 @@ from Templates.About import PROGRAM_SETTINGS_FOLDER, RECENT_DIRS_LOG, TEMPLATE_P
 class Project:
 	'''
 	Управляющий данными по проекту класс. Для создания единственного объекта
-	
-	:base_dir: директория папки src с модулями проекта. По умолчанию определяется автоматически.
-	:sourсes_folder: наименование папки сохранения настроек проекта. По умолчанию "Data"
-	:settings_file_name: Корневой файл с настройками проекта. По умолчанию "Core.json"
 	'''
 
 	# ---------------------------- Работа с каталогом -----------------------------------
@@ -125,22 +121,27 @@ class Project:
 	def __init__(
 			self, 
 			base_dir = None, 
-			sourсes_folder = 'Data', 
+			sources_folder = 'Data', 
 			settings_file_name = 'Project.json', 
 			project_BoQs_folder = 'ВОР'
 	):
-		
+		"""
+		:base_dir: директория папки проекта.
+		:sourсes_folder: наименование папки сохранения настроек проекта.
+		:settings_file_name: Корневой файл с настройками проекта.
+		"""
 		# ------------------------------- пути к файлам ---------------------------------
-
-		self.base_dir = Path(base_dir) if base_dir else Path(__file__).parent	# Определение директории проекта
-		self.sourсes_folder = sourсes_folder 									# Дирректория базы данных
-		self.settings_file_name = settings_file_name 							# Файл с основными настройками проекта
-		self.settings_file_path: Path = self.base_dir / sourсes_folder / settings_file_name # полный путь к файлу настроек
-		self.project_BoQs_folder = project_BoQs_folder 						# Наименование рабочей папки с файлам ВОР
-		self.project_BoQs_path: Path = self.base_dir / project_BoQs_folder	# путь к рабочей папки с фалами ВОР
+		# Определение директории проекта
+		self.base_dir = Path(base_dir) if base_dir else Path(__file__).parent	
+		self.sources_folder = sources_folder			# Директория базы данных
+		self.settings_file_name = settings_file_name	# Файл с основными настройками проекта
+		# полный путь к файлу настроек
+		self.settings_file_path: Path = self.base_dir / sources_folder / settings_file_name
+		self.project_BoQs_folder = project_BoQs_folder 	# Наименование рабочей папки с файлам ВОР
+		# путь к рабочей папки с фалами ВОР
+		self.project_BoQs_path: Path = self.base_dir / project_BoQs_folder
 
 		# ------------------------------ атрибуты проекта -------------------------------
-
 		self.construction_site: str = ''				# Наименование объекта
 		self.shorted_name: str | None = None			# Короткое имя для окна
 		self.verifier: dict = {							# Заверитель
@@ -151,17 +152,17 @@ class Project:
 		self.description: str = ''						# Дополнительное описание
 
 		# Базовые параметры проекта
-		self.units: dict = None 						# Словарь с еденицами измерения и их параметрами
+		self.units: dict = None 						# Словарь с единицами измерения и их параметрами
 		self.work_modes: dict = None 					# Словарь с настройкой режимов работы среды
 		self.posts: list = []	 						# Список с должностями исполнителей
-		self.performers: list = [] 						# Список с исполниетелями
+		self.performers: list = [] 						# Список с исполнителями
 		self.chiefs: list = []							# Список с ГИПами
 
 		self.recent_dirs: list | None = None			# Список прошлых директорий
 		self.project_BoQs: tuple[File_BoQ] = tuple()	# Кортеж с объектами данных о файлах BoQ
 		
 		# Словарь всех библиотек проекта, используемых для ссылок
-		# модиицируется менеджерами
+		# модифицируется менеджерами
 		self.library = dict() 							
 		
 		self.clipboard: tuple | None = None				# буфер обмена для работы с разделами. 
@@ -170,7 +171,7 @@ class Project:
 		# ---------------- Автоматическая загрузка при создании объекта -----------------
 
 		self.start_project_settings()
-		DataLibraryManager.DATA = self.sourсes_folder			# сводим всех наследников к единому атрибуту
+		DataLibraryManager.DATA = self.sources_folder			# сводим всех наследников к единому атрибуту
 		self.soils_manager = Soils_Manager(self)				# единый менеджер грунтов
 		self.sources_manager = Sources_Manager(self)			# единый менеджер источников
 		self.libraries_manager = LibManager(self)				# менеджер управления пользовательскими библиотеками
@@ -188,7 +189,7 @@ class Project:
 		self.code: str = Template.PROJECT_DATA_TEMPLATE.get('Code', '')
 		self.description: str = Template.PROJECT_DATA_TEMPLATE.get('Description', '')
 
-		#Библиотек едениз измерений
+		#Библиотек единиц измерений
 		self.units = Template.UNITS_TEMPLATE
 
 		# Режимы работы
@@ -233,7 +234,7 @@ class Project:
 				Template.PROJECT_DATA_TEMPLATE.get('Description', '')
 			)
 
-			# загрузка настроек едениц измерений
+			# загрузка настроек единиц измерений
 			self.units = settings_data.get('units_settings', Template.UNITS_TEMPLATE) 
 			# загрузка настроек проекта
 			self.work_modes = settings_data.get('work_modes_settings', Template.WORK_MODES_TEMPLATE) 
@@ -275,7 +276,7 @@ class Project:
 			'performers_lib': self.performers,
 			'chiefs_lib': self.chiefs
 		}
-		folder = self.base_dir / self.sourсes_folder
+		folder = self.base_dir / self.sources_folder
 		folder.mkdir(parents=True, exist_ok=True) # parents=True — рекурсивно создаёт вложенные папки
 		with open(self.settings_file_path, "w", encoding="utf-8") as f: # сохранение параметров в JSON файл
 			json.dump(export_elements, f, indent=4, ensure_ascii=False)
@@ -323,7 +324,7 @@ class Project:
 		:filename: наименование нового файла
 		:metadata: словарь с информацией о новом разделе ВОР
 		'''
-		def __сleaning_filename_of_special_characters(text:str):
+		def __cleaning_filename_of_special_characters(text:str):
 			""" Очищает от символов `__` имя файла """
 			filename = text
 			while '__' in filename:
@@ -331,7 +332,7 @@ class Project:
 			return filename
 
 
-		name = __сleaning_filename_of_special_characters(filename)
+		name = __cleaning_filename_of_special_characters(filename)
 
 		file_path: Path = self.project_BoQs_path / f'{name}.json'
 		if file_path.exists():
@@ -353,23 +354,28 @@ class Project:
 		return True
 
 	
-	def open_BoQ(self, idx_BoQ) -> BoQ_manager:
+	def open_BoQ(self, idx_BoQ: int, read_mode: bool = False) -> BoQ_manager:
 		try:
 			self.set_library()
 			file: File_BoQ = self.project_BoQs[idx_BoQ]
 			if not file.path.exists():
 				raise FileNotFoundError
+
+			# Принудительный режим чтения — блокировку не ставим
+			if read_mode:
+				return BoQ_manager(self, file, True)
+			
 			lock_info = file.status_lock
 			if lock_info[0]:
 				raise FileIsBusy(lock_info[1])
 			init_lock = file.lock()
 			if not init_lock:
-				# file.lock() сам по себе  вызывает FileNotFoundError, FileIsBusy
-				return
+				# lock() вернул False (гонка) — откатываемся в режим чтения
+				return BoQ_manager(self, file, True)
 			return BoQ_manager(self, file, False)
 		except IndexError:						# Передаётся в GUI для обновления списка
 			raise IndexError
-		except FileNotFoundError:						# Передоётся в GUI для сообщения
+		except FileNotFoundError:						# Передаётся в GUI для сообщения
 			raise FileNotFoundError('Файл отсутствует')
 		except FileIsBusy:
 			return BoQ_manager(self, file, True)		# Открытие в режиме чтения
@@ -390,7 +396,7 @@ class Project:
 		"""
 		Создаёт библиотеку ссылок на переменные проекта в виде словаря,
 		запросы к которому отправляются через self.process_library_requests()
-		TODO перевести функцию генерацию в модули, сдесь только вызов
+		TODO перевести функцию генерацию в модули, здесь только вызов
 		"""
 		self.library = {}	# модифицируется менеджерами библиотек
 
@@ -429,7 +435,7 @@ class Project:
 		return tuple(sorted(result))
 
 
-	def get_soils_gesn1_data(self) -> list:
+	def get_soils_GESN1_data(self) -> list:
 		""" Собирает данные для диалога земляных работ
 		Возвращает список с кортежами внутри которых: номер грунта, доступные работы
 		Доступные работы содержат в себе: Наименование работы, ссылку, индекс
@@ -439,7 +445,7 @@ class Project:
 		return self.soils_manager.get_soils_gesn1_data()
 
 	
-	def get_soils_gesn5_data(self) -> list:
+	def get_soils_GESN5_data(self) -> list:
 		if not self.soils_manager:
 			return
 		return self.soils_manager.get_soils_gesn5_data()
@@ -512,7 +518,7 @@ class Project:
 
 		project_data = None
 		try:
-			project_json = path_to_project / self.sourсes_folder / self.settings_file_name
+			project_json = path_to_project / self.sources_folder / self.settings_file_name
 			with open(project_json, "r", encoding="utf-8") as f:
 				project_data = json.load(f)
 		except Exception:
@@ -520,7 +526,7 @@ class Project:
 
 
 		def __get_library_file_data(root_path: Path, library_manager: DataLibraryManager):
-			path = root_path / self.sourсes_folder / (library_manager.FILE+'.json')
+			path = root_path / self.sources_folder / (library_manager.FILE+'.json')
 			try:
 				with open(path, "r", encoding="utf-8") as f:
 					return json.load(f)
@@ -557,7 +563,7 @@ class Project:
 			return
 
 		# ----- Предварительная подготовка ----
-		# библиотеки проекта за исключением едениц измерения
+		# библиотеки проекта за исключением единиц измерения
 		LIB_KEYS = ('performers_lib', 'chiefs_lib', 'posts_lib', 'units_settings',
 			'soils_lib', 'sources_lib', 'user_libs', 'machinery_lib')	
 
@@ -571,7 +577,7 @@ class Project:
 			return instructions.get(key, fail_value)
 		
 		is_was_project_import = False
-		# еденицы измерения
+		# единицы измерения
 		if __get_instruction('units_settings'):
 			other_units = data.get('units_settings', {})
 			if other_units and isinstance(other_units, dict):

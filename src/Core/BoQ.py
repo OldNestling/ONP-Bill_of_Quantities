@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 	from .Project import File_BoQ
 
 from Core.Documentation import Book
-from Core.Utilities import get_user_log, convert_value
+from Core.Utilities import convert_value
 from Core.Soils import Soil
 from .BoQ_elements import Section, Work, Resource, Link, PositionLine
 from .UserLibs import Group, MainElement, SubElement
@@ -976,9 +976,46 @@ class BoQ_manager:
 		Создаёт позиции для всех элементов выбранной группы из пользовательской библиотеки
 		со ссылками на базу данных
 		### Args:
-			- :data: словарь с целеуказаниями
+			- :data: словарь с целеуказанием
 			- :indexes: индексы (координаты) вставки новых позиций 
 		"""
+
+		def __create_work(index_section, index_work, main_el: MainElement) -> Work:
+			"""Создаёт Work для основного элемента."""
+			new_work = Work(self, [index_section, index_work, None])
+			# вставляем сейчас, чтобы не повредить текстовую ссылку ресурса после смещения позиций
+			self.add_filled_object(new_work)
+			new_work.name = f'=@{main_el.alias_work}'
+			new_work.unit = main_el.raw_work_unit
+			new_work.raw_quantity_formula = '0'
+			new_work.raw_comment = f'=@{main_el.alias_note1}'
+			return new_work
+
+
+		def __create_resource(
+			index_section, index_work, index_resource, work: Work, sub_el: SubElement
+		) -> Resource:
+			"""Создаёт Resource и привязывает его к Work."""
+			new_resource = Resource(self, [index_section, index_work, index_resource])
+			self.add_filled_object(new_resource)
+			new_resource.name = f'=@{sub_el.alias_resource}'
+			new_resource.unit = sub_el.raw_resource_unit
+			new_resource.raw_quantity_formula = f'=@{sub_el.alias_factor}*{work.format_address}'
+			new_resource.raw_comment = f'=@{sub_el.alias_note2}'
+			work.dependents.add(new_resource)
+			return new_resource
+
+
+		def __create_main_element(index_section, index_work, main_el: MainElement) -> None:
+			"""Создаёт Work основного элемента и все его ресурсы (основной + дополнительные)."""
+			new_work = __create_work(index_section, index_work, main_el)
+			# индекс 0 — первый ресурс
+			__create_resource(index_section, index_work, 0, new_work, main_el)
+			for i, res in enumerate(main_el.sub_elements, start=1):
+				res: SubElement
+				__create_resource(index_section, index_work, i, new_work, res)
+
+
 		group: Group = data.get('group')
 		main_element: MainElement = data.get('main_element')
 		sub_element: SubElement = data.get('sub_element')
@@ -986,81 +1023,31 @@ class BoQ_manager:
 		index_section, index_work, index_resource = indexes
 		if not self._check_access_to_obj((index_section, index_work, None)):
 			return
-		
+
 		section: Section = self.sections[index_section]
 		if sub_element is None:
 			new_index_work = len(section.works) if index_work is None else index_work + 1
 		else:
 			new_index_work = len(section.works) if index_work is None else index_work
-		
-		# ===== Создание всей группы ===== 
+
+		# ===== Создание всей группы =====
 		if main_element is None:
 			for main_el in group.main_elements:
 				main_el: MainElement
-				new_work = Work(self, [index_section, new_index_work, None])
-				# вставляем сейчас, чтобы не повредить текстовую ссылку ресурса после смещения позиций
-				self.add_filled_object(new_work)	
-				new_work.name = f'=@{main_el.alias_work}'
-				new_work.raw_quantity_formula = f'0'
-				new_work.raw_comment = f'=@{main_el.alias_note1}'
-
-				# ----- Создаем основной ресурс элемента -----
-				main_resource = Resource(self, [index_section, new_index_work, 0])  # индекс 0 — первый ресурс
-				self.add_filled_object(main_resource)	
-				main_resource.name = f'=@{main_el.alias_resource}'
-				main_resource.raw_quantity_formula = f'=@{main_el.alias_factor}*{new_work.format_address}'
-				main_resource.raw_comment = f'=@{main_el.alias_note2}'
-				new_work.dependents.add(main_resource)		
-
-				# ----- Добавляем дополнительные ресурсы -----
-				for i, res in enumerate(main_el.sub_elements, start=1):
-					res: SubElement
-					new_resource = Resource(self, [index_section, new_index_work, i])
-					self.add_filled_object(new_resource)	
-					new_resource.name = f'=@{res.alias_resource}'
-					new_resource.raw_quantity_formula = f'=@{res.alias_factor}*{new_work.format_address}'
-					new_resource.raw_comment = f'=@{res.alias_note2}'
-					new_work.dependents.add(new_resource)
+				__create_main_element(index_section, new_index_work, main_el)
 				new_index_work += 1
-		
+
 		# -------- Создание основного элемента и потомков ---------
 		elif sub_element is None:
-			main_el: MainElement = main_element
-			new_work = Work(self, [index_section, new_index_work, None])
-			self.add_filled_object(new_work)	
-			new_work.name = f'=@{main_el.alias_work}'
-			new_work.raw_quantity_formula = f'0'
-			new_work.raw_comment = f'=@{main_el.alias_note1}'
+			__create_main_element(index_section, new_index_work, main_element)
 
-			# ----- Создаем основной ресурс элемента -----
-			main_resource = Resource(self, [index_section, new_index_work, 0])
-			self.add_filled_object(main_resource)
-			main_resource.name = f'=@{main_el.alias_resource}'
-			main_resource.raw_quantity_formula = f'=@{main_el.alias_factor}*{new_work.format_address}'
-			main_resource.raw_comment = f'=@{main_el.alias_note2}'
-			new_work.dependents.add(main_resource)
-
-			for i, res in enumerate(main_el.sub_elements, start=1):
-				res: SubElement
-				new_resource = Resource(self, [index_section, new_index_work, i])
-				self.add_filled_object(new_resource)
-				new_resource.name = f'=@{res.alias_resource}'
-				new_resource.raw_quantity_formula = f'=@{res.alias_factor}*{new_work.format_address}'
-				new_resource.raw_comment = f'=@{res.alias_note2}'
-				new_work.dependents.add(new_resource)
-
-		# ------ Создание  только ресурса  ------  
+		# ------ Создание только ресурса ------
 		else:
 			if index_work is None:
 				return
-			new_resource = Resource(self, [index_section, new_index_work, index_resource])
-			self.add_filled_object(new_resource)
-			new_resource.name = f'=@{sub_element.alias_resource}'
 			work: Work = self.get_object((index_section, index_work, None))
-			new_resource.raw_quantity_formula = f'=@{sub_element.alias_factor}*{work.format_address}'
-			new_resource.raw_comment = f'=@{sub_element.alias_note2}'
-			work.dependents.add(new_resource)
-
+			__create_resource(index_section, new_index_work, index_resource, work, sub_element)
+	
 	# ------------------------------------ Удаление --------------------------------------
 	def clear_all(self):
 		self.sections.clear()
