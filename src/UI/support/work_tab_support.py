@@ -948,10 +948,7 @@ class BoQItemDelegate(QStyledItemDelegate):
 			if index.column() == 3:
 				# value может быть ключом (например, 'meter')
 				idx = editor.findData(value)
-				if idx >= 0:
-					editor.setCurrentIndex(idx)
-				else:
-					editor.setCurrentIndex(0)
+				editor.setCurrentIndex(idx if idx >= 0 else 0)
 			else:
 				item = index.internalPointer()
 				editor.setCurrentText(item.type)
