@@ -354,19 +354,24 @@ class Project:
 		return True
 
 	
-	def open_BoQ(self, idx_BoQ) -> BoQ_manager:
+	def open_BoQ(self, idx_BoQ: int, read_mode: bool = False) -> BoQ_manager:
 		try:
 			self.set_library()
 			file: File_BoQ = self.project_BoQs[idx_BoQ]
 			if not file.path.exists():
 				raise FileNotFoundError
+
+			# Принудительный режим чтения — блокировку не ставим
+			if read_mode:
+				return BoQ_manager(self, file, True)
+			
 			lock_info = file.status_lock
 			if lock_info[0]:
 				raise FileIsBusy(lock_info[1])
 			init_lock = file.lock()
 			if not init_lock:
-				# file.lock() сам по себе  вызывает FileNotFoundError, FileIsBusy
-				return
+				# lock() вернул False (гонка) — откатываемся в режим чтения
+				return BoQ_manager(self, file, True)
 			return BoQ_manager(self, file, False)
 		except IndexError:						# Передаётся в GUI для обновления списка
 			raise IndexError

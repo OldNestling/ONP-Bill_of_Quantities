@@ -838,8 +838,13 @@ class MainProjectTab(QWidget):
 			self.load_project_data()
 	
 
-	def open_file_BoQ(self) -> bool:
-		"""Открывает все выбранные ведомости во вкладке 'Ведомости'."""
+	def open_file_BoQ(self, read_mode = False) -> bool:
+		"""
+		Открывает все выбранные ведомости во вкладке 'Ведомости'.
+		:param read_mode: если True — открыть принудительно в режиме чтения
+			(без захвата блокировки на запись).
+  		:return: True, если операция выполнена без критических ошибок.
+		"""
 		if self.project is None:
 			return False
 		
@@ -848,7 +853,10 @@ class MainProjectTab(QWidget):
 		for idx in self.project_BoQs_table.selectedIndexes():
 			selected_rows.add(idx.row())
 		if not selected_rows:
-			QMessageBox.warning(self, 'Открытие файлов', "Сначала выберите ведомости в таблице.")
+			QMessageBox.warning(
+				self, 'Открытие файлов',
+				"Сначала выберите ведомости в таблице."
+			)
 			return False
 		
 		all_files = self.project.project_BoQs
@@ -857,7 +865,12 @@ class MainProjectTab(QWidget):
 		# Сортируем для предсказуемого порядка
 		for row in sorted(selected_rows):
 			try:
-				file_manager = self.project.open_BoQ(row)
+				# Принудительно передаём read_mode в менеджер проекта
+				file_manager = self.project.open_BoQ(row, read_mode= read_mode)
+
+				if file_manager is None:
+					continue
+
 				if file_manager.read_mode:
 					name = self.project.BoQs[row].object_name
 					busy_files.append(name)
@@ -868,18 +881,17 @@ class MainProjectTab(QWidget):
 					return False
 			except FileNotFoundError:
 				QMessageBox.warning(self, 'Открытие файла', f"Файл ведомости не найден ({all_files[row].path.name}).")
-			#except Exception as e:
-			#	QMessageBox.warning(self, 'Открытие файла', f"Не удалось открыть ведомость ({all_files[row].path.name}): {e}")
 
 		if busy_files:
 			busy_files = [f'<li>{file}</li>' for file in busy_files]
-			output = f'<ul>{''.join(busy_files)}</ul>'
+			output = f'<ul>{"".join(busy_files)}</ul>'
 			QMessageBox.warning(
 				self, 'Открытие файла', 
 				f'<p>Файл(ы) открыт(ы) в режиме чтения:</p>{output}'
 			)
 
 		self.reload_BoQs_table()   # обновляем статусы блокировок
+		return True
 
 		
 	def unlock_BoQ(self):
