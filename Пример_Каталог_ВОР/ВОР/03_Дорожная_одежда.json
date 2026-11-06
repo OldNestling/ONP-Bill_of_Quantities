@@ -1,16 +1,16 @@
 {
-    "data_scheme": 1,
+    "data_scheme": 3,
     "metadata": {
         "ObjectName": "Дорожная одежда",
-        "Num": "ВО-3",
+        "Num": "ВО-03",
         "local_estimate": "",
         "Date": "06.07.2026",
         "Signatures": {
-            "Composer": "Иванов И.И.",
+            "Composer": "Чайников Г.А.",
             "Composer_Position": "Руководитель группы"
         },
         "Verifier": null,
-        "Status_Done": false,
+        "Status": 1,
         "log_list": [
             {
                 "Date": "15.07.2026",
@@ -24,20 +24,25 @@
             {
                 "format_address_cache": null,
                 "name": "Устройство дорожной одежды по основной дороге в стеснённых условиях",
+                "local_comment": null,
                 "works": [
                     {
                         "format_address_cache": null,
                         "num_cache": null,
                         "raw_name": "=@ВДО.К2.ДСО.Работа",
-                        "name_cache": "4afdcbc0c9392b9dc5aff37710d17759",
+                        "name_hash": "4afdcbc0c9392b9dc5aff37710d17759",
+                        "name_cache": "Устройство дополнительного слоя основания, толщиной 13 см.",
                         "raw_unit": "cubic_meter",
                         "raw_quantity_formula": "6000",
+                        "quantity_formula_cache": "6000",
                         "quantity_cache": "6000.0",
                         "raw_comment": "",
-                        "comment_cache": "d41d8cd98f00b204e9800998ecf8427e",
+                        "comment_hash": "d41d8cd98f00b204e9800998ecf8427e",
+                        "comment_cache": "",
                         "local_comment": "",
                         "type": "работа",
                         "custom_round": null,
+                        "custom_round_mode": null,
                         "style_manager": {
                             "col_2": null,
                             "col_5": null,
@@ -49,31 +54,35 @@
                         "status_calculated": true,
                         "links": [
                             {
-                                "book_num": 3,
-                                "tag": 24,
+                                "book_num": "3",
+                                "tag": 26,
                                 "user_pages": null
                             },
                             {
-                                "book_num": 3,
-                                "tag": 26,
+                                "book_num": "3",
+                                "tag": 24,
                                 "user_pages": null
                             }
                         ],
-                        "links_cache": null,
+                        "links_cache": "1234-ТКР-В19 (Том 3) Ведомость дорожной одежды, стр. 74\n————————————\n1234-ТКР-Ч03 (Том 3) Конструкция дорожной одежды, стр. 102",
                         "resources": [
                             {
                                 "format_address_cache": null,
                                 "num_cache": null,
                                 "raw_name": "=@ВДО.К2.ДСО.Ресурс",
-                                "name_cache": "e5dfc7452b43b2812b5c9e2d274e7343",
+                                "name_hash": "e5dfc7452b43b2812b5c9e2d274e7343",
+                                "name_cache": "Щебеночно-песчаная смесь типа 0/45 категории К90 марки М1,  ГОСТ 70458-2022 / ГОСТ 25607-2009",
                                 "raw_unit": "cubic_meter_material",
                                 "raw_quantity_formula": "=@ВДО.К2.ДСО.Расход*Р1.П1",
+                                "quantity_formula_cache": "1.26*1.004*1.0115*6000.0",
                                 "quantity_cache": "7678",
                                 "raw_comment": "=@ВДО.К2.ДСО.Прим1",
-                                "comment_cache": "dc49e13182107b8f13204bdf277e286a",
+                                "comment_hash": "dc49e13182107b8f13204bdf277e286a",
+                                "comment_cache": "К-1.26 (СП 78.13330.2012);\nК-1.004 (РДС 82-202-96, Прил. Д);\nК-1.0115 (РДС 82-202-96, Прил. Г)",
                                 "local_comment": "",
                                 "type": "материал",
                                 "custom_round": null,
+                                "custom_round_mode": null,
                                 "style_manager": {
                                     "col_2": null,
                                     "col_5": null,
@@ -85,17 +94,17 @@
                                 "status_calculated": true,
                                 "links": [
                                     {
-                                        "book_num": 3,
-                                        "tag": 24,
+                                        "book_num": "3",
+                                        "tag": 26,
                                         "user_pages": null
                                     },
                                     {
-                                        "book_num": 3,
-                                        "tag": 26,
+                                        "book_num": "3",
+                                        "tag": 24,
                                         "user_pages": null
                                     }
                                 ],
-                                "links_cache": null
+                                "links_cache": "1234-ТКР-В19 (Том 3) Ведомость дорожной одежды, стр. 74\n————————————\n1234-ТКР-Ч03 (Том 3) Конструкция дорожной одежды, стр. 102"
                             }
                         ]
                     },
@@ -103,15 +112,19 @@
                         "format_address_cache": null,
                         "num_cache": null,
                         "raw_name": "=@ВДО.К2.НСО.Работа",
-                        "name_cache": "ace5e7d0b622bd833b4f8bd7639c1782",
+                        "name_hash": "ace5e7d0b622bd833b4f8bd7639c1782",
+                        "name_cache": "Устройство нижнего слоя основания, толщиной 15 см.",
                         "raw_unit": "square_meter",
                         "raw_quantity_formula": "29713",
+                        "quantity_formula_cache": "29713",
                         "quantity_cache": "29713.00",
                         "raw_comment": "",
-                        "comment_cache": "d41d8cd98f00b204e9800998ecf8427e",
+                        "comment_hash": "d41d8cd98f00b204e9800998ecf8427e",
+                        "comment_cache": "",
                         "local_comment": "",
                         "type": "работа",
                         "custom_round": null,
+                        "custom_round_mode": null,
                         "style_manager": {
                             "col_2": null,
                             "col_5": null,
@@ -119,35 +132,39 @@
                             "col_7": null,
                             "col_9": null
                         },
-                        "status_correct": false,
-                        "status_calculated": false,
+                        "status_correct": true,
+                        "status_calculated": true,
                         "links": [
                             {
-                                "book_num": 3,
-                                "tag": 24,
+                                "book_num": "3",
+                                "tag": 26,
                                 "user_pages": null
                             },
                             {
-                                "book_num": 3,
-                                "tag": 26,
+                                "book_num": "3",
+                                "tag": 24,
                                 "user_pages": null
                             }
                         ],
-                        "links_cache": null,
+                        "links_cache": "1234-ТКР-В19 (Том 3) Ведомость дорожной одежды, стр. 74\n————————————\n1234-ТКР-Ч03 (Том 3) Конструкция дорожной одежды, стр. 102",
                         "resources": [
                             {
                                 "format_address_cache": null,
                                 "num_cache": null,
                                 "raw_name": "=@ВДО.К2.НСО.Ресурс",
-                                "name_cache": "cc37fc2f1f1744f79b313fc87c98388f",
+                                "name_hash": "cc37fc2f1f1744f79b313fc87c98388f",
+                                "name_cache": "Щебеночно-песчаная смесь типа 0/63 категории К90 марки М1,  ГОСТ 70458-2022 / ГОСТ 25607-2009",
                                 "raw_unit": "cubic_meter_material",
                                 "raw_quantity_formula": "=@ВДО.К2.НСО.Расход*$Р1.$П1*0.15",
-                                "quantity_cache": "5703",
+                                "quantity_formula_cache": "1.26*1.004*1.0115*6000.0*0.15",
+                                "quantity_cache": "1152",
                                 "raw_comment": "=@ВДО.К2.НСО.Прим1",
-                                "comment_cache": "dc49e13182107b8f13204bdf277e286a",
+                                "comment_hash": "dc49e13182107b8f13204bdf277e286a",
+                                "comment_cache": "К-1.26 (СП 78.13330.2012);\nК-1.004 (РДС 82-202-96, Прил. Д);\nК-1.0115 (РДС 82-202-96, Прил. Г)",
                                 "local_comment": "",
                                 "type": "материал",
                                 "custom_round": null,
+                                "custom_round_mode": null,
                                 "style_manager": {
                                     "col_2": null,
                                     "col_5": null,
@@ -155,21 +172,21 @@
                                     "col_7": null,
                                     "col_9": null
                                 },
-                                "status_correct": false,
-                                "status_calculated": false,
+                                "status_correct": true,
+                                "status_calculated": true,
                                 "links": [
                                     {
-                                        "book_num": 3,
-                                        "tag": 24,
+                                        "book_num": "3",
+                                        "tag": 26,
                                         "user_pages": null
                                     },
                                     {
-                                        "book_num": 3,
-                                        "tag": 26,
+                                        "book_num": "3",
+                                        "tag": 24,
                                         "user_pages": null
                                     }
                                 ],
-                                "links_cache": null
+                                "links_cache": "1234-ТКР-В19 (Том 3) Ведомость дорожной одежды, стр. 74\n————————————\n1234-ТКР-Ч03 (Том 3) Конструкция дорожной одежды, стр. 102"
                             }
                         ]
                     },
@@ -177,15 +194,436 @@
                         "format_address_cache": null,
                         "num_cache": null,
                         "raw_name": "=@ВДО.К2.ВСО.Работа",
-                        "name_cache": "cb727c5f607ffb2630ec951f6c836b84",
+                        "name_hash": "cb727c5f607ffb2630ec951f6c836b84",
+                        "name_cache": "Устройство верхнего слоя основания асфальтоукладчиком 3-го типоразмера, толщиной 7 см, с предварительным розливом битума марки БНД 100/130.",
                         "raw_unit": "square_meter",
                         "raw_quantity_formula": "27152",
+                        "quantity_formula_cache": "27152",
                         "quantity_cache": "27152.00",
                         "raw_comment": "",
-                        "comment_cache": "d41d8cd98f00b204e9800998ecf8427e",
+                        "comment_hash": "d41d8cd98f00b204e9800998ecf8427e",
+                        "comment_cache": "",
                         "local_comment": "",
                         "type": "работа",
                         "custom_round": null,
+                        "custom_round_mode": null,
+                        "style_manager": {
+                            "col_2": null,
+                            "col_5": null,
+                            "col_6": null,
+                            "col_7": null,
+                            "col_9": null
+                        },
+                        "status_correct": true,
+                        "status_calculated": true,
+                        "links": [
+                            {
+                                "book_num": "3",
+                                "tag": 26,
+                                "user_pages": null
+                            },
+                            {
+                                "book_num": "3",
+                                "tag": 24,
+                                "user_pages": null
+                            }
+                        ],
+                        "links_cache": "1234-ТКР-В19 (Том 3) Ведомость дорожной одежды, стр. 74\n————————————\n1234-ТКР-Ч03 (Том 3) Конструкция дорожной одежды, стр. 102",
+                        "resources": [
+                            {
+                                "format_address_cache": null,
+                                "num_cache": null,
+                                "raw_name": "=@ВДО.К2.ВСО.Ресурс",
+                                "name_hash": "2f68af5f122a88a97af848578059375b",
+                                "name_cache": "Асфальтобетонная смесь типа А22Он, ГОСТ 58406.2-2020 на битуме марки БНД 100/130 по ГОСТ 33133-2014",
+                                "raw_unit": "ton",
+                                "raw_quantity_formula": "=@ВДО.К2.ВСО.Расход*Р1.П3",
+                                "quantity_formula_cache": "167.71/1000*27152.00",
+                                "quantity_cache": "4553.662",
+                                "raw_comment": "=@ВДО.К2.ВСО.Прим1",
+                                "comment_hash": "950e7442d4f72513f3d3a7777a96b84c",
+                                "comment_cache": "расход 167.71 т/1000м²",
+                                "local_comment": "",
+                                "type": "материал",
+                                "custom_round": null,
+                                "custom_round_mode": null,
+                                "style_manager": {
+                                    "col_2": null,
+                                    "col_5": null,
+                                    "col_6": null,
+                                    "col_7": null,
+                                    "col_9": null
+                                },
+                                "status_correct": true,
+                                "status_calculated": true,
+                                "links": [
+                                    {
+                                        "book_num": "3",
+                                        "tag": 26,
+                                        "user_pages": null
+                                    },
+                                    {
+                                        "book_num": "3",
+                                        "tag": 24,
+                                        "user_pages": null
+                                    }
+                                ],
+                                "links_cache": "1234-ТКР-В19 (Том 3) Ведомость дорожной одежды, стр. 74\n————————————\n1234-ТКР-Ч03 (Том 3) Конструкция дорожной одежды, стр. 102"
+                            }
+                        ]
+                    },
+                    {
+                        "format_address_cache": null,
+                        "num_cache": null,
+                        "raw_name": "=@ВДО.К2.НСП.Работа",
+                        "name_hash": "070bfa557b3b5157df3fee41fac2fee9",
+                        "name_cache": "Устройство нижнего слоя покрытия, асфальтоукладчиком 3-го типоразмера толщиной 7 см, с предварительным розливом битума марки БНД 100/130.",
+                        "raw_unit": "square_meter",
+                        "raw_quantity_formula": "=Р1.П3",
+                        "quantity_formula_cache": "27152.00",
+                        "quantity_cache": "27152.00",
+                        "raw_comment": "",
+                        "comment_hash": "d41d8cd98f00b204e9800998ecf8427e",
+                        "comment_cache": "",
+                        "local_comment": "",
+                        "type": "работа",
+                        "custom_round": null,
+                        "custom_round_mode": null,
+                        "style_manager": {
+                            "col_2": null,
+                            "col_5": null,
+                            "col_6": null,
+                            "col_7": null,
+                            "col_9": null
+                        },
+                        "status_correct": true,
+                        "status_calculated": true,
+                        "links": [
+                            {
+                                "book_num": "3",
+                                "tag": 26,
+                                "user_pages": null
+                            },
+                            {
+                                "book_num": "3",
+                                "tag": 24,
+                                "user_pages": null
+                            }
+                        ],
+                        "links_cache": "1234-ТКР-В19 (Том 3) Ведомость дорожной одежды, стр. 74\n————————————\n1234-ТКР-Ч03 (Том 3) Конструкция дорожной одежды, стр. 102",
+                        "resources": [
+                            {
+                                "format_address_cache": null,
+                                "num_cache": null,
+                                "raw_name": "=@ВДО.К2.НСП.Ресурс",
+                                "name_hash": "a90f5b5aa0ef480a27cc0762ca9eae0f",
+                                "name_cache": "Асфальтобетонная смесь типа А22Нн, ГОСТ 58406.2-2020 на битуме марки БНД 100/130 по ГОСТ 33133-2014",
+                                "raw_unit": "square_meter",
+                                "raw_quantity_formula": "=@ВДО.К2.НСП.Расход*Р1.П4",
+                                "quantity_formula_cache": "167.71/1000*27152.00",
+                                "quantity_cache": "4553.66",
+                                "raw_comment": "=@ВДО.К2.НСП.Прим1",
+                                "comment_hash": "950e7442d4f72513f3d3a7777a96b84c",
+                                "comment_cache": "расход 167.71 т/1000м²",
+                                "local_comment": "",
+                                "type": "материал",
+                                "custom_round": null,
+                                "custom_round_mode": null,
+                                "style_manager": {
+                                    "col_2": null,
+                                    "col_5": null,
+                                    "col_6": null,
+                                    "col_7": null,
+                                    "col_9": null
+                                },
+                                "status_correct": true,
+                                "status_calculated": true,
+                                "links": [
+                                    {
+                                        "book_num": "3",
+                                        "tag": 26,
+                                        "user_pages": null
+                                    },
+                                    {
+                                        "book_num": "3",
+                                        "tag": 24,
+                                        "user_pages": null
+                                    }
+                                ],
+                                "links_cache": "1234-ТКР-В19 (Том 3) Ведомость дорожной одежды, стр. 74\n————————————\n1234-ТКР-Ч03 (Том 3) Конструкция дорожной одежды, стр. 102"
+                            }
+                        ]
+                    },
+                    {
+                        "format_address_cache": null,
+                        "num_cache": null,
+                        "raw_name": "=@ВДО.К2.ВСП.Работа",
+                        "name_hash": "b5b63d7f638a2db562a499d8cdd59589",
+                        "name_cache": "Устройство верхнего слоя покрытия, асфальтоукладчиком 3-го типоразмера толщиной 5 см, с предварительным розливом битума марки БНД 100/130.",
+                        "raw_unit": "square_meter",
+                        "raw_quantity_formula": "=Р1.П3+0.567",
+                        "quantity_formula_cache": "27152.00+0.567",
+                        "quantity_cache": "27152.57",
+                        "raw_comment": "",
+                        "comment_hash": "d41d8cd98f00b204e9800998ecf8427e",
+                        "comment_cache": "",
+                        "local_comment": "",
+                        "type": "работа",
+                        "custom_round": null,
+                        "custom_round_mode": null,
+                        "style_manager": {
+                            "col_2": null,
+                            "col_5": null,
+                            "col_6": null,
+                            "col_7": null,
+                            "col_9": null
+                        },
+                        "status_correct": true,
+                        "status_calculated": true,
+                        "links": [
+                            {
+                                "book_num": "3",
+                                "tag": 26,
+                                "user_pages": null
+                            },
+                            {
+                                "book_num": "3",
+                                "tag": 24,
+                                "user_pages": null
+                            }
+                        ],
+                        "links_cache": "1234-ТКР-В19 (Том 3) Ведомость дорожной одежды, стр. 74\n————————————\n1234-ТКР-Ч03 (Том 3) Конструкция дорожной одежды, стр. 102",
+                        "resources": [
+                            {
+                                "format_address_cache": null,
+                                "num_cache": null,
+                                "raw_name": "=@ВДО.К2.ВСП.Ресурс",
+                                "name_hash": "f00f89aeac4e8b82888619bcf8eab4ea",
+                                "name_cache": "Асфальтобетонная смесь типа А16Вл, ГОСТ 58406.2-2020 на битуме марки БНД 100/130 по ГОСТ 33133-2014",
+                                "raw_unit": "ton",
+                                "raw_quantity_formula": "=@ВДО.К2.ВСП.Расход*Р1.П5",
+                                "quantity_formula_cache": "120.03/1000*27152.57",
+                                "quantity_cache": "3259.123",
+                                "raw_comment": "=@ВДО.К2.ВСП.Прим1",
+                                "comment_hash": "d9412a32253b5b5ba5f1ba3f2541eed6",
+                                "comment_cache": "расход 120.03 т/1000м²",
+                                "local_comment": "",
+                                "type": "материал",
+                                "custom_round": null,
+                                "custom_round_mode": null,
+                                "style_manager": {
+                                    "col_2": null,
+                                    "col_5": null,
+                                    "col_6": null,
+                                    "col_7": null,
+                                    "col_9": null
+                                },
+                                "status_correct": true,
+                                "status_calculated": true,
+                                "links": [
+                                    {
+                                        "book_num": "3",
+                                        "tag": 26,
+                                        "user_pages": null
+                                    },
+                                    {
+                                        "book_num": "3",
+                                        "tag": 24,
+                                        "user_pages": null
+                                    }
+                                ],
+                                "links_cache": "1234-ТКР-В19 (Том 3) Ведомость дорожной одежды, стр. 74\n————————————\n1234-ТКР-Ч03 (Том 3) Конструкция дорожной одежды, стр. 102"
+                            }
+                        ]
+                    },
+                    {
+                        "format_address_cache": null,
+                        "num_cache": null,
+                        "raw_name": "=@ВДО.К2.ПО.Работа",
+                        "name_hash": "baf4877a9153e4689d6f045e28ee1fda",
+                        "name_cache": "Устройство присыпных обочин, средней толщиной 31 см",
+                        "raw_unit": "cubic_meter_profile",
+                        "raw_quantity_formula": "4577.2",
+                        "quantity_formula_cache": "4577.2",
+                        "quantity_cache": "4577.2",
+                        "raw_comment": "=@ВДО.К2.ПО.Прим2",
+                        "comment_hash": "58fb25a2b373cb17b8bc064d1e980104",
+                        "comment_cache": "В том числе под троуары, со средней толщиной 48 см",
+                        "local_comment": "",
+                        "type": "работа",
+                        "custom_round": null,
+                        "custom_round_mode": null,
+                        "style_manager": {
+                            "col_2": null,
+                            "col_5": null,
+                            "col_6": null,
+                            "col_7": null,
+                            "col_9": null
+                        },
+                        "status_correct": true,
+                        "status_calculated": true,
+                        "links": [
+                            {
+                                "book_num": "3",
+                                "tag": 26,
+                                "user_pages": null
+                            },
+                            {
+                                "book_num": "3",
+                                "tag": 24,
+                                "user_pages": null
+                            }
+                        ],
+                        "links_cache": "1234-ТКР-В19 (Том 3) Ведомость дорожной одежды, стр. 74\n————————————\n1234-ТКР-Ч03 (Том 3) Конструкция дорожной одежды, стр. 102",
+                        "resources": [
+                            {
+                                "format_address_cache": null,
+                                "num_cache": null,
+                                "raw_name": "=@ВДО.К2.ПО.Ресурс",
+                                "name_hash": "e5dfc7452b43b2812b5c9e2d274e7343",
+                                "name_cache": "Щебеночно-песчаная смесь типа 0/45 категории К90 марки М1, ГОСТ 70458-2022 / ГОСТ 25607-2009",
+                                "raw_unit": "cubic_meter_material",
+                                "raw_quantity_formula": "=@ВДО.К2.ПО.Расход*Р1.П6",
+                                "quantity_formula_cache": "1.26*1.004*1.0115*4577.2",
+                                "quantity_cache": "5857",
+                                "raw_comment": "=@ВДО.К2.ПО.Прим1",
+                                "comment_hash": "dc49e13182107b8f13204bdf277e286a",
+                                "comment_cache": "К-1.26 (СП 78.13330.2012);\nК-1.004 (РДС 82-202-96, Прил. Д);\nК-1.0115 (РДС 82-202-96, Прил. Г)",
+                                "local_comment": "",
+                                "type": "материал",
+                                "custom_round": null,
+                                "custom_round_mode": null,
+                                "style_manager": {
+                                    "col_2": null,
+                                    "col_5": null,
+                                    "col_6": null,
+                                    "col_7": null,
+                                    "col_9": null
+                                },
+                                "status_correct": true,
+                                "status_calculated": true,
+                                "links": [
+                                    {
+                                        "book_num": "3",
+                                        "tag": 26,
+                                        "user_pages": null
+                                    },
+                                    {
+                                        "book_num": "3",
+                                        "tag": 24,
+                                        "user_pages": null
+                                    }
+                                ],
+                                "links_cache": "1234-ТКР-В19 (Том 3) Ведомость дорожной одежды, стр. 74\n————————————\n1234-ТКР-Ч03 (Том 3) Конструкция дорожной одежды, стр. 102"
+                            }
+                        ]
+                    },
+                    {
+                        "format_address_cache": null,
+                        "num_cache": null,
+                        "raw_name": "=@ВДО.К2.УЧО.Работа",
+                        "name_hash": "d112281274042b07fd48d3433bab8967",
+                        "name_cache": "Устройство укрепленной части обочины, толщиной 5 см, с предварительным розливом битума марки БНД 100/130.",
+                        "raw_unit": "square_meter",
+                        "raw_quantity_formula": "916.62",
+                        "quantity_formula_cache": "916.62",
+                        "quantity_cache": "916.62",
+                        "raw_comment": "",
+                        "comment_hash": "d41d8cd98f00b204e9800998ecf8427e",
+                        "comment_cache": "",
+                        "local_comment": "",
+                        "type": "работа",
+                        "custom_round": null,
+                        "custom_round_mode": null,
+                        "style_manager": {
+                            "col_2": null,
+                            "col_5": null,
+                            "col_6": null,
+                            "col_7": null,
+                            "col_9": null
+                        },
+                        "status_correct": true,
+                        "status_calculated": true,
+                        "links": [
+                            {
+                                "book_num": "3",
+                                "tag": 26,
+                                "user_pages": null
+                            },
+                            {
+                                "book_num": "3",
+                                "tag": 24,
+                                "user_pages": null
+                            }
+                        ],
+                        "links_cache": "1234-ТКР-В19 (Том 3) Ведомость дорожной одежды, стр. 74\n————————————\n1234-ТКР-Ч03 (Том 3) Конструкция дорожной одежды, стр. 102",
+                        "resources": [
+                            {
+                                "format_address_cache": null,
+                                "num_cache": null,
+                                "raw_name": "=@ВДО.К2.УЧО.Ресурс",
+                                "name_hash": "f00f89aeac4e8b82888619bcf8eab4ea",
+                                "name_cache": "Асфальтобетонная смесь типа А16Вл, ГОСТ 58406.2-2020 на битуме марки БНД 100/130 по ГОСТ 33133-2014",
+                                "raw_unit": "ton",
+                                "raw_quantity_formula": "=@ВДО.К2.УЧО.Расход*Р1.П7",
+                                "quantity_formula_cache": "120.03/1000*916.62",
+                                "quantity_cache": "110.022",
+                                "raw_comment": "=@ВДО.К2.УЧО.Прим1",
+                                "comment_hash": "d9412a32253b5b5ba5f1ba3f2541eed6",
+                                "comment_cache": "расход 120.03 т/1000м²",
+                                "local_comment": "",
+                                "type": "материал",
+                                "custom_round": null,
+                                "custom_round_mode": null,
+                                "style_manager": {
+                                    "col_2": null,
+                                    "col_5": null,
+                                    "col_6": null,
+                                    "col_7": null,
+                                    "col_9": null
+                                },
+                                "status_correct": true,
+                                "status_calculated": true,
+                                "links": [
+                                    {
+                                        "book_num": "3",
+                                        "tag": 26,
+                                        "user_pages": null
+                                    },
+                                    {
+                                        "book_num": "3",
+                                        "tag": 24,
+                                        "user_pages": null
+                                    }
+                                ],
+                                "links_cache": "1234-ТКР-В19 (Том 3) Ведомость дорожной одежды, стр. 74\n————————————\n1234-ТКР-Ч03 (Том 3) Конструкция дорожной одежды, стр. 102"
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "format_address_cache": null,
+                "name": "Усиление дорожной одежды",
+                "local_comment": null,
+                "works": [
+                    {
+                        "format_address_cache": null,
+                        "num_cache": null,
+                        "raw_name": "=@ВДО.К1.СО.Работа",
+                        "name_hash": "c74ebb87d09d50655548f5340ee95d94",
+                        "name_cache": "Нижний слой основания из ОМС 32 К, обработанной органическим вяжущим, с добавлением цемента, полученной путем дробления и регенерации существующего дорожного полотна, толщиной 15 см",
+                        "raw_unit": "square_meter",
+                        "raw_quantity_formula": "1000",
+                        "quantity_formula_cache": "1000",
+                        "quantity_cache": "1000.00",
+                        "raw_comment": "=@ВДО.К1.СО.Прим1",
+                        "comment_hash": "d41d8cd98f00b204e9800998ecf8427e",
+                        "comment_cache": "",
+                        "local_comment": "",
+                        "type": "работа",
+                        "custom_round": null,
+                        "custom_round_mode": null,
                         "style_manager": {
                             "col_2": null,
                             "col_5": null,
@@ -195,255 +633,26 @@
                         },
                         "status_correct": true,
                         "status_calculated": false,
-                        "links": [
-                            {
-                                "book_num": 3,
-                                "tag": 24,
-                                "user_pages": null
-                            },
-                            {
-                                "book_num": 3,
-                                "tag": 26,
-                                "user_pages": null
-                            }
-                        ],
-                        "links_cache": null,
+                        "links": [],
+                        "links_cache": "",
                         "resources": [
                             {
                                 "format_address_cache": null,
                                 "num_cache": null,
-                                "raw_name": "=@ВДО.К2.ВСО.Ресурс",
-                                "name_cache": "2f68af5f122a88a97af848578059375b",
-                                "raw_unit": "ton",
-                                "raw_quantity_formula": "=@ВДО.К2.ВСО.Расход*Р1.П3",
-                                "quantity_cache": "4553.662",
-                                "raw_comment": "=@ВДО.К2.ВСО.Прим1",
-                                "comment_cache": "950e7442d4f72513f3d3a7777a96b84c",
-                                "local_comment": "",
-                                "type": "материал",
-                                "custom_round": null,
-                                "style_manager": {
-                                    "col_2": null,
-                                    "col_5": null,
-                                    "col_6": null,
-                                    "col_7": null,
-                                    "col_9": null
-                                },
-                                "status_correct": true,
-                                "status_calculated": false,
-                                "links": [
-                                    {
-                                        "book_num": 3,
-                                        "tag": 24,
-                                        "user_pages": null
-                                    },
-                                    {
-                                        "book_num": 3,
-                                        "tag": 26,
-                                        "user_pages": null
-                                    }
-                                ],
-                                "links_cache": null
-                            }
-                        ]
-                    },
-                    {
-                        "format_address_cache": null,
-                        "num_cache": null,
-                        "raw_name": "=@ВДО.К2.НСП.Работа",
-                        "name_cache": "070bfa557b3b5157df3fee41fac2fee9",
-                        "raw_unit": "square_meter",
-                        "raw_quantity_formula": "=Р1.П3",
-                        "quantity_cache": "27152.00",
-                        "raw_comment": "",
-                        "comment_cache": "d41d8cd98f00b204e9800998ecf8427e",
-                        "local_comment": "",
-                        "type": "работа",
-                        "custom_round": null,
-                        "style_manager": {
-                            "col_2": null,
-                            "col_5": null,
-                            "col_6": null,
-                            "col_7": null,
-                            "col_9": null
-                        },
-                        "status_correct": true,
-                        "status_calculated": true,
-                        "links": [
-                            {
-                                "book_num": 3,
-                                "tag": 24,
-                                "user_pages": null
-                            },
-                            {
-                                "book_num": 3,
-                                "tag": 26,
-                                "user_pages": null
-                            }
-                        ],
-                        "links_cache": null,
-                        "resources": [
-                            {
-                                "format_address_cache": null,
-                                "num_cache": null,
-                                "raw_name": "=@ВДО.К2.НСП.Ресурс",
-                                "name_cache": "a90f5b5aa0ef480a27cc0762ca9eae0f",
-                                "raw_unit": "square_meter",
-                                "raw_quantity_formula": "=@ВДО.К2.НСП.Расход*Р1.П4",
-                                "quantity_cache": "4553.66",
-                                "raw_comment": "=@ВДО.К2.НСП.Прим1",
-                                "comment_cache": "950e7442d4f72513f3d3a7777a96b84c",
-                                "local_comment": "",
-                                "type": "материал",
-                                "custom_round": null,
-                                "style_manager": {
-                                    "col_2": null,
-                                    "col_5": null,
-                                    "col_6": null,
-                                    "col_7": null,
-                                    "col_9": null
-                                },
-                                "status_correct": true,
-                                "status_calculated": false,
-                                "links": [
-                                    {
-                                        "book_num": 3,
-                                        "tag": 24,
-                                        "user_pages": null
-                                    },
-                                    {
-                                        "book_num": 3,
-                                        "tag": 26,
-                                        "user_pages": null
-                                    }
-                                ],
-                                "links_cache": null
-                            }
-                        ]
-                    },
-                    {
-                        "format_address_cache": null,
-                        "num_cache": null,
-                        "raw_name": "=@ВДО.К2.ВСП.Работа",
-                        "name_cache": "b5b63d7f638a2db562a499d8cdd59589",
-                        "raw_unit": "square_meter",
-                        "raw_quantity_formula": "=Р1.П3+0.567",
-                        "quantity_cache": "27152.57",
-                        "raw_comment": "",
-                        "comment_cache": "d41d8cd98f00b204e9800998ecf8427e",
-                        "local_comment": "",
-                        "type": "работа",
-                        "custom_round": null,
-                        "style_manager": {
-                            "col_2": null,
-                            "col_5": null,
-                            "col_6": null,
-                            "col_7": null,
-                            "col_9": null
-                        },
-                        "status_correct": true,
-                        "status_calculated": true,
-                        "links": [
-                            {
-                                "book_num": 3,
-                                "tag": 24,
-                                "user_pages": null
-                            },
-                            {
-                                "book_num": 3,
-                                "tag": 26,
-                                "user_pages": null
-                            }
-                        ],
-                        "links_cache": null,
-                        "resources": [
-                            {
-                                "format_address_cache": null,
-                                "num_cache": null,
-                                "raw_name": "=@ВДО.К2.ВСП.Ресурс",
-                                "name_cache": "f00f89aeac4e8b82888619bcf8eab4ea",
-                                "raw_unit": "ton",
-                                "raw_quantity_formula": "=@ВДО.К2.ВСП.Расход*Р1.П5",
-                                "quantity_cache": "3259.123",
-                                "raw_comment": "=@ВДО.К2.ВСП.Прим1",
-                                "comment_cache": "d9412a32253b5b5ba5f1ba3f2541eed6",
-                                "local_comment": "",
-                                "type": "материал",
-                                "custom_round": null,
-                                "style_manager": {
-                                    "col_2": null,
-                                    "col_5": null,
-                                    "col_6": null,
-                                    "col_7": null,
-                                    "col_9": null
-                                },
-                                "status_correct": true,
-                                "status_calculated": false,
-                                "links": [
-                                    {
-                                        "book_num": 3,
-                                        "tag": 24,
-                                        "user_pages": null
-                                    },
-                                    {
-                                        "book_num": 3,
-                                        "tag": 26,
-                                        "user_pages": null
-                                    }
-                                ],
-                                "links_cache": null
-                            }
-                        ]
-                    },
-                    {
-                        "format_address_cache": null,
-                        "num_cache": null,
-                        "raw_name": "=@ВДО.К2.ПО.Работа",
-                        "name_cache": "baf4877a9153e4689d6f045e28ee1fda",
-                        "raw_unit": "cubic_meter_profile",
-                        "raw_quantity_formula": "4577.2",
-                        "quantity_cache": "4577.2",
-                        "raw_comment": "=@ВДО.К2.ПО.Прим2",
-                        "comment_cache": "58fb25a2b373cb17b8bc064d1e980104",
-                        "local_comment": "",
-                        "type": "работа",
-                        "custom_round": null,
-                        "style_manager": {
-                            "col_2": null,
-                            "col_5": null,
-                            "col_6": null,
-                            "col_7": null,
-                            "col_9": null
-                        },
-                        "status_correct": true,
-                        "status_calculated": true,
-                        "links": [
-                            {
-                                "book_num": 3,
-                                "tag": 24,
-                                "user_pages": null
-                            },
-                            {
-                                "book_num": 3,
-                                "tag": 26,
-                                "user_pages": null
-                            }
-                        ],
-                        "links_cache": null,
-                        "resources": [
-                            {
-                                "format_address_cache": null,
-                                "num_cache": null,
-                                "raw_name": "=@ВДО.К2.ПО.Ресурс",
-                                "name_cache": "e5dfc7452b43b2812b5c9e2d274e7343",
+                                "raw_name": "=@ВДО.К1.СО.Ресурс",
+                                "name_hash": "e5dfc7452b43b2812b5c9e2d274e7343",
+                                "name_cache": "Щебеночно-песчаная смесь типа 0/45 категории К90 марки М1,  ГОСТ 70458-2022 / ГОСТ 25607-2009",
                                 "raw_unit": "cubic_meter_material",
-                                "raw_quantity_formula": "=@ВДО.К2.ПО.Расход*Р1.П6",
-                                "quantity_cache": "5857",
-                                "raw_comment": "=@ВДО.К2.ПО.Прим1",
-                                "comment_cache": "dc49e13182107b8f13204bdf277e286a",
+                                "raw_quantity_formula": "=@ВДО.К1.СО.Расход*Р2.П1",
+                                "quantity_formula_cache": "0.25*1.26*1.004*1.0115*1000.00",
+                                "quantity_cache": "320",
+                                "raw_comment": "=@ВДО.К1.СО.Прим2",
+                                "comment_hash": "4319f97dc4f5ecb2be5b0c4d1cf36dfa",
+                                "comment_cache": "щпс 25% от Vслоя\n\nК-1.26 (СП 78.13330.2012);\nК-1.004 (РДС 82-202-96, Прил. Д);\nК-1.0115 (РДС 82-202-96, Прил. Г)",
                                 "local_comment": "",
                                 "type": "материал",
                                 "custom_round": null,
+                                "custom_round_mode": null,
                                 "style_manager": {
                                     "col_2": null,
                                     "col_5": null,
@@ -453,35 +662,86 @@
                                 },
                                 "status_correct": true,
                                 "status_calculated": false,
-                                "links": [
-                                    {
-                                        "book_num": 3,
-                                        "tag": 24,
-                                        "user_pages": null
-                                    },
-                                    {
-                                        "book_num": 3,
-                                        "tag": 26,
-                                        "user_pages": null
-                                    }
-                                ],
-                                "links_cache": null
+                                "links": [],
+                                "links_cache": ""
+                            },
+                            {
+                                "format_address_cache": null,
+                                "num_cache": null,
+                                "raw_name": "=@ВДО.К1.СО.Цемент.Ресурс",
+                                "name_hash": "2326537fe8b3573942b02b9bbc57251d",
+                                "name_cache": "Портландцемент М400, 8%",
+                                "raw_unit": "ton",
+                                "raw_quantity_formula": "=@ВДО.К1.СО.Цемент.Расход*Р2.П1",
+                                "quantity_formula_cache": "0.08*2.3*1000.00",
+                                "quantity_cache": "184.000",
+                                "raw_comment": "=@ВДО.К1.СО.Цемент.Прим2",
+                                "comment_hash": "467bdf71c699751c02d37577db7f6615",
+                                "comment_cache": "8% от плотности конечно материала,\nY = 2.3 т/м³",
+                                "local_comment": "",
+                                "type": "материал",
+                                "custom_round": null,
+                                "custom_round_mode": null,
+                                "style_manager": {
+                                    "col_2": null,
+                                    "col_5": null,
+                                    "col_6": null,
+                                    "col_7": null,
+                                    "col_9": null
+                                },
+                                "status_correct": true,
+                                "status_calculated": false,
+                                "links": [],
+                                "links_cache": ""
+                            },
+                            {
+                                "format_address_cache": null,
+                                "num_cache": null,
+                                "raw_name": "=@ВДО.К1.СО.Эмульсия.Ресурс",
+                                "name_hash": "94c6094d2b209d916f7dd37ba77c21b6",
+                                "name_cache": "Эмульсия битумно-катионная ЭБДК-М, 6%",
+                                "raw_unit": "ton",
+                                "raw_quantity_formula": "=@ВДО.К1.СО.Эмульсия.Расход*Р2.П1",
+                                "quantity_formula_cache": "0.06*2.3*1000.00",
+                                "quantity_cache": "138.000",
+                                "raw_comment": "=@ВДО.К1.СО.Эмульсия.Прим2",
+                                "comment_hash": "eb2c244d8427d86ed557c6bf71010ab1",
+                                "comment_cache": "6% от плотности конечно материала,\n1.05 т/м³",
+                                "local_comment": "",
+                                "type": "материал",
+                                "custom_round": null,
+                                "custom_round_mode": null,
+                                "style_manager": {
+                                    "col_2": null,
+                                    "col_5": null,
+                                    "col_6": null,
+                                    "col_7": null,
+                                    "col_9": null
+                                },
+                                "status_correct": true,
+                                "status_calculated": false,
+                                "links": [],
+                                "links_cache": ""
                             }
                         ]
                     },
                     {
                         "format_address_cache": null,
                         "num_cache": null,
-                        "raw_name": "=@ВДО.К2.УЧО.Работа",
-                        "name_cache": "d112281274042b07fd48d3433bab8967",
+                        "raw_name": "=@ВДО.К1.НСП.Работа",
+                        "name_hash": "ded54724def025ccde45ead9cfd6a5e0",
+                        "name_cache": "Устройство выравнивающего слоя, асфальтоукладчиком 3-го типоразмера , толщиной 7 см, с предварительным розливом битума",
                         "raw_unit": "square_meter",
-                        "raw_quantity_formula": "916.62",
-                        "quantity_cache": "916.62",
-                        "raw_comment": "",
-                        "comment_cache": "d41d8cd98f00b204e9800998ecf8427e",
+                        "raw_quantity_formula": "1000",
+                        "quantity_formula_cache": "1000",
+                        "quantity_cache": "1000.00",
+                        "raw_comment": "=@ВДО.К1.НСП.Прим1",
+                        "comment_hash": "d41d8cd98f00b204e9800998ecf8427e",
+                        "comment_cache": "",
                         "local_comment": "",
                         "type": "работа",
                         "custom_round": null,
+                        "custom_round_mode": null,
                         "style_manager": {
                             "col_2": null,
                             "col_5": null,
@@ -490,34 +750,27 @@
                             "col_9": null
                         },
                         "status_correct": true,
-                        "status_calculated": true,
-                        "links": [
-                            {
-                                "book_num": 3,
-                                "tag": 24,
-                                "user_pages": null
-                            },
-                            {
-                                "book_num": 3,
-                                "tag": 26,
-                                "user_pages": null
-                            }
-                        ],
-                        "links_cache": null,
+                        "status_calculated": false,
+                        "links": [],
+                        "links_cache": "",
                         "resources": [
                             {
                                 "format_address_cache": null,
                                 "num_cache": null,
-                                "raw_name": "=@ВДО.К2.УЧО.Ресурс",
-                                "name_cache": "f00f89aeac4e8b82888619bcf8eab4ea",
+                                "raw_name": "=@ВДО.К1.НСП.Ресурс",
+                                "name_hash": "175c5ab3ea8dff7d72ed6398594d9a1e",
+                                "name_cache": "Асфальтобетонная смесь типа А22Н/Т, ГОСТ 58406.2-2020 на битуме марки БНД 100/130 по ГОСТ 33133-2014",
                                 "raw_unit": "ton",
-                                "raw_quantity_formula": "=@ВДО.К2.УЧО.Расход*Р1.П7",
-                                "quantity_cache": "110.022",
-                                "raw_comment": "=@ВДО.К2.УЧО.Прим1",
-                                "comment_cache": "d9412a32253b5b5ba5f1ba3f2541eed6",
+                                "raw_quantity_formula": "=@ВДО.К1.НСП.Расход*Р2.П2",
+                                "quantity_formula_cache": "167.71/1000*1000.00",
+                                "quantity_cache": "167.710",
+                                "raw_comment": "=@ВДО.К1.НСП.Прим2",
+                                "comment_hash": "950e7442d4f72513f3d3a7777a96b84c",
+                                "comment_cache": "расход 167.71 т/1000м²",
                                 "local_comment": "",
                                 "type": "материал",
                                 "custom_round": null,
+                                "custom_round_mode": null,
                                 "style_manager": {
                                     "col_2": null,
                                     "col_5": null,
@@ -527,19 +780,186 @@
                                 },
                                 "status_correct": true,
                                 "status_calculated": false,
-                                "links": [
-                                    {
-                                        "book_num": 3,
-                                        "tag": 24,
-                                        "user_pages": null
-                                    },
-                                    {
-                                        "book_num": 3,
-                                        "tag": 26,
-                                        "user_pages": null
-                                    }
-                                ],
-                                "links_cache": null
+                                "links": [],
+                                "links_cache": ""
+                            },
+                            {
+                                "format_address_cache": null,
+                                "num_cache": null,
+                                "raw_name": "=@ВДО.К1.НСП.Битум.Ресурс",
+                                "name_hash": "e8ea8d67f6e9950ff6c2def51fb17384",
+                                "name_cache": "Битум марки БНД 100/130",
+                                "raw_unit": "ton",
+                                "raw_quantity_formula": "=@ВДО.К1.НСП.Битум.Расход*Р2.П2",
+                                "quantity_formula_cache": "0.6/1000*1000.00",
+                                "quantity_cache": "0.600",
+                                "raw_comment": "=@ВДО.К1.НСП.Битум.Прим2",
+                                "comment_hash": "78343c8810c795ddd19ebc24dc0b0598",
+                                "comment_cache": "расход \n0.6т/1000м²",
+                                "local_comment": "",
+                                "type": "материал",
+                                "custom_round": null,
+                                "custom_round_mode": null,
+                                "style_manager": {
+                                    "col_2": null,
+                                    "col_5": null,
+                                    "col_6": null,
+                                    "col_7": null,
+                                    "col_9": null
+                                },
+                                "status_correct": true,
+                                "status_calculated": false,
+                                "links": [],
+                                "links_cache": ""
+                            }
+                        ]
+                    },
+                    {
+                        "format_address_cache": null,
+                        "num_cache": null,
+                        "raw_name": "=@ВДО.К1.ВСП.Работа",
+                        "name_hash": "b5b63d7f638a2db562a499d8cdd59589",
+                        "name_cache": "Устройство верхнего слоя покрытия, асфальтоукладчиком 3-го типоразмера толщиной 5 см, с предварительным розливом битума марки БНД 100/130.",
+                        "raw_unit": "square_meter",
+                        "raw_quantity_formula": "1000",
+                        "quantity_formula_cache": "1000",
+                        "quantity_cache": "1000.00",
+                        "raw_comment": "=@ВДО.К1.ВСП.Прим1",
+                        "comment_hash": "d41d8cd98f00b204e9800998ecf8427e",
+                        "comment_cache": "",
+                        "local_comment": "",
+                        "type": "работа",
+                        "custom_round": null,
+                        "custom_round_mode": null,
+                        "style_manager": {
+                            "col_2": null,
+                            "col_5": null,
+                            "col_6": null,
+                            "col_7": null,
+                            "col_9": null
+                        },
+                        "status_correct": true,
+                        "status_calculated": false,
+                        "links": [],
+                        "links_cache": "",
+                        "resources": [
+                            {
+                                "format_address_cache": null,
+                                "num_cache": null,
+                                "raw_name": "=@ВДО.К1.ВСП.Ресурс",
+                                "name_hash": "8060eca5a7f0fd2cf7f46b9fef8bf764",
+                                "name_cache": "Щебеночно-мастичная асфальтобетонная смесь ЩМА-16, ГОСТ 58406.1-2020 на битуме марки БНД 100/130 по ГОСТ 33133-2014",
+                                "raw_unit": "ton",
+                                "raw_quantity_formula": "=@ВДО.К1.ВСП.Расход*Р2.П3",
+                                "quantity_formula_cache": "119.89/1000*1000.00",
+                                "quantity_cache": "119.890",
+                                "raw_comment": "=@ВДО.К1.ВСП.Прим2",
+                                "comment_hash": "7bbdb801c64ac0018cd4255969244211",
+                                "comment_cache": "расход 119.89 т/1000м²",
+                                "local_comment": "",
+                                "type": "материал",
+                                "custom_round": null,
+                                "custom_round_mode": null,
+                                "style_manager": {
+                                    "col_2": null,
+                                    "col_5": null,
+                                    "col_6": null,
+                                    "col_7": null,
+                                    "col_9": null
+                                },
+                                "status_correct": true,
+                                "status_calculated": false,
+                                "links": [],
+                                "links_cache": ""
+                            },
+                            {
+                                "format_address_cache": null,
+                                "num_cache": null,
+                                "raw_name": "=@ВДО.К1.ВСП.Битум.Ресурс",
+                                "name_hash": "e8ea8d67f6e9950ff6c2def51fb17384",
+                                "name_cache": "Битум марки БНД 100/130",
+                                "raw_unit": "ton",
+                                "raw_quantity_formula": "=@ВДО.К1.ВСП.Битум.Расход*Р2.П3",
+                                "quantity_formula_cache": "0.3/1000*1000.00",
+                                "quantity_cache": "0.300",
+                                "raw_comment": "=@ВДО.К1.ВСП.Битум.Прим2",
+                                "comment_hash": "b95f24d48202858fe8a1a84760301506",
+                                "comment_cache": "расход битума  0.3т/1000м²",
+                                "local_comment": "",
+                                "type": "материал",
+                                "custom_round": null,
+                                "custom_round_mode": null,
+                                "style_manager": {
+                                    "col_2": null,
+                                    "col_5": null,
+                                    "col_6": null,
+                                    "col_7": null,
+                                    "col_9": null
+                                },
+                                "status_correct": true,
+                                "status_calculated": false,
+                                "links": [],
+                                "links_cache": ""
+                            }
+                        ]
+                    },
+                    {
+                        "format_address_cache": null,
+                        "num_cache": null,
+                        "raw_name": "=@ВДО.К1.ПО.Работа",
+                        "name_hash": "e8d700c0894ad5475d49008008497580",
+                        "name_cache": "Устройство присыпных обочин",
+                        "raw_unit": "cubic_meter_profile",
+                        "raw_quantity_formula": "500",
+                        "quantity_formula_cache": "500",
+                        "quantity_cache": "500.0",
+                        "raw_comment": "=@ВДО.К1.ПО.Прим1",
+                        "comment_hash": "d41d8cd98f00b204e9800998ecf8427e",
+                        "comment_cache": "",
+                        "local_comment": "",
+                        "type": "работа",
+                        "custom_round": null,
+                        "custom_round_mode": null,
+                        "style_manager": {
+                            "col_2": null,
+                            "col_5": null,
+                            "col_6": null,
+                            "col_7": null,
+                            "col_9": null
+                        },
+                        "status_correct": true,
+                        "status_calculated": false,
+                        "links": [],
+                        "links_cache": "",
+                        "resources": [
+                            {
+                                "format_address_cache": null,
+                                "num_cache": null,
+                                "raw_name": "=@ВДО.К1.ПО.Ресурс",
+                                "name_hash": "e5dfc7452b43b2812b5c9e2d274e7343",
+                                "name_cache": "Щебеночно-песчаная смесь типа 0/45 категории К90 марки М1, ГОСТ 70458-2022 / ГОСТ 25607-2009",
+                                "raw_unit": "cubic_meter_material",
+                                "raw_quantity_formula": "=@ВДО.К1.ПО.Расход*Р2.П4",
+                                "quantity_formula_cache": "1.26*1.004*1.0115*500.0",
+                                "quantity_cache": "640",
+                                "raw_comment": "=@ВДО.К1.ПО.Прим2",
+                                "comment_hash": "dc49e13182107b8f13204bdf277e286a",
+                                "comment_cache": "К-1.26 (СП 78.13330.2012);\nК-1.004 (РДС 82-202-96, Прил. Д);\nК-1.0115 (РДС 82-202-96, Прил. Г)",
+                                "local_comment": "",
+                                "type": "материал",
+                                "custom_round": null,
+                                "custom_round_mode": null,
+                                "style_manager": {
+                                    "col_2": null,
+                                    "col_5": null,
+                                    "col_6": null,
+                                    "col_7": null,
+                                    "col_9": null
+                                },
+                                "status_correct": true,
+                                "status_calculated": false,
+                                "links": [],
+                                "links_cache": ""
                             }
                         ]
                     }

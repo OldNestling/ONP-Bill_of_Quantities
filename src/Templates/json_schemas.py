@@ -1,12 +1,11 @@
 JSON_SCHEMA_3 = """
-{
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
+{  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://example.com/schemas/boq.schema.json",
   "title": "Bill of Quantities (ВОР) file",
   "description": "Схема валидации файла ВОР (формат JSON, сохранённый BoQ_manager.save_file)",
 
   "type": "object",
-  "required": ["metadata", "data"],
+  "required": ["data"],
   "additionalProperties": true,
 
   "properties": {
@@ -45,8 +44,7 @@ JSON_SCHEMA_3 = """
           "type": ["object", "null"]
         },
         "Status": {
-          "type": "integer",
-          "enum": [0, 1, 2]
+          "type": "integer"
         },
         "log_list": {
           "type": "array",
@@ -64,8 +62,8 @@ JSON_SCHEMA_3 = """
 
     "Data": {
       "type": "object",
-      "additionalProperties": false,
-      "required": ["sections", "archive"],
+      "additionalProperties": true,
+      "required": ["sections" ],
       "properties": {
         "sections": {
           "type": "array",
@@ -95,7 +93,7 @@ JSON_SCHEMA_3 = """
 
     "Link": {
       "type": "object",
-      "additionalProperties": false,
+      "additionalProperties": true,
       "required": ["book_num", "tag", "user_pages"],
       "properties": {
         "book_num":   { "type": "string" },
@@ -106,7 +104,7 @@ JSON_SCHEMA_3 = """
 
     "StyleManager": {
       "type": "object",
-      "additionalProperties": false,
+      "additionalProperties": true,
       "properties": {
         "col_2": { "$ref": "#/$defs/ColumnStyle" },
         "col_5": { "$ref": "#/$defs/ColumnStyle" },
@@ -179,8 +177,7 @@ JSON_SCHEMA_3 = """
       ],
       "required": [
         "raw_name", "raw_unit", "raw_quantity_formula", "raw_comment",
-        "type", "style_manager", "status_correct", "status_calculated",
-        "links", "resources"
+        "type", "status_correct", "links" 
       ],
       "properties": {
         "resources": {
@@ -199,11 +196,11 @@ JSON_SCHEMA_3 = """
       ],
       "required": [
         "raw_name", "raw_unit", "raw_quantity_formula", "raw_comment",
-        "type", "style_manager", "status_correct", "status_calculated",
-        "links"
+        "type", "status_correct", "links"
       ],
       "unevaluatedProperties": false
     }
   }
+
 }
 """
