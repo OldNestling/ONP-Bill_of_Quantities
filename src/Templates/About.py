@@ -16,7 +16,7 @@
 
 # Данные для вывода информации о программе
 PROGRAM_NAME = 'ONP: Система ВОР'
-PROGRAM_VERSION = '1.0.3.9 (от 2026.11.11)'
+PROGRAM_VERSION = '1.0.4.0 (от 2026.11.06)'
 COPYRIGHT = "Copyright © 2026 OldNestling"
 PROGRAM_SETTINGS_FOLDER = "ONP_Система_ВОР"			# папка с настройками по пути C:\Users\User\AppData\Roaming\
 RECENT_DIRS_LOG ='recent_dirs.json'					# файл с реестром последних открытых каталогов
@@ -24,9 +24,35 @@ TEMPLATE_PROJECT_FILE = 'template_project.json'		# файл с указание�
 GITHUB = r'https://github.com/OldNestling/ONP-Bill_of_Quantities.git'
 ABOUT = 'Программа создана для автоматизированного формирования ведомости объемов работ в формате XML-схемы,' \
 		' утвержденной Минстроем, с акцентом на применение в дорожно-строительной области.'
+
 PARTICIPANTS ='''<p "align" = "left"> \
 			<b>Участники проекта:</b><br> \
 			<i>OldNestling</i>: разработка архитектуры, интерфейса, стандарта, написание кода и раннее прототипирование<br> \
 			<i>Хощенко А.О.</i>: раннее прототипирование, разработка стандарта, отдельных алгоритмов и логики вкладок «Грунты»
 			 и «Источники и транспортировка», тестирование и многократная поломка программы
 			</p>'''
+
+SUPPORT_PLEASE =(
+			"<i>Программа создана за спасибо.<br>"
+			"Более весомая благодарность стимулирует разработчика "
+			"поддерживать продукт :)</i>"
+)
+
+TUTORIAL = (
+	f'<b>Справочная информация: </b>'
+	f'<a href="{GITHUB}" style="color: #3B82F6; '
+	f'text-decoration: none;">{GITHUB}</a>'
+)
+
+COMMUNICATION_AND_RECEIPTS = (
+	f'<b>Связь с разработчиком: </b>'
+	f'<a href="mailto:oldnestling@yandex.ru" style="color: #3B82F6; '
+	f'text-decoration: none;">oldnestling@yandex.ru</a>'
+	f'<br><b>Telegram-канал: </b>'
+	f'<a href="https://t.me/old_nestling_projects" style="color: #3B82F6; '
+	f'text-decoration: none;">Old Nestling\'s Projects</a>'
+	f'<br><b>Номер карты для благодарности: </b>'
+	f'<a href="https://www.tinkoff.ru/rm/r_aOqwUwfbRm.lZNlrKjSLm/oMI8k46003" '
+	f'style="color: #3B82F6; text-decoration: none;">'
+	f'2200 7004 2212 0336</a>'
+)

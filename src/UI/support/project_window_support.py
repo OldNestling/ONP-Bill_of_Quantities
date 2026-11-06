@@ -35,7 +35,8 @@ from Core.Utilities import text_after, text_before
 from ..ui_utilities import MultilineTextDelegate, create_ok_cancel_buttons
 
 from Templates.About import (
-	ABOUT, COPYRIGHT, GITHUB, PROGRAM_NAME, PROGRAM_VERSION, PARTICIPANTS
+	ABOUT, COPYRIGHT, SUPPORT_PLEASE, PROGRAM_NAME, PROGRAM_VERSION, PARTICIPANTS,
+	COMMUNICATION_AND_RECEIPTS, TUTORIAL
 )
 
 from ..ui_utilities import create_separator
@@ -615,11 +616,7 @@ class HelpDialog(QDialog):
 
 		layout.addWidget(create_separator(QFrame.Shape.HLine))
 
-		thanks_label = QLabel(
-			"<i>Программа создана за спасибо.<br>"
-			"Более весомая благодарность стимулирует разработчика "
-			"поддерживать продукт :)</i>"
-		)
+		thanks_label = QLabel(SUPPORT_PLEASE)
 		thanks_label.setWordWrap(True)
 		thanks_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 		layout.addWidget(thanks_label)
@@ -633,28 +630,13 @@ class HelpDialog(QDialog):
 	def _build_tutorial_label(self) -> QLabel:
 		label = QLabel()
 		label.setOpenExternalLinks(True)
-		label.setText(
-			f'<b>Справочная информация: </b>'
-			f'<a href="{GITHUB}" style="color: #3B82F6; '
-			f'text-decoration: none;">{GITHUB}</a>'
-		)
+		label.setText(TUTORIAL)
 		label.setWordWrap(True)
 		return label
 
 
 	def _build_contact_label(self) -> QLabel:
-		label = QLabel(
-			f'<b>Связь с разработчиком: </b>'
-			f'<a href="mailto:oldnestling@yandex.ru" style="color: #3B82F6; '
-			f'text-decoration: none;">oldnestling@yandex.ru</a>'
-			f'<br><b>Telegram-канал: </b>'
-			f'<a href="https://t.me/old_nestling_projects" style="color: #3B82F6; '
-			f'text-decoration: none;">Old Nestling\'s Projects</a>'
-			f'<br><b>Номер карты для благодарности: </b>'
-			f'<a href="https://www.tinkoff.ru/rm/r_aOqwUwfbRm.lZNlrKjSLm/oMI8k46003" '
-			f'style="color: #3B82F6; text-decoration: none;">'
-			f'2200 7004 2212 0336</a>'
-		)
+		label = QLabel(COMMUNICATION_AND_RECEIPTS)
 		label.setOpenExternalLinks(True)
 		label.setWordWrap(True)
 		return label

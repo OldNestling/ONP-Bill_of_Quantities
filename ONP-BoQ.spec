@@ -1,15 +1,36 @@
 # -*- mode: python ; coding: utf-8 -*-
-# Сборкa Windows: pyinstaller ONP-BoQ.spec
-# Сборкa Linux:  python -m PyInstaller ONP-BoQ.spec    
+# Сборка Windows: pyinstaller ONP-BoQ.spec
+# Сборка Linux:  python -m PyInstaller ONP-BoQ.spec
+
+from PyInstaller.utils.hooks import collect_submodules, collect_data_files, copy_metadata
+import sys
+from os import path
 
 block_cipher = None
+
+# Собираем все подмодули для jsonschema и jsonschema_specifications
+hiddenimports = [
+    'openpyxl',
+    'jsonschema',
+    'jsonschema_specifications',
+] + collect_submodules('jsonschema') + collect_submodules('jsonschema_specifications')
+
+# Собираем файлы данных и метаданные
+datas = [
+    ('src/UI/resources', 'UI/resources'),
+] + collect_data_files('jsonschema') + collect_data_files('jsonschema_specifications')
+
+# Явно копируем метаданные пакетов, чтобы избежать ошибок DistributionNotFound
+datas += copy_metadata('jsonschema')
+datas += copy_metadata('jsonschema_specifications')
+
 
 a = Analysis(
     ['src/main.py'],
     pathex=[],
     binaries=[],
-    datas=[('src/UI/resources', 'UI/resources')],
-    hiddenimports=['openpyxl'],
+    hiddenimports=hiddenimports,
+    datas=datas,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -34,7 +55,7 @@ exe = EXE(
     upx=False,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=False,                                  # на Linux не имеет эффекта, оставлено для совместимости
-    icon='src/UI/resources/icons/icon_main.ico',    # на Linux игнорируется
-    version='version_info.txt',                     # только для Windows — на Linux не работает
+    console=False,
+    icon='src/UI/resources/icons/icon_main.ico',
+    version='version_info.txt',
 )

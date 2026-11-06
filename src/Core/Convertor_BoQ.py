@@ -1195,7 +1195,7 @@ class ValidatorJSON:
 	SCHEMA = json.loads(JSON_SCHEMA_3)	# схема фалов ВОР для валидации
 	def __init__(self, project: Project):
 		self.project = project
-		self.output_folder = Path(self.project.project_BoQs_folder)
+		self.output_folder = Path(self.project.project_BoQs_path)
 
 
 	def _validate_file(self, file) -> tuple[bool, None | str]:
