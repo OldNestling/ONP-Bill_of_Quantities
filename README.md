@@ -38,7 +38,7 @@
   Скачать исполняемый файл можно по следующим ссылкам для
   [Windows](https://github.com/OldNestling/ONP-Bill_of_Quantities/releases/latest/download/ONP-Bill_of_Quantities.windows.zip)
   и
-  [Linux](https://github.com/OldNestling/ONP-Bill_of_Quantities/releases/latest/download/ONP-Bill_of_Quantities.linux.zip)
+  [Linux (Ubuntu)](https://github.com/OldNestling/ONP-Bill_of_Quantities/releases/latest/download/ONP-Bill_of_Quantities.linux.zip)
   или через раздел [релизов](https://github.com/OldNestling/ONP-Bill_of_Quantities/releases) в репозитории;
 - с помощью файла-лаунчера в репозитории.
   В этом случае небольшая программа будет запускать исходный код напрямую, с помощью упакованного интерпретатора Python.
@@ -47,7 +47,7 @@
   что позволит обновляться даже при запущенном сеансе программы другими пользователями на сервере.
   Версии лаунчера можно получить по следующим ссылкам:
   - для [windows](https://github.com/OldNestling/ONP-Bill_of_Quantities/releases/download/Code_Launcher/ONP-BoQ_Code_Launcher.windows.zip);
-  - для [linux](https://github.com/OldNestling/ONP-Bill_of_Quantities/releases/download/Code_Launcher/ONP-BoQ_Code_Launcher.linux.zip).
+  - для [linux (ubuntu)](https://github.com/OldNestling/ONP-Bill_of_Quantities/releases/download/Code_Launcher/ONP-BoQ_Code_Launcher.linux.zip).
 - напрямую через интерпретатор Python (необходима версия 3.14 и пакеты, указанные в файле [requirements.txt](requirements.txt)).
 
 Работоспособность программы протестирована на:
