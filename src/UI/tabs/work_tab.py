@@ -471,8 +471,8 @@ class BoQ_Tab(QWidget):
 				widget = self.boq_views_container.widget(i)
 				if isinstance(widget, BoQ_View) and widget.manager.is_modified:
 					text = (
-						f'Раздел "{widget.manager.file.path.stem}" был изменён.'
-						'Сохранить перед закрытием?',
+						f'Раздел "{widget.manager.file.path.stem}" был изменён. '
+						'Сохранить перед закрытием?'
 					)
 					reply = Request.ask(
 						parent_dialog,
@@ -542,7 +542,7 @@ class BoQ_Tab(QWidget):
 				reply = Request.ask(
 					parent,
 					'Файл существует',
-					f'Файл {new_name}.json уже существует. Перезаписать?',
+					f'Файл {new_name}.json уже существует. Перезаписать?'
 				)
 				if reply != QMessageBox.StandardButton.Yes:
 					return False
