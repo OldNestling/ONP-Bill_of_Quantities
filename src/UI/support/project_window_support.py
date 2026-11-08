@@ -27,8 +27,8 @@ from PyQt6.QtWidgets import (
 	QStyleOptionViewItem, QStyle, QDialog, QVBoxLayout, QGroupBox,
 	QLabel, QFrame, QTextBrowser
 	)
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QColor, QPixmap
+from PyQt6.QtCore import Qt, QUrl, pyqtSignal
+from PyQt6.QtGui import QColor, QPixmap, QDesktopServices
 
 from Core.Project import File_BoQ
 from Core.Utilities import text_after, text_before
@@ -36,7 +36,7 @@ from ..ui_utilities import MultilineTextDelegate, create_ok_cancel_buttons
 
 from Templates.About import (
 	ABOUT, COPYRIGHT, SUPPORT_PLEASE, PROGRAM_NAME, PROGRAM_VERSION, PARTICIPANTS,
-	COMMUNICATION_AND_RECEIPTS, TUTORIAL
+	COMMUNICATION_AND_RECEIPTS, TUTORIAL, AUTHOR, GITHUB
 )
 
 from ..ui_utilities import create_separator
@@ -551,6 +551,49 @@ class BoQ_Dialog(QDialog):
 
 
 
+class ClickableLogoLabel(QLabel):
+	"""
+	Логотип-картинка.
+	Если задан `link` — над логотипом появляется курсор-рука, tooltip с URL,
+	и клик левой кнопкой открывает ссылку в системном браузере.
+	Без `link` ведёт себя как обычный QLabel
+	"""
+	clicked = pyqtSignal()
+
+
+	def __init__(self, resource: str, align, link: str | None = None, parent=None):
+		super().__init__(parent)
+		self._link = link
+		self.setCursor(Qt.CursorShape.PointingHandCursor)
+
+		logo = Path(Icons.resource_path(resource))
+		pixmap = QPixmap(str(logo))
+		pixmap = pixmap.scaled(
+			100, 100,
+			Qt.AspectRatioMode.KeepAspectRatio,
+			Qt.TransformationMode.SmoothTransformation,
+		)
+		self.setPixmap(pixmap)
+		self.setAlignment(align)
+
+		if link:
+			self.setCursor(Qt.CursorShape.PointingHandCursor)
+			self.setToolTip(link)
+			self.clicked.connect(self._open_link)
+
+
+	def _open_link(self):
+		if self._link:
+			QDesktopServices.openUrl(QUrl(self._link))
+			
+
+	def mousePressEvent(self, event):
+		if event.button() == Qt.MouseButton.LeftButton:
+			self.clicked.emit()
+		super().mousePressEvent(event)
+
+
+
 class HelpDialog(QDialog):
 	"""Диалог справки: информация о программе, контакты, реквизиты."""
 	def __init__(self, parent=None):
@@ -577,17 +620,27 @@ class HelpDialog(QDialog):
 		group = QGroupBox("О программе")
 		layout = QVBoxLayout()
 
-		title_label = QLabel(f"<h2>{PROGRAM_NAME}</h2>")
-		title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-		layout.addWidget(title_label)
+		label_layout = QHBoxLayout()
 
-		version_label = QLabel(f"<b>Версия:</b> {PROGRAM_VERSION}")
-		version_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-		layout.addWidget(version_label)
+		program_label = ClickableLogoLabel(
+			r'UI/resources/icons/ONP-BoQ.svg',
+			Qt.AlignmentFlag.AlignRight,
+			GITHUB
+		)
+		label_layout.addWidget(program_label)
 
-		copyright_label = QLabel(f"<i>{COPYRIGHT} (GPLv3)</i>")
-		copyright_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-		layout.addWidget(copyright_label)
+		meta_label = self._get_meta()
+		label_layout.addWidget(meta_label)
+		
+		author_label = ClickableLogoLabel(
+			r'UI/resources/OldNestling.svg',
+			Qt.AlignmentFlag.AlignLeft,
+			AUTHOR
+		)
+		label_layout.addWidget(author_label)
+
+		layout.addLayout(label_layout)
+
 
 		layout.addWidget(create_separator(QFrame.Shape.HLine))
 
@@ -654,6 +707,16 @@ class HelpDialog(QDialog):
 		label.setPixmap(pixmap)
 		label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 		return label
+
+
+	def _get_meta(self):
+		""" Выводит информацию о наименовании, версии, copyright """
+		title = f"<h2>{PROGRAM_NAME}</h2>"
+		version = f"<b>Версия:</b> {PROGRAM_VERSION}"
+		copyright = f"<i>{COPYRIGHT} (GPLv3)</i>"
+		meta = QLabel('<br>'.join((title, version, copyright)))
+		meta.setAlignment(Qt.AlignmentFlag.AlignCenter)
+		return meta
 
 	# ---------------------------------- Конструктор ------------------------------------
 	@classmethod

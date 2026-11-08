@@ -17,7 +17,7 @@
 # ==============================  О ПРОЕКТЕ ===================================
 
 # ПРОЕКТ: "ONP: Система ВОР"
-# РАЗРАБОЧИК: OldNestling (OldNestling@yandex.ru)
+# РАЗРАБОТЧИК: OldNestling (OldNestling@yandex.ru)
 # GitHub: https://github.com/OldNestling/ONP-Bill_of_Quantities.git
 
 # Данный проект разработан для автоматизации и упрощения составления
@@ -124,7 +124,7 @@ def main():
 	
 	app.setStyleSheet(get_css(SYSTEM_PLATFORM.startswith('linux')))
 
-	icon = QIcon(resource_path(r'UI\resources\icons\icon_main.ico'))
+	icon = QIcon(resource_path(r'UI/resources/icons/ONP-BoQ.svg'))
 	app.setWindowIcon(icon)
 	window = Project_Window()
 	window.setWindowIcon(icon)
