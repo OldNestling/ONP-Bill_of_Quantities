@@ -27,6 +27,7 @@ PACKAGES = [
     'pyperclip',
     'jsonschema',
     'jsonschema_specifications',
+	'orjson'
 ]
 
 datas, binaries, hiddenimports = [], [], []

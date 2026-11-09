@@ -16,7 +16,7 @@
 
 # Данные для вывода информации о программе
 PROGRAM_NAME = 'ONP: Система ВОР'
-PROGRAM_VERSION = '1.0.4.0 (от 2026.11.06)'
+PROGRAM_VERSION = '1.0.4.1 (от 2026.11.09)'
 COPYRIGHT = "Copyright © 2026 OldNestling"
 
 # папка с настройками по пути С:\Users\User\AppData\Roaming\

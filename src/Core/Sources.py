@@ -14,18 +14,17 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-import json
 from .Utilities import convert_value, text_after
 from .DataLib import DataLibraryManager
 
-# Данный модуль организует работу с базой источников проетка, данными о транспортировки до них
+# Данный модуль организует работу с базой источников проекта, данными о транспортировки до них
 # Содержит класс Source_Manager для управления БД и класс Source как основной элемент БД
 
 
 
 class Sources_Manager(DataLibraryManager):
 	"""
-	Управялет процессом создания и настройки библиотеки источников и транспортировки
+	Управляет процессом создания и настройки библиотеки источников и транспортировки
 
 	Args:
 		:project: объект управления проектом

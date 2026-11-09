@@ -14,10 +14,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-import json, shutil, os, time
+import shutil, os, time
 from pathlib import Path
 from datetime import datetime
-from .Utilities import get_user_log, open_folder
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from orjson import JSONDecodeError
+
+from .Utilities import get_user_log, open_folder, get_thread_count, read_json, save_json
 from .DataLib import DataLibraryManager
 from .Soils import Soils_Manager
 from .Sources import Sources_Manager
@@ -55,12 +58,11 @@ class Project:
 		app_dir = Project.get_app_data_dir()
 		filename = app_dir / RECENT_DIRS_LOG
 		try:
-			with open(filename, "r", encoding="utf-8") as f:
-				data = json.load(f)
-				if isinstance(data, list):
-					# Отсев не существующих путей
-					data = [path for path in data if Path(path).exists()]
-					return data
+			data = read_json(filename)
+			if isinstance(data, list):
+				# Отсев не существующих путей
+				data = [path for path in data if Path(path).exists()]
+				return data
 		except FileNotFoundError:
 			pass
 		return []
@@ -80,8 +82,7 @@ class Project:
 			dirs.pop(0)
 		app_dir = Project.get_app_data_dir()
 		filename = app_dir / RECENT_DIRS_LOG
-		with open(filename, "w", encoding="utf-8") as f:
-			json.dump(dirs, f, indent=4, ensure_ascii=False)
+		save_json(filename, dirs)
 
 	
 	@staticmethod
@@ -94,10 +95,9 @@ class Project:
 		filename = app_dirr / TEMPLATE_PROJECT_FILE
 		path = None	# путь к проекту-шаблону
 		try:
-			with open(filename, "r", encoding="utf-8") as f:
-				data = json.load(f)
-				if isinstance(data, dict):
-					path = data.get('path')
+			data = read_json(filename)
+			if isinstance(data, dict):
+				path = data.get('path')
 		except FileNotFoundError:
 			return
 		if not path:
@@ -111,11 +111,9 @@ class Project:
 	@staticmethod
 	def save_path_to_template(path: Path):
 		""" Сохраняет файл с путем к шаблонному проекту в папке настроек программы """
-		app_dirr = Project.get_app_data_dir()
-		filename = app_dirr / TEMPLATE_PROJECT_FILE
-
-		with open(filename, "w", encoding="utf-8") as f:
-			json.dump({'path': path}, f, indent=4, ensure_ascii=False)
+		app_dir = Project.get_app_data_dir()
+		filename = app_dir / TEMPLATE_PROJECT_FILE
+		save_json(filename, {'path': path})
 
 	# ================================== Инициализация ==================================
 	def __init__(
@@ -209,49 +207,48 @@ class Project:
 		'''Функция инициализации базовых настроек среды и проекта из загрузочного файла Project.json'''
 		import Templates.ProjectTemplate as Template
 
-		with open(self.settings_file_path, "r", encoding="utf-8") as f:
-			settings_data = json.load(f)
+		settings_data = read_json(self.settings_file_path)
 
-			self.construction_site: str = settings_data.get(
-				'ConstructionSite',
-				Template.PROJECT_DATA_TEMPLATE.get('ConstructionSite', '')
-			)
+		self.construction_site: str = settings_data.get(
+			'ConstructionSite',
+			Template.PROJECT_DATA_TEMPLATE.get('ConstructionSite', '')
+		)
 
-			self.shorted_name: str = settings_data.get('shorted_name')
+		self.shorted_name: str = settings_data.get('shorted_name')
 
-			self.verifier: dict = settings_data.get(
-				'Verifier',
-				Template.PROJECT_DATA_TEMPLATE.get('Verifier', dict())
-			)
+		self.verifier: dict = settings_data.get(
+			'Verifier',
+			Template.PROJECT_DATA_TEMPLATE.get('Verifier', dict())
+		)
 
-			self.code: str = settings_data.get(
-				'Code',
-				Template.PROJECT_DATA_TEMPLATE.get('Code', '')
-			)
+		self.code: str = settings_data.get(
+			'Code',
+			Template.PROJECT_DATA_TEMPLATE.get('Code', '')
+		)
 
-			self.description: str = settings_data.get(
-				'Description',
-				Template.PROJECT_DATA_TEMPLATE.get('Description', '')
-			)
+		self.description: str = settings_data.get(
+			'Description',
+			Template.PROJECT_DATA_TEMPLATE.get('Description', '')
+		)
 
-			# загрузка настроек единиц измерений
-			self.units = settings_data.get('units_settings', Template.UNITS_TEMPLATE) 
-			# загрузка настроек проекта
-			self.work_modes = settings_data.get('work_modes_settings', Template.WORK_MODES_TEMPLATE) 
-			# загрузка возможных должностей
-			self.posts = settings_data.get('posts_lib', list(Template.POSTS_TEMPLATE))
-			# загрузка списка исполнителей
-			self.performers = settings_data.get('performers_lib', list(Template.PERFORMERS_TEMPLATE)) 
-			if isinstance(self.performers, list):
-				self.performers.sort()
-			else:
-				self.performers = []
-			# загрузка списка ГИПов
-			self.chiefs = settings_data.get('chiefs_lib', list(Template.CHIEFS)) 
-			if isinstance(self.chiefs, list):
-				self.chiefs.sort()
-			else:
-				self.chiefs = []
+		# загрузка настроек единиц измерений
+		self.units = settings_data.get('units_settings', Template.UNITS_TEMPLATE) 
+		# загрузка настроек проекта
+		self.work_modes = settings_data.get('work_modes_settings', Template.WORK_MODES_TEMPLATE) 
+		# загрузка возможных должностей
+		self.posts = settings_data.get('posts_lib', list(Template.POSTS_TEMPLATE))
+		# загрузка списка исполнителей
+		self.performers = settings_data.get('performers_lib', list(Template.PERFORMERS_TEMPLATE)) 
+		if isinstance(self.performers, list):
+			self.performers.sort()
+		else:
+			self.performers = []
+		# загрузка списка ГИПов
+		self.chiefs = settings_data.get('chiefs_lib', list(Template.CHIEFS)) 
+		if isinstance(self.chiefs, list):
+			self.chiefs.sort()
+		else:
+			self.chiefs = []
 
 
 	def start_project_settings(self):
@@ -278,8 +275,7 @@ class Project:
 		}
 		folder = self.base_dir / self.sources_folder
 		folder.mkdir(parents=True, exist_ok=True) # parents=True — рекурсивно создаёт вложенные папки
-		with open(self.settings_file_path, "w", encoding="utf-8") as f: # сохранение параметров в JSON файл
-			json.dump(export_elements, f, indent=4, ensure_ascii=False)
+		save_json(self.settings_file_path, export_elements)
 
 
 	def create_new_refinement(self, name: str):
@@ -298,7 +294,7 @@ class Project:
 		if not self.project_BoQs_path.exists():
 			self.project_BoQs_path.mkdir(parents=True, exist_ok=True) # parents=True — рекурсивно создаёт вложенные папки
 			return [] # папки нет – возвращаем пустой словарь
-		files = self.project_BoQs_path.glob('*.json') 			# Список файлов разделов
+		file_paths = self.project_BoQs_path.glob('*.json') 			# Список файлов разделов
 		locked_files = []
 		for f in self.project_BoQs_path.glob('*.lock'):
 			parts = f.stem.split('__')
@@ -309,12 +305,38 @@ class Project:
 				file_name = f.stem
 				user = None
 			locked_files.append((file_name, user))
+
+		def __get_BoQ(path):
+			try:
+				return path, read_json(path), None
+			except Exception as e:
+				return path, None, e
+
 		BoQs = []
-		for file in files:
-			obj = File_BoQ(file, locked_files, self)
-			BoQs.append(obj)
+		errors = []
+	
+		with ThreadPoolExecutor(max_workers=get_thread_count()) as ex:
+			futures = [ex.submit(__get_BoQ, fp) for fp in file_paths]
+			for fut in as_completed(futures):
+				path, file_data, error = fut.result()
+				if error is not None: 
+					errors.append((path, error))
+					continue
+				# без валидации по схеме, так как станет слишком долго
+				obj = File_BoQ(path, locked_files, file_data, self)
+				if obj.is_was_error:
+					errors.append((path, obj.error_msg))
+					continue
+				else:
+					BoQs.append(obj)
+
+		if errors:
+			for path, err in errors:
+				print(f"Пропущен файл {path.name}: {err}")
+
 		BoQs.sort(key= lambda obj: obj.num)
-		self.project_BoQs = tuple(BoQs)
+		BoQs = tuple(BoQs)
+		self.project_BoQs = BoQs
 		return BoQs
 		
 
@@ -345,10 +367,9 @@ class Project:
 		data['data'] = data_template
 		
 		try:
-			self.project_BoQs_path.mkdir(parents=True, exist_ok=True) # parents=True - рекурсивно создаёт вложенные папки
-			with open(file_path, "w", encoding="utf-8") as f:
-				# Записываем словарь в файл с форматированием
-				json.dump(data, f, indent=4, ensure_ascii=False)
+			# parents=True - рекурсивно создаёт вложенные папки
+			self.project_BoQs_path.mkdir(parents=True, exist_ok=True) 
+			save_json(file_path, data)
 		except Exception as e:
 			return False
 		return True
@@ -517,10 +538,10 @@ class Project:
 			return
 
 		project_data = None
+
 		try:
 			project_json = path_to_project / self.sources_folder / self.settings_file_name
-			with open(project_json, "r", encoding="utf-8") as f:
-				project_data = json.load(f)
+			project_data = read_json(project_json)
 		except Exception:
 			return None
 
@@ -528,8 +549,7 @@ class Project:
 		def __get_library_file_data(root_path: Path, library_manager: DataLibraryManager):
 			path = root_path / self.sources_folder / (library_manager.FILE+'.json')
 			try:
-				with open(path, "r", encoding="utf-8") as f:
-					return json.load(f)
+				return read_json(path)
 			except Exception:
 				return None
 
@@ -679,7 +699,7 @@ class Project:
 
 class File_BoQ:
 	"""Представляет один файл раздела ВОР. Управляет чтением, записью, блокировками."""
-	def __init__(self, path: Path, locked_files, project: Project = None):
+	def __init__(self, path: Path, locked_files, file_data: dict, project: Project = None):
 		self.path = Path(path)				# Объект пути к файлу
 		self.project = project				# Объект данных проекта. Центральная система
 		# -------------------------------- Метаданные файла ---------------------------------
@@ -695,10 +715,12 @@ class File_BoQ:
 
 		self.is_locked = False				# Является ли файл заблокированным
 		self.active_user = None				# Текущий пользователь (пользователи)
+		self.is_was_error = False
+		self.error_msg: str | None = None
 
 		self._exists = self.path.exists()
 		if self._exists:
-			self._load_metadata(locked_files)
+			self._load_metadata(locked_files, file_data)
 
 
 	def __str__(self):
@@ -709,44 +731,44 @@ class File_BoQ:
 		return str(self.path)
 
 		
-	def _load_metadata(self, locked_files):
+	def _load_metadata(self, locked_files, data):
 		"""Загружает только метаданные из JSON-файла."""
 		filename = self.path.stem
 		active_user =  None
-		for data in locked_files:
-			f_name, user = data
+		for lock_info in locked_files:
+			f_name, user = lock_info
 			if filename == f_name:
 				active_user = user
 				break
 		self.is_locked = True if active_user else False
 		self.active_user = active_user	
 		try:
-			with open(self.path, 'r', encoding='utf-8') as f:
-				data = json.load(f)
-				content = data.get('metadata')
-				self.num = content.get('Num', '')
-				self.object_name = content.get('ObjectName', '')
-				sig =  content.get('Signatures',{})
-				self.composer = sig.get('Composer','')
-				self.composer_position = sig.get('Composer_Position','')
-				self.date = content.get('Date', self.project.now.strftime("%d.%m.%Y"))
+			content = data.get('metadata')
+			self.num = content.get('Num', '')
+			self.object_name = content.get('ObjectName', '')
+			sig =  content.get('Signatures',{})
+			self.composer = sig.get('Composer','')
+			self.composer_position = sig.get('Composer_Position','')
+			self.date = content.get('Date', self.project.now.strftime("%d.%m.%Y"))
 
-				# для совместимости со старыми файлами
-				status_done = content.get('Status_Done')
-				if status_done is None:
-					self.status = content.get('Status', 0)
-				elif isinstance(status_done, bool):
-					self.status = 2 if status_done else 0
-				elif isinstance(status_done, int) and status_done in (0, 1, 2):
-					self.status = status_done
-				else:
-					self.status = 0
+			# для совместимости со старыми файлами
+			status_done = content.get('Status_Done')
+			if status_done is None:
+				self.status = content.get('Status', 0)
+			elif isinstance(status_done, bool):
+				self.status = 2 if status_done else 0
+			elif isinstance(status_done, int) and status_done in (0, 1, 2):
+				self.status = status_done
+			else:
+				self.status = 0
 
-				self.local_estimate = content.get('local_estimate','')
-				self.log_list = content.get('log_list',{})
-				self.note = content.get('note', '')
-		except (json.JSONDecodeError, PermissionError) as e:
-			print(f"Ошибка при чтении файла {self.path}: {e}")
+			self.local_estimate = content.get('local_estimate','')
+			self.log_list = content.get('log_list',{})
+			self.note = content.get('note', '')
+		except (JSONDecodeError, PermissionError, ValueError, AttributeError) as e:
+			text = f"[File_BoQ: _load_metadata] {self.path.name}: {e}" 
+			self.is_was_error = True
+			self.error_msg = text
 
 
 	def _load_data(self):
@@ -754,14 +776,12 @@ class File_BoQ:
 		if self.project is None:
 			return
 		try:
-			with open(self.path, 'r', encoding='utf-8') as f:
-				content = json.load(f)
-				return content.get('data', None)
+			content = read_json(self.path)
+			return content.get('data', None)
 		except FileNotFoundError:
 			raise FileNotFoundError
 		except Exception as e:
-			print(f"Ошибка загрузки данных из {self.path}: {e}")
-			return
+			print(f"[File_BoQ: _load_data] {e}")
 
 
 	@property
@@ -773,7 +793,7 @@ class File_BoQ:
 			user = None
 			try:
 				f_name, user = data.stem.split('__')
-			# в старом файле пристутсвуют лишние символы __, 
+			# в старом файле присутствуют лишние символы __, 
 			# которые не были устранены исправлением символов в имени файла,
 			# появившегося позже   
 			except ValueError:		
@@ -840,8 +860,8 @@ class File_BoQ:
 		filename = metadata.pop('FileName')
 		output = metadata
 		output['data'] = data
-		with open(self.path, 'w', encoding='utf-8') as f:
-			json.dump(output, f, indent=4, ensure_ascii=False)
+		save_json(self.path, output)
+			
 		if filename and filename != self.path.stem:
 			self.unlock()
 			new_file_path = self.path.parent / f'{filename}.json'

@@ -17,6 +17,9 @@
 import re, os, pyperclip, sys, hashlib,  subprocess
 from datetime import datetime
 from decimal import Decimal, ROUND_HALF_UP
+import orjson
+from orjson import JSONDecodeError	# используется в импортах
+from functools import cache
 
 # ГЛОБАЛЬНЫЕ ФУНКЦИИ ПРОЕКТА 
 
@@ -30,7 +33,7 @@ def requesting_value(value_type, input_object: str, min_value = None, max_value 
 	'''
 	Функция для запроса ввода данных пользователем с проверкой соблюдения условий
 
-	:value_type: тип запрашиваеомго значения
+	:value_type: тип запрашиваемого значения
 	:input_object: указатель сущности запроса
 	:min_value: минимальное допустимое значение
 	:max_value: максимально допустимое значение
@@ -71,12 +74,14 @@ def requesting_value(value_type, input_object: str, min_value = None, max_value 
 				print('Ошибка: введите число')
 				continue  # Повторяем ввод
 
+
 def decimal_round(number, precision=2):
 	# Преобразуем число в строку, чтобы Decimal точно его понял
 	# Формируем строку для указания точности, например '0.01' для 2 знаков
 	quantize_str = '0.' + '0' * precision
 	# Выполняем округление с нужным правилом
 	return Decimal(str(number)).quantize(Decimal(quantize_str), rounding=ROUND_HALF_UP)
+
 
 def clearing_string(string):
 	"""Подготовка строки для вычисления."""
@@ -86,6 +91,7 @@ def clearing_string(string):
 	s = s.replace('\n', '')
 	s = s.replace(',', '.')
 	return s
+
 
 def fixing_decimals(string: str):
 	""" Заменяет в числах десятичный разделитель на точку """
@@ -97,6 +103,7 @@ def fixing_decimals(string: str):
 		text = text.replace(m, fix)
 	return text
 
+
 def fixing_spaces(string: str):
 	""" Убирает лишние пробелы в тексте"""
 	pattern = r'\s{2,}'
@@ -107,6 +114,7 @@ def fixing_spaces(string: str):
 	for m in matches:
 		output = output.replace(m, ' ')
 	return output.replace(MARKER, '\n')
+
 
 def convert_value(text: str) -> int | float | str:
 	"""
@@ -171,7 +179,8 @@ def get_hash_text(text: str) -> str:
 	hash_object = hashlib.md5(text.encode())
 	hex_digest = hash_object.hexdigest()
 	return hex_digest
-	
+
+
 def text_before(text, part, match=1):
 	"""
 	Аналог функции ТЕКСТДО()
@@ -207,6 +216,7 @@ def text_before(text, part, match=1):
 	# Возвращаем текст до нужного вхождения
 	target_pos = positions[match - 1]
 	return text[:target_pos]
+
 
 def text_after(text, part, match=1):
 	"""
@@ -267,6 +277,7 @@ def get_user_log(mode = 'get_name'):
 		except OSError:
 			print("os.getlogin() не работает в некоторых окружениях (например, в некоторых сервисах)")
 
+
 def copy_to_clipboard(text):
 	"""
 	Копирует текст в буфер обмена.
@@ -276,6 +287,7 @@ def copy_to_clipboard(text):
 	"""
 	pyperclip.copy(text)
 	print("Текст скопирован в буфер обмена!")
+
 
 def open_folder(path):
 	""" Открывает указанную папку  """
@@ -288,3 +300,32 @@ def open_folder(path):
 			subprocess.Popen(["xdg-open", path])
 	except Exception as e:
 		print(e)
+
+
+@cache
+def get_platform() -> str:
+	return sys.platform
+
+
+@cache
+def get_thread_count() -> int:
+	cores = os.cpu_count() or 4
+	threads = min(16, cores*4)
+	return threads
+
+
+def save_json(path, data):
+	""" Сохраняет данные с помощью orjson
+	### Args:
+		- :path: путь сохраняемого файла
+		- :data: содержание файла
+	"""
+	with open(path, 'wb') as f:
+		f.write(orjson.dumps(data, option=orjson.OPT_INDENT_2))
+
+
+def read_json(path):
+	""" Читает данные указанного файла с помощью orjson """
+	with open(path, 'rb') as f:
+		data = orjson.loads(f.read())
+	return data

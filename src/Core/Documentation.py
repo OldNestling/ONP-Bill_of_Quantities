@@ -14,9 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-import json
 from math import ceil
-from Core.Utilities import convert_value, text_before
+from Core.Utilities import convert_value, text_before, read_json, save_json, JSONDecodeError
 from .DataLib import DataLibraryManager
 
 
@@ -26,13 +25,14 @@ from .DataLib import DataLibraryManager
 
 class DOCs_Manager(DataLibraryManager):
 	"""
-	Управялет процессом создания и настройки библиотеки документов
+	Управляет процессом создания и настройки библиотеки документов
 
 	Args:
 		:project: объект управления проектом
 	"""
 
 	FILE = 'Documentation' 					# Файл с данными
+
 	
 	def __init__(self, project):
 		super().__init__()
@@ -48,17 +48,16 @@ class DOCs_Manager(DataLibraryManager):
 	def load_lib(self):
 		if self.project:
 			try:
-				with open(self._file_path, "r", encoding="utf-8") as f:
-					data = json.load(f)
-					for book in data.values():
-						obj = Book.deserialization(book)
-						self.library[obj.num]=obj
+				data = read_json(self._file_path)
+				for book in data.values():
+					obj = Book.deserialization(book)
+					self.library[obj.num]=obj
 			except FileNotFoundError:
 				self.library = {}
-			except json.JSONDecodeError:
+			except JSONDecodeError:
 				pass
 			except Exception as e:
-				raise RuntimeError(f'{"-"*40}\nОшибка загрузки файла {self._file_path}: {e}')
+				raise RuntimeError(f'[DOCs_Manager: load_lib] {self._file_path}: {e}')
 
 
 	def save_lib(self):
@@ -68,16 +67,15 @@ class DOCs_Manager(DataLibraryManager):
 		try:
 			self.restore_library()
 			tmp_path = self._file_path.with_suffix(".tmp")
-			with open(tmp_path, 'w', encoding='utf-8') as f:
-				data = {}
-				for num, book in self.library.items():
-					data[num] = book.serialization()
-				json.dump(data, f, indent=4, ensure_ascii=False)
+			data = {}
+			for num, book in self.library.items():
+				data[num] = book.serialization()
+			save_json(tmp_path, data)
 			tmp_path.replace(self._file_path)
 			self.unlock()
 			return True
 		except Exception as e:
-			print(f'{"-"*40}\nПроизошла ошибка: {e}')
+			print(f'[DOCs_Manager: save_lib] Произошла ошибка: {e}')
 			if tmp_path and tmp_path.exists():
 				tmp_path.unlink(missing_ok=True)
 			return False
@@ -97,6 +95,7 @@ class DOCs_Manager(DataLibraryManager):
 		for book in books:
 			new_lib[book.num] = book
 		self.library = new_lib
+
 
 	def add_book(self):
 		if not self.project:
@@ -179,6 +178,7 @@ class Book:
 		self.content: dict[int, Document] = content if content is not None else {}
 		self.link: str | None = None
 
+
 	@property
 	def current_tag(self):
 		"""
@@ -193,10 +193,12 @@ class Book:
 		else:
 			return 1
 
+
 	@property
 	def full_name(self):
 		return f'{self.code} {self.name}'
-	
+
+
 	def __str__(self):
 		""" Для вставки в ячейки ВОР """
 		return f'{self.code} {self.name}'
@@ -204,7 +206,8 @@ class Book:
 
 	def set_link(self, path):
 		self.link = path
-	
+
+
 	def add_document(self, row):
 		new_tag = self.current_tag
 		data = {
@@ -225,11 +228,13 @@ class Book:
 	def remove_document(self, key):
 		del self.content[key]
 
+
 	def sort_content(self):
 		""" Сортирует содержимое тома по порядку документации """
 		sorted_content: dict = dict(sorted(self.content.items(), key = lambda item: item[1].page))
 		self.content = sorted_content
-	
+
+
 	def resetting_tags(self):
 		""" Сбрасывает существующие теги и заново присваивает """
 		if self.content:
@@ -241,13 +246,15 @@ class Book:
 				new_content[new_tag] = doc
 				new_tag += 1
 
+
 	def fill_by_template(self, template: tuple, start = None):
 		"""
 		Создаёт заготовки для документов по указанному шаблону
 		
 		Args:
-			:template: коллекция кортежей, где первый элемент - тип документа, второй - количество документов данного типа
-			:start: начальный индекс для всавки документов в промежуток
+			- :template: коллекция кортежей, где первый элемент - тип документа, 
+				второй - количество документов данного типа
+			- :start: начальный индекс для вставки документов в промежуток
 		"""
 		new_tag = self.current_tag
 		documents = {}
@@ -256,7 +263,7 @@ class Book:
 			for i in range(count):
 				num = f'0{i+1}' if len(str(i+1)) == 1 else i+1
 				data = {
-					'tag': new_tag(),
+					'tag': new_tag,
 					'code': f'{self.code}-{code}{num}',
 					'name': '',
 					'page': 0
@@ -274,9 +281,10 @@ class Book:
 			merged = prefix + new_items + suffix
 			self.content = dict(merged)
 
+
 	def fill_from_files(self, files: list, start = None):
 		""" Добавляет в том документы на основе файлов """
-		#TODO Доработь в будущем систему паттернов
+		#TODO Доработать в будущем систему паттернов
 		new_tag = self.current_tag
 		documents = {}
 		for file in files:
@@ -340,10 +348,10 @@ class Book:
 			dct[doc.page] = doc
 		if page in dct:
 			return dct.get(page)
-		if docs[0] > page:
+		if docs[0].page > page:
 			return None
 		if docs[-1] < page:
-			return dct.get(docs[-1])
+			return dct.get(docs[-1].page)
 		i = 0
 		while not docs[i] < page < docs[i+1]:
 			i += 1
@@ -372,7 +380,7 @@ class Book:
 		content = {}
 		if self.content:
 			for tag, doc in self.content.items():
-				content[tag] = doc.serialization()
+				content[str(tag)] = doc.serialization()
 		data = {
 			'num': self.num,
 			'code': self.code,
@@ -399,6 +407,7 @@ class Document:
 	def page(self):
 		return self._page
 
+
 	@page.setter
 	def page(self, value):
 		try: 
@@ -410,6 +419,7 @@ class Document:
 	@property
 	def full_name(self):
 		return f'{self.code} {self.name}'
+
 	
 	@property
 	def formated_page(self):
@@ -438,7 +448,8 @@ class Document:
 			obj.link = data.get('link')
 
 			return obj
-	
+
+
 	def serialization(self):
 		data = {
 			'tag': self.tag,
@@ -447,8 +458,9 @@ class Document:
 			'page': self.page,
 			'link': self.link
 		}
-
 		return data
 	
+
+
 class FileNameFormatError(Exception):
 	pass

@@ -2,7 +2,9 @@
 # Сборка Windows: pyinstaller ONP-BoQ.spec
 # Сборка Linux:  python -m PyInstaller ONP-BoQ.spec
 
-from PyInstaller.utils.hooks import collect_submodules, collect_data_files, copy_metadata
+from PyInstaller.utils.hooks import (
+    collect_submodules, collect_data_files, copy_metadata, collect_all
+)
 import sys
 from os import path
 
@@ -13,6 +15,7 @@ hiddenimports = [
     'openpyxl',
     'jsonschema',
     'jsonschema_specifications',
+	'orjson'
 ] + collect_submodules('jsonschema') + collect_submodules('jsonschema_specifications')
 
 # Собираем файлы данных и метаданные
@@ -20,15 +23,20 @@ datas = [
     ('src/UI/resources', 'UI/resources'),
 ] + collect_data_files('jsonschema') + collect_data_files('jsonschema_specifications')
 
+# Собираем бинарные файлы orjson
+orjson_datas, orjson_binaries, orjson_hiddenimports = collect_all('orjson')
+datas += orjson_datas
+hiddenimports += orjson_hiddenimports
+
 # Явно копируем метаданные пакетов, чтобы избежать ошибок DistributionNotFound
-datas += copy_metadata('jsonschema')
-datas += copy_metadata('jsonschema_specifications')
+#datas += copy_metadata('jsonschema')
+#datas += copy_metadata('jsonschema_specifications')
 
 
 a = Analysis(
     ['src/main.py'],
     pathex=[],
-    binaries=[],
+    binaries=orjson_binaries,
     hiddenimports=hiddenimports,
     datas=datas,
     hookspath=[],

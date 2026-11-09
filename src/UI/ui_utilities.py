@@ -20,7 +20,8 @@ from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QLabel, QMenu, QTreeView, QDi
 from PyQt6.QtCore import Qt, pyqtSignal, QSize, QPoint, QModelIndex, QThread
 from PyQt6.QtGui import QPainter, QColor, QBrush, QTextDocument, QFont, QPen, QIntValidator
 
-import json, re
+import re
+import orjson
 from urllib import request as  url_request, error as url_error
 from Templates.About import PROGRAM_VERSION, GITHUB
 
@@ -578,8 +579,8 @@ class UpdateChecker(QThread):
 				}
 			)
 
-			with url_request.urlopen(request, timeout= self.timeout) as respons:
-				data = json.loads(respons.read().decode('utf-8'))
+			with url_request.urlopen(request, timeout= self.timeout) as response:
+				data = orjson.loads(response.read())
 
 			if self._cancelled:
 				return

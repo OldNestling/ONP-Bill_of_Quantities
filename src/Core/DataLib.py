@@ -1,8 +1,8 @@
 from filelock import FileLock, Timeout
 from abc import ABC, abstractmethod
 from pathlib import Path
-from .Utilities import get_user_log
-import os, time, json
+from .Utilities import get_user_log, read_json, save_json, JSONDecodeError
+import os, time
 
 
 class DataLibraryManager(ABC):
@@ -69,8 +69,7 @@ class DataLibraryManager(ABC):
 			"timestamp": time.time()
 		}
 		try:
-			with open(self._meta_file, "w") as f:
-				json.dump(meta, f)
+			save_json(self._meta_file, meta)
 		except Exception as e:
 			lock.release()
 			print(f"Ошибка записи мета-файла: {e}")
@@ -119,8 +118,7 @@ class DataLibraryManager(ABC):
 			# Блокировка занята – читаем мета-файл
 			if self._meta_file.exists():
 				try:
-					with open(self._meta_file) as f:
-						return json.load(f)
+					return read_json(self._meta_file)
 				except:
 					return {"user": "неизвестен", "pid": None, "timestamp": None}
 
@@ -130,7 +128,7 @@ class DataLibraryManager(ABC):
 	def deserialization_function(data) -> object:
 		""" Функция десериализации для конкретной библиотеки данных 
 			
-			:data: словарь с данными единичноо объекта из json"""
+			:data: словарь с данными единичного объекта из json"""
 		pass
 
 	def load_lib(self):
@@ -138,14 +136,13 @@ class DataLibraryManager(ABC):
 		if not self.project:
 			return
 		try:
-			with open(self._file_path, "r", encoding="utf-8") as f:
-				data = json.load(f)
-				for element in data:
-					obj = self.deserialization_function(element)
-					self.library.append(obj)
+			data = read_json(self._file_path)
+			for element in data:
+				obj = self.deserialization_function(element)
+				self.library.append(obj)
 		except FileNotFoundError:
 			self.library = []
-		except json.JSONDecodeError:
+		except JSONDecodeError:
 			pass
 		except Exception as e:
 			raise RuntimeError(f'{"-"*40}\nОшибка загрузки файла {self._file_path}: {e}')
@@ -156,11 +153,8 @@ class DataLibraryManager(ABC):
 			return False
 		try:
 			tmp_path = self._file_path.with_suffix(".tmp")
-			with open(tmp_path, 'w', encoding='utf-8') as f:
-				data = []
-				for obj in self.library:
-					data.append(obj.serialization())
-				json.dump(data, f, indent=4, ensure_ascii=False)
+			data = [obj.serialization() for obj in self.library]
+			save_json(tmp_path, data)
 			tmp_path.replace(self._file_path)
 			return True
 		except Exception as e:

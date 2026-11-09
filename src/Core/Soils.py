@@ -15,8 +15,8 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 from dataclasses import dataclass
-import json, copy
-from .Utilities import convert_value
+import copy
+from .Utilities import convert_value, read_json, save_json, JSONDecodeError
 from .DataLib import DataLibraryManager
 
 # TODO Переработать по типу остальных библиотек с коллекцией-списком
@@ -33,11 +33,11 @@ class Soils_Manager(DataLibraryManager):
 
 	def __init__(self, project):
 		super().__init__()
-		self.project = project # Единый глобальный объект, хранящий настройки и артубты для всех модулей
+		self.project = project
 		self.library: dict[str, Soil] = {}  #  словарь всех созданных объектов Soil
 		self.load_lib()
 		self._update_gesn_data()
-		# Устанавливка режима сопоставления
+		# Установка режима сопоставления
 		Soil._compare_mode = self.project.work_modes.get('ground_complementation_mode',False) if self.project else False 
 
 	# ------------------------------- Загрузка и сохранение БД -----------------------------
@@ -49,17 +49,16 @@ class Soils_Manager(DataLibraryManager):
 		if not self.project or self._file_path is None or self._file_path is None:
 			return
 		try:
-			with open(self._file_path, "r", encoding="utf-8") as f:
-				data = json.load(f)
-				data.sort(key= lambda dct: dct.get('local_num'))
-				for soil in data:
-					self.soil_deserializer(soil)
+			data = read_json(self._file_path)
+			data.sort(key= lambda dct: dct.get('local_num'))
+			for soil in data:
+				self.soil_deserializer(soil)
 		except FileNotFoundError:
 			self.library = {}
-		except json.JSONDecodeError:
+		except JSONDecodeError:
 			pass
 		except Exception as e:
-			raise RuntimeError(f'{"-"*40}\nОшибка загрузки файла {self._file_path}: {e}')
+			raise RuntimeError(f'[Soils_Manager: load_lib] Ошибка загрузки файла {self._file_path}: {e}')
 
 
 	def save_lib(self):
@@ -67,11 +66,8 @@ class Soils_Manager(DataLibraryManager):
 			return False
 		try:
 			tmp_path = self._file_path.with_suffix(".tmp")
-			with open(tmp_path, 'w', encoding='utf-8') as f:
-				data = []
-				for value in self.library.values():
-					data.append(self.soil_serializer(value))
-				json.dump(data, f, indent=4, ensure_ascii=False)
+			data = [self.soil_serializer(value) for value in self.library.values()]
+			save_json(tmp_path, data)
 			tmp_path.replace(self._file_path)
 			self.unlock()
 			return True
@@ -154,7 +150,7 @@ class Soils_Manager(DataLibraryManager):
 	# ------------------------------ Загрузка и сохранение JSON ----------------------------
 	@staticmethod
 	def soil_serializer(obj_soil):
-		""" Создаеn словарь Python для экземляра объекта класса Soil для сериализации в json """
+		""" Создает словарь Python для экземпляра объекта класса Soil для сериализации в json """
 		if isinstance(obj_soil,Soil):
 			json_soil = {
 				"local_num": obj_soil.local_num,
@@ -172,7 +168,7 @@ class Soils_Manager(DataLibraryManager):
 
 		
 	def soil_deserializer(self, dict_soil):
-		""" Распознаёт еденичный объект класса Soil из предоставленного словаря json и 
+		""" Распознаёт единичный объект класса Soil из предоставленного словаря json и 
 		добавляет его в общий словарь грунтов
 		:dict_soil: одна пара словаря ключ-значение, где значение это атрибуты класса
 		"""
@@ -208,10 +204,9 @@ class Soils_Manager(DataLibraryManager):
 		gesn1_data['data'] = data
 		try:
 			file = self.project.base_dir / self.DATA / self.GESN_1_FILE
-			with open(file, 'w', encoding='utf-8') as f:
-				json.dump(gesn1_data, f, indent=4, ensure_ascii=False)
+			save_json(file, gesn1_data)
 		except Exception as e:
-			print(f'{"-"*40}\nПроизошла ошибка: {e}')
+			print(f'[Soils_Manager: save_ges1_data] Произошла ошибка: {e}')
 
 
 	def save_gesn5_data(self, data):
@@ -221,10 +216,9 @@ class Soils_Manager(DataLibraryManager):
 		gesn5_data['data'] = data
 		try:
 			file = self.project.base_dir / self.DATA / self.GESN_5_FILE
-			with open(file, 'w', encoding='utf-8') as f:
-				json.dump(gesn5_data, f, indent=4, ensure_ascii=False)
+			save_json(file, gesn5_data)
 		except Exception as e:
-			print(f'{"-"*40}\nПроизошла ошибка: {e}')
+			print(f'[Soils Manager: save_gesn5_data] Произошла ошибка: {e}')
 
 	# --------------------------------- Данные ГЭСН -------------------------------------
 	@property
@@ -233,14 +227,13 @@ class Soils_Manager(DataLibraryManager):
 		if self.project:
 			file = self.project.base_dir / self.DATA / self.GESN_1_FILE
 			try:
-				with open(file, "r", encoding="utf-8") as f:
-						data = json.load(f)
-						return data['data']
+				data = read_json(file)
+				return data['data']
 			except FileNotFoundError:
 				from Templates.GESN_1 import GESN_DATA
 				return GESN_DATA['data']
 			except Exception as e:
-				print(f'{"-"*40}\Произошла ошибка: {e}')
+				print(f'[Soils_Manager: gesn_1_data] Произошла ошибка: {e}')
 
 
 	@property
@@ -249,14 +242,13 @@ class Soils_Manager(DataLibraryManager):
 		if self.project:
 			file = self.project.base_dir / self.DATA / self.GESN_4_FILE
 			try:
-				with open(file, "r", encoding="utf-8") as f:
-						data = json.load(f)
-						return data['data']
+				data = read_json(file)
+				return data['data']
 			except FileNotFoundError:
 				from Templates.GESN_4 import GESN_DATA
 				return GESN_DATA['data']
 			except Exception as e:
-				print(f'{"-"*40}\Произошла ошибка: {e}')
+				print(f'[Soils_Manager: gesn_4_data] Произошла ошибка: {e}')
 
 
 	@property
@@ -265,18 +257,17 @@ class Soils_Manager(DataLibraryManager):
 		if self.project:
 			file = self.project.base_dir / self.DATA / self.GESN_5_FILE
 			try:
-				with open(file, "r", encoding="utf-8") as f:
-						data = json.load(f)
-						return data['data']
+				data = read_json(file)
+				return data['data']
 			except FileNotFoundError:
 				from Templates.GESN_5 import GESN_DATA
 				return GESN_DATA['data']
 			except Exception as e:
-				print(f'{"-"*40}\Произошла ошибка: {e}')
+				print(f'[Soils_Manager: gesn_5_data] Произошла ошибка: {e}')
 
 
 	def get_gesn1_headers(self):
-		""" Получает заголвки по столбцов для таблицы по ГЭСН 1 """
+		""" Получает заголовки по столбцов для таблицы по ГЭСН 1 """
 		headers = ['№', 'Наименование и краткая характеристика грунтов']
 		headers.extend(list(Gesn1.short_names.values()))
 		return headers
@@ -339,7 +330,7 @@ class Soils_Manager(DataLibraryManager):
 	def get_gesn_1_obj(self, key, gesn_data = None):
 		""" Преобразует выбранный словарь из файла JSON в объект dataclass Gesn1
 		 :key: Ключ (номер грунта по ГЭСН 1) для поиска словаря с данными
-		 :gesn_data: загруженные данные из файоа JSON. На случай, если функция применятся многократно, чтобы не читать файл каждый раз
+		 :gesn_data: загруженные данные из файла JSON. На случай, если функция применятся многократно, чтобы не читать файл каждый раз
 		   """
 		if not self.project:
 			return None
@@ -353,7 +344,7 @@ class Soils_Manager(DataLibraryManager):
 	def get_gesn_4_obj(self, key : str, gesn_data = None):
 		""" Преобразует выбранный словарь из файла JSON в объект dataclass Gesn1
 		 :key: Ключ из раздела и группы грунта по типу 'раздел-группа'
-		 :gesn_data: загруженные данные из файоа JSON. На случай, если функция применятся многократно, чтобы не читать файл каждый раз
+		 :gesn_data: загруженные данные из файла JSON. На случай, если функция применятся многократно, чтобы не читать файл каждый раз
 		   """
 		if not self.project:
 			return None
@@ -383,7 +374,7 @@ class Soils_Manager(DataLibraryManager):
 	def get_gesn_5_obj(self, key, gesn_data = None):
 		""" Преобразует выбранный словарь из файла JSON в объект dataclass Gesn1
 		 :key: Ключ (номер грунта по ГЭСН 1) для поиска словаря с данными
-		 :gesn_data: загруженные данные из файоа JSON. На случай, если функция применятся многократно, чтобы не читать файл каждый раз
+		 :gesn_data: загруженные данные из файла JSON. На случай, если функция применятся многократно, чтобы не читать файл каждый раз
 		   """
 		if not self.project:
 			return None

@@ -38,7 +38,7 @@ class ImportManager:
 
 
 	def _get_files(self):
-		""" Открываетдиалоговое окно выбора файлов """
+		""" Открывает диалоговое окно выбора файлов """
 		# Диалог выбора файлов с расширенным фильтром
 		files, _ = QFileDialog.getOpenFileNames(
 			self.main_tab,

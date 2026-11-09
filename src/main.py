@@ -31,13 +31,13 @@ import sys, traceback, os
 
 from Templates.styles import get_css
 from UI.project_window import Project_Window
-from Core.Utilities import resource_path
+from Core.Utilities import resource_path, get_platform
 
 from PyQt6.QtWidgets import QApplication, QMessageBox
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QPalette, QColor, QIcon, QFont, QFontDatabase
 
-SYSTEM_PLATFORM = sys.platform
+SYSTEM_PLATFORM = get_platform()
 
 # Исправляем ошибку	18:52:55.052, возникшую на linux: 
 # Settings schema 'org.gnome.settings-daemon.plugins.xsettings' 

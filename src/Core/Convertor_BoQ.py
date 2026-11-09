@@ -14,13 +14,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-import xml.etree.ElementTree as ET
+import re, shutil
+import orjson
 import jsonschema
 from jsonschema import ValidationError
+import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
 from pathlib import Path
 from openpyxl import load_workbook
-import json, re, shutil
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.units import mm
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -33,7 +34,7 @@ from reportlab.lib.enums import TA_CENTER, TA_LEFT
 
 from Core.BoQ import BoQ_manager, Section, Work, Resource, Link
 from Core.Project import Project
-from Core.Utilities import text_after, clearing_string, convert_value
+from Core.Utilities import text_after, clearing_string, convert_value, read_json, save_json
 
 from Templates.About import PROGRAM_NAME, PROGRAM_VERSION
 from Templates.json_schemas import JSON_SCHEMA_3
@@ -384,9 +385,7 @@ class Convertor:
 			folder.mkdir(parents=True, exist_ok=True)
 			filename = xml_path.stem
 			filepath = folder / f'{filename}.json'
-			with open(filepath, "w", encoding="utf-8") as f:
-				# Записываем словарь в файл с форматированием
-				json.dump(file_data, f, indent=4, ensure_ascii=False)
+			save_json(filepath, file_data)
 		except Exception as e:
 			print(f'[DEBAG: import_from_xml_3p01] Ошибка импорта: {e}')
 
@@ -670,9 +669,7 @@ class Convertor:
 
 			# --- Сохранение в файл ---
 			output_path = output_dir / f"{filepath.stem}.json"
-			with open(output_path, "w", encoding="utf-8") as f:
-				json.dump(output_data, f, indent=4, ensure_ascii=False)
-
+			save_json(output_path, output_data)
 			print(f"Конвертирован лист '{sheet_name}' -> {output_path}")
 			processed += 1
 
@@ -1192,7 +1189,7 @@ class SchemaError(Exception):
 
 class ValidatorJSON:
 	""" Осуществляет процесс импорта фалов ВОР в формате json с валидацией данных """
-	SCHEMA = json.loads(JSON_SCHEMA_3)	# схема фалов ВОР для валидации
+	SCHEMA = orjson.loads(JSON_SCHEMA_3)	# схема фалов ВОР для валидации
 	def __init__(self, project: Project):
 		self.project = project
 		self.output_folder = Path(self.project.project_BoQs_path)
@@ -1201,9 +1198,8 @@ class ValidatorJSON:
 	def _validate_file(self, file) -> tuple[bool, None | str]:
 		""" Проверяет 1 файл на минимальное соответствие схеме """
 		try:
-			with open(file, 'r', encoding="utf-8") as f:
-				data = json.load(f)
-				jsonschema.validate(instance=data, schema=self.SCHEMA)   # ValidationError при ошибке
+			data = read_json(file)
+			jsonschema.validate(instance=data, schema=self.SCHEMA)   # ValidationError при ошибке
 			return (True, None)
 		except ValidationError as e:
 			message = e.message

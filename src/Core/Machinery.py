@@ -14,8 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-import json
-from .Utilities import fixing_decimals, text_after
+from .Utilities import fixing_decimals
 from .DataLib import DataLibraryManager
 
 

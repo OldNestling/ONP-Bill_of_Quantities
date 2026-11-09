@@ -1,9 +1,9 @@
 VSVersionInfo(
   ffi=FixedFileInfo(
     # версия файла (четыре числа)
-    filevers=(1, 0, 4, 0),
+    filevers=(1, 0, 4, 1),
     # версия продукта
-    prodvers=(1, 0, 4, 0),
+    prodvers=(1, 0, 4, 1),
     # маска флагов (обычно 0x3f)
     mask=0x3f,
     # флаги (0 – без флагов)
@@ -25,12 +25,12 @@ VSVersionInfo(
           u'040904B0',
           [
             StringStruct(u'FileDescription', u'Система работы с ведомостью объемов работ'),
-            StringStruct(u'FileVersion', u'1.0.4.0'),
+            StringStruct(u'FileVersion', u'1.0.4.1'),
             StringStruct(u'InternalName', u'myapp.exe'),
             StringStruct(u'LegalCopyright', u'Copyright (C) 2026 OldNestling'),
             StringStruct(u'OriginalFilename', u'ONP_Система_ВОР.exe'),
             StringStruct(u'ProductName', u'ONP: Система ВОР'),
-            StringStruct(u'ProductVersion', u'1.0.4.0'),
+            StringStruct(u'ProductVersion', u'1.0.4.1'),
           ])
       ]),
     VarFileInfo([

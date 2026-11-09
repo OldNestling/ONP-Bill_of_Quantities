@@ -14,15 +14,16 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-import json, copy, math
+import copy, math
 from pathlib import Path
+import orjson
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
 	from .Project import File_BoQ
 
 from Core.Documentation import Book
-from Core.Utilities import convert_value
+from Core.Utilities import convert_value, save_json, read_json
 from Core.Soils import Soil
 from .BoQ_elements import Section, Work, Resource, Link, PositionLine
 from .UserLibs import Group, MainElement, SubElement
@@ -169,9 +170,8 @@ class BoQ_manager:
 				self.file.lock()			# восстанавливаем блокировку
 			return False
 		try:
-			with open(save_path, "w", encoding="utf-8") as f:
-				json.dump(data, f, indent=4, ensure_ascii=False)
-				self.is_modified = False	# Сбрасываем флаг после успешного сохранения
+			save_json(save_path, data)
+			self.is_modified = False	# Сбрасываем флаг после успешного сохранения
 			self.file.lock()				# блокируем новый файл
 			return True
 		except Exception as e:
@@ -190,9 +190,8 @@ class BoQ_manager:
 		self.archive = list() if self.archive is None else self.archive
 		self.links = set() if self.links is None else self.links
 
-		with open(file, "r", encoding="utf-8") as f:
-			data: dict = json.load(f)
-			self.deserialization(data, data.get('data_scheme', 1))
+		data = read_json(file)
+		self.deserialization(data, data.get('data_scheme', 1))
 		# После воссоздания структуры нужно восстановить множества зависимостей
 		self.__clean_init_dependencies()
 		self.calculate_pos_nums()

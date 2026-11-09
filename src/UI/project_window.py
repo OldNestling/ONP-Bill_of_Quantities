@@ -890,7 +890,7 @@ class MainProjectTab(QWidget):
 				f'<p>Файл(ы) открыт(ы) в режиме чтения:</p>{output}'
 			)
 
-		self.reload_BoQs_table()   # обновляем статусы блокировок
+		#self.reload_BoQs_table()   # обновляем статусы блокировок
 		return True
 
 		

@@ -25,7 +25,7 @@ from .DataLib import DataLibraryManager
 
 class LibManager(DataLibraryManager):
 	"""
-	Управялет процессом создания и настройки библиотек
+	Управляет процессом создания и настройки библиотек
 
 	Args:
 		:project: объект управления проектом
@@ -35,7 +35,7 @@ class LibManager(DataLibraryManager):
 
 	def __init__(self, project):
 		super().__init__()
-		self.project = project				# Единый глобальный объект проекта
+		self.project: Project = project				# Единый глобальный объект проекта
 		self.library: list[Library] = []
 		self.load_lib()
 	
