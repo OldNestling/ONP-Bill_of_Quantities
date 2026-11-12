@@ -215,11 +215,13 @@ class Convertor:
 				work_tag = ET.SubElement(works_tag, 'Work')
 				__create_position_element(work_tag, work)
 
+				if not without_resources:
+					resources_tag = ET.SubElement(work_tag, 'Resources')
+				
 				for resource in work.resources:
 					if without_resources:	# все ресурсы в одном уровне с работами
 						resource_tag = ET.SubElement(works_tag, 'Work')
 					else:
-						resources_tag = ET.SubElement(work_tag, 'Resources')
 						resource_tag = ET.SubElement(resources_tag, 'Resource')
 					__create_position_element(resource_tag, resource)
 
